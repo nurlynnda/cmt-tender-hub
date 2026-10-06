@@ -166,6 +166,45 @@ it('is read-only for other staff and when closed', function () {
         ->assertDontSee('+ Add line')->assertSee('This project is closed');
 });
 
+it('handles a line a colleague added after the tab was opened', function () {
+    [$pic, $tender, $project] = pdTab();
+    $c = Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender]);
+    $new = PdLine::factory()->for($project)->create(['pd_group' => PdGroup::Principal, 'name' => 'Added by Ahmad']);
+
+    $c->call('selectGroup', 'principal')
+        ->assertSet("rows.l{$new->id}.name", 'Added by Ahmad')
+        ->call('openDocuments', $new->id)
+        ->set('entry.type', 'invoice')->set('entry.date', '2026-02-01')->set('entry.amount', '100')
+        ->call('saveEntry')->assertHasNoErrors();
+
+    expect($new->fresh()->entries)->toHaveCount(1);
+});
+
+it('explains when a colleague removed the line you are working on', function () {
+    [$pic, $tender, $project] = pdTab();
+    $line = $project->lines[1];
+    $c = Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])->call('openDocuments', $line->id);
+    $line->delete();
+
+    $c->set('entry.type', 'invoice')->set('entry.date', '2026-02-01')->set('entry.amount', '100')
+        ->call('saveEntry')->assertOk()->assertSee('This line was removed by someone else — reload to see the latest.');
+    $c->set("rows.l{$line->id}.name", 'Mine')->assertOk()->assertSee('This line was removed by someone else');
+    $c->call('removeLine', $line->id)->assertOk()->assertSee('This line was removed by someone else');
+});
+
+it('ignores lines and documents from another project', function () {
+    [$pic, $tender] = pdTab();
+    $otherLine = PdLine::factory()->create(['name' => 'Not yours']);
+    $otherEntry = PdEntry::factory()->for($otherLine, 'line')->create();
+
+    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+        ->call('removeLine', $otherLine->id)->assertOk()->assertSee('This line was removed by someone else')
+        ->call('editEntry', $otherEntry->id)->assertOk()->assertSet('editingEntry', null)
+        ->call('removeEntry', $otherEntry->id)->assertOk();
+
+    expect(PdLine::find($otherLine->id))->not->toBeNull()->and(PdEntry::find($otherEntry->id))->not->toBeNull();
+});
+
 it('shows the cash flow', function () {
     [$pic, $tender, $project] = pdTab();
     $project->lines[0]->update(['scheduled_date' => '2026-03-01']);

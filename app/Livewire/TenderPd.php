@@ -9,6 +9,7 @@ use App\Models\{PdEntry, PdLine, Project, ProjectType, Tender};
 use App\Rules\{MoneyAmount, Percentage};
 use App\Support\{Money, Percent};
 use DomainException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
@@ -109,7 +110,7 @@ class TenderPd extends Component
         ]);
         $row = $this->rows[$key];
         $this->run(function () use ($id, $key, $row) {
-            $line = app(UpdatePdLine::class)->handle(auth()->user(), PdLine::findOrFail($id), $this->versions[$key], [
+            $line = app(UpdatePdLine::class)->handle(auth()->user(), $this->line($id), $this->versions[$key] ?? 0, [
                 'name' => $row['name'],
                 'reference' => $row['reference'],
                 'budget_sen' => Money::parse($row['budget']) ?? 0,
@@ -160,7 +161,7 @@ class TenderPd extends Component
     public function removeLine(int $id): void
     {
         $this->run(function () use ($id) {
-            app(RemovePdLine::class)->handle(auth()->user(), PdLine::findOrFail($id), $this->versions["l{$id}"] ?? 0);
+            app(RemovePdLine::class)->handle(auth()->user(), $this->line($id), $this->versions["l{$id}"] ?? 0);
             unset($this->rows["l{$id}"], $this->versions["l{$id}"]);
             if ($this->openLine === $id) {
                 $this->openLine = null;
@@ -177,13 +178,15 @@ class TenderPd extends Component
 
     public function editEntry(int $id): void
     {
-        $e = PdEntry::findOrFail($id);
-        $this->openLine = $e->pd_line_id;
-        $this->editingEntry = $e->id;
-        $this->entry = [
-            'type' => $e->type->value, 'number' => (string) $e->number, 'date' => $e->date->format('Y-m-d'),
-            'amount' => Money::toInput($e->amount_sen), 'note' => (string) $e->note,
-        ];
+        $this->run(function () use ($id) {
+            $e = $this->entryOf($id);
+            $this->openLine = $e->pd_line_id;
+            $this->editingEntry = $e->id;
+            $this->entry = [
+                'type' => $e->type->value, 'number' => (string) $e->number, 'date' => $e->date->format('Y-m-d'),
+                'amount' => Money::toInput($e->amount_sen), 'note' => (string) $e->note,
+            ];
+        });
     }
 
     public function cancelEntry(): void
@@ -194,19 +197,19 @@ class TenderPd extends Component
 
     public function saveEntry(): void
     {
-        $line = PdLine::findOrFail($this->openLine);
-        $this->validate([
-            'entry.type' => ['required', Rule::in(array_map(fn (PdEntryType $t) => $t->value, $line->pd_group->entryTypes()))],
-            'entry.number' => ['nullable', 'string', 'max:100'],
-            'entry.date' => ['required', 'date_format:Y-m-d'],
-            'entry.amount' => ['required', new MoneyAmount(mustBePositive: true)],
-            'entry.note' => ['nullable', 'string', 'max:255'],
-        ], ['entry.type.in' => 'Choose a document type this line takes.'], [
-            'entry.type' => 'type', 'entry.number' => 'number', 'entry.date' => 'date', 'entry.amount' => 'amount', 'entry.note' => 'note',
-        ]);
-        $this->run(function () use ($line) {
-            app(SavePdEntry::class)->handle(auth()->user(), $line, $this->versions["l{$line->id}"],
-                $this->editingEntry ? PdEntry::findOrFail($this->editingEntry) : null, [
+        $this->run(function () {
+            $line = $this->line($this->openLine ?? 0);
+            $this->validate([
+                'entry.type' => ['required', Rule::in(array_map(fn (PdEntryType $t) => $t->value, $line->pd_group->entryTypes()))],
+                'entry.number' => ['nullable', 'string', 'max:100'],
+                'entry.date' => ['required', 'date_format:Y-m-d'],
+                'entry.amount' => ['required', new MoneyAmount(mustBePositive: true)],
+                'entry.note' => ['nullable', 'string', 'max:255'],
+            ], ['entry.type.in' => 'Choose a document type this line takes.'], [
+                'entry.type' => 'type', 'entry.number' => 'number', 'entry.date' => 'date', 'entry.amount' => 'amount', 'entry.note' => 'note',
+            ]);
+            app(SavePdEntry::class)->handle(auth()->user(), $line, $this->versions["l{$line->id}"] ?? 0,
+                $this->editingEntry ? $this->entryOf($this->editingEntry) : null, [
                     'type' => $this->entry['type'],
                     'number' => $this->entry['number'],
                     'date' => $this->entry['date'],
@@ -220,8 +223,8 @@ class TenderPd extends Component
 
     public function removeEntry(int $id): void
     {
-        $e = PdEntry::findOrFail($id);
-        $this->run(function () use ($e) {
+        $this->run(function () use ($id) {
+            $e = $this->entryOf($id);
             app(RemovePdEntry::class)->handle(auth()->user(), $e, $this->versions["l{$e->pd_line_id}"] ?? 0);
             $this->versions["l{$e->pd_line_id}"] = PdLine::findOrFail($e->pd_line_id)->version;
             if ($this->editingEntry === $e->id) {
@@ -240,12 +243,25 @@ class TenderPd extends Component
         $this->run(fn () => $this->projectVersion = app(ReopenProject::class)->handle(auth()->user(), $this->project(), $this->projectVersion)->version);
     }
 
+    /** A line of THIS project only; a missing or foreign id is treated as removed. */
+    private function line(int $id): PdLine
+    {
+        return PdLine::where('project_id', $this->project()->id)->findOrFail($id);
+    }
+
+    private function entryOf(int $id): PdEntry
+    {
+        return PdEntry::whereHas('line', fn ($q) => $q->where('project_id', $this->project()->id))->findOrFail($id);
+    }
+
     /** Runs an action; refusals become a message and typed values stay on screen. */
     private function run(callable $action): void
     {
         $this->problem = null;
         try {
             $action();
+        } catch (ModelNotFoundException) {
+            $this->problem = 'This line was removed by someone else — reload to see the latest.';
         } catch (StalePdRecord|ProjectLocked|DomainException $e) {
             $this->problem = $e->getMessage();
         } catch (InvalidArgumentException $e) {
@@ -256,6 +272,11 @@ class TenderPd extends Component
     public function render()
     {
         $project = $this->project()->load(['projectType', 'closedBy']);
+        foreach ($project->lines as $l) {
+            if (! isset($this->rows["l{$l->id}"])) {
+                $this->loadLine($l); // added by a colleague since this tab opened
+            }
+        }
         $summary = $project->summary();
 
         return view('livewire.tender-pd', [
