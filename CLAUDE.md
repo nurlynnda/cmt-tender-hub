@@ -20,6 +20,8 @@ term is unavoidable, say what it means in the same breath.
 - Livewire components stay thin; business rules live in `app/Actions` and `app/Policies`.
 - Every tender change checks/increments `version` and writes an activity log row.
 - After any browser-visible change, click through it in a real browser before calling it done.
+- Never let a test contact a government site; use tests/Fixtures/collector and Tests\Support\FakeFetcher.
+- Write PHP files with the editor tool, not sed/heredocs (Git Bash mangles backslashes).
 
 Spec: docs/superpowers/specs/2026-10-06-cmt-tender-hub-stage1-design.md
 Plan: docs/superpowers/plans/2026-10-06-cmt-tender-hub-stage1.md

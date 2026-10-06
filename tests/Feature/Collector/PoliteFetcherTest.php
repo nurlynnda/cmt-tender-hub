@@ -77,3 +77,23 @@ it('trusts SPAN\'s extra certificate only on the SPAN downloader', function () {
         ->and(substr_count($bundle, 'BEGIN CERTIFICATE'))->toBeGreaterThan(50)
         ->and((new PoliteFetcher)->httpOptions())->toBe([]);
 });
+
+it('trusts SPAN\'s current GeoTrust intermediate too (SPAN switched certificates in 2026)', function () {
+    expect(file_get_contents(SpanCertificate::bundlePath()))
+        ->toContain(trim(file_get_contents(resource_path('certs/span-geotrust-tls-rsa-ca-g1.pem'))));
+});
+
+it('rebuilds the SPAN trust file when it is out of date', function () {
+    file_put_contents(storage_path('app/span-ca-bundle.pem'), "stale bundle from an older version\n");
+
+    expect(file_get_contents(SpanCertificate::bundlePath()))
+        ->not->toContain('stale bundle')
+        ->toContain(trim(file_get_contents(resource_path('certs/span-geotrust-tls-rsa-ca-g1.pem'))));
+});
+
+it('keeps the underlying reason when a download fails', function () {
+    Http::fake(['*' => Http::failedConnection('cURL error 60: SSL certificate problem')]);
+
+    expect(fn () => fetcher()->getText('https://example.test/g'))
+        ->toThrow(CollectorException::class, 'SSL certificate problem');
+});

@@ -36,6 +36,18 @@ runs the suite with the coverage gate — enable it once with
 The `scheduler` container runs `php artisan tenders:send-reminders` every hour
 ("closes in 3 days" and "briefing tomorrow" notifications).
 
+## Collector (Find Tenders)
+
+- Collects MyProcurement, SPAN and LLM daily at 12:01pm Malaysia time (a check runs every
+  5 minutes, so a missed run catches up when the PC comes back on), plus **Collect now** for
+  Managers/Admins (open tenders only). Collection runs in the `worker` container; only one
+  run at a time, and a run still going after 2 hours is marked failed.
+- KWSP was dropped (Cloudflare blocks non-browser downloads); its imported history remains.
+- `php artisan collector:import-legacy --mongo-uri=… --database=…` copied tms-v2's 206k
+  tenders once (safe to re-run — it updates rather than duplicates).
+- Tests never contact the real sites (`Http::preventStrayRequests()`); the page readers are
+  tested on saved pages in `tests/Fixtures/collector`.
+
 ## Before going live
 
 - `php artisan serve` is for development; put a proper web server (e.g. Nginx +
@@ -47,3 +59,5 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
 
 - Spec: `docs/superpowers/specs/2026-10-06-cmt-tender-hub-stage1-design.md`
 - Plan: `docs/superpowers/plans/2026-10-06-cmt-tender-hub-stage1.md`
+- Stage 2 spec/plan: `docs/superpowers/specs/2026-10-06-cmt-tender-hub-stage2-design.md`,
+  `docs/superpowers/plans/2026-10-06-cmt-tender-hub-stage2.md`

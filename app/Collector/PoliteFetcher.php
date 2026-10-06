@@ -47,6 +47,7 @@ final class PoliteFetcher implements Fetcher
     {
         $attempt = 0;
         $graceUsed = false;
+        $lastProblem = 'no response';
         while ($attempt < self::MAX_ATTEMPTS) {
             Sleep::for(self::BASE_DELAY_MS + $this->jitter())->milliseconds();
             try {
@@ -57,6 +58,7 @@ final class PoliteFetcher implements Fetcher
                 if ($response->successful()) {
                     return $response->body();
                 }
+                $lastProblem = "HTTP {$response->status()}";
                 if (in_array($response->status(), [429, 503], true)) {
                     $retryAfter = (int) $response->header('Retry-After');
                     Sleep::for($retryAfter > 0 ? $retryAfter * 1000 : self::PENALTY_MS)->milliseconds();
@@ -67,7 +69,8 @@ final class PoliteFetcher implements Fetcher
                     }
                 }
                 $attempt++;
-            } catch (ConnectionException) {
+            } catch (ConnectionException $e) {
+                $lastProblem = $e->getMessage();
                 $attempt++;
             }
             if ($attempt < self::MAX_ATTEMPTS) {
@@ -75,7 +78,7 @@ final class PoliteFetcher implements Fetcher
             }
         }
 
-        throw new CollectorException('Download failed after '.self::MAX_ATTEMPTS." attempts: {$url}");
+        throw new CollectorException('Download failed after '.self::MAX_ATTEMPTS." attempts: {$url} ({$lastProblem})");
     }
 
     private function jitter(): int
