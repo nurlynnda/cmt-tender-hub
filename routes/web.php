@@ -15,11 +15,10 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/tenders/{list}', \App\Livewire\TenderList::class)
         ->whereIn('list', ['in-progress', 'done', 'awarded', 'lost'])
         ->name('tenders.index');
-    // Placeholders until Tasks 12 and 14 build these screens:
     Route::get('/tenders/{tender}', \App\Livewire\TenderDetail::class)
         ->whereNumber('tender')->name('tenders.show');
-    Route::get('/settings', fn () => 'Settings coming soon')->name('settings');
-    Route::get('/settings/users', fn () => 'Manage users coming soon')
+    Route::get('/settings', \App\Livewire\Settings::class)->name('settings');
+    Route::get('/settings/users', \App\Livewire\ManageUsers::class)
         ->middleware('can:manage-users')->name('users.index');
     Route::post('/logout', LogoutController::class)->name('logout');
 });
