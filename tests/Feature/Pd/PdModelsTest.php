@@ -48,6 +48,19 @@ it('gives costing lines a group, Principal by default', function () {
     expect($line->fresh()->pd_group)->toBe(PdGroup::Principal);
 });
 
+it('summarises a saved project', function () {
+    $project = Project::factory()->create(['start_date' => '2026-01-01', 'end_date' => '2026-12-31']);
+    $line = PdLine::factory()->for($project)->create(['pd_group' => PdGroup::Collection, 'budget_sen' => 100000, 'scheduled_date' => '2026-02-01']);
+    PdEntry::factory()->for($line, 'line')->create(['type' => PdEntryType::Invoice, 'amount_sen' => 40000, 'date' => '2026-02-03']);
+
+    $s = $project->fresh()->summary('2026-07-02');
+
+    expect($s['pnl']['budget']['revenue'])->toBe(100000)
+        ->and($s['pnl']['actual']['revenue'])->toBe(40000)
+        ->and($s['lines'][0]['id'])->toBe($line->id)
+        ->and($s['duration_pct'])->toBe(50);   // 182 of 364 days
+});
+
 it('refuses to delete a line that still has entries', function () {
     $line = PdLine::factory()->create();
     PdEntry::factory()->for($line, 'line')->create();

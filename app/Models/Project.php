@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Pd\PdCalculator;
+use App\Support\MalaysiaTime;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
@@ -54,5 +56,29 @@ class Project extends Model
     public function isOpen(): bool
     {
         return $this->closed_at === null;
+    }
+
+    /** @see PdCalculator::summary() */
+    public function summary(?string $today = null): array
+    {
+        return PdCalculator::summary(
+            $this->lines->map(fn (PdLine $l) => [
+                'id' => $l->id,
+                'group' => $l->pd_group->value,
+                'budget_sen' => $l->budget_sen,
+                'scheduled_date' => $l->scheduled_date?->format('Y-m-d'),
+                'entries' => $l->entries->map(fn (PdEntry $e) => [
+                    'type' => $e->type->value, 'amount_sen' => $e->amount_sen, 'date' => $e->date->format('Y-m-d'),
+                ])->all(),
+            ])->all(),
+            [
+                'approved_margin_bp' => $this->approved_margin_bp,
+                'project_charge_bp' => $this->project_charge_bp,
+                'commission_share_bp' => $this->commission_share_bp,
+            ],
+            $this->start_date?->format('Y-m-d'),
+            $this->end_date?->format('Y-m-d'),
+            $today ?? MalaysiaTime::today()->format('Y-m-d'),
+        );
     }
 }
