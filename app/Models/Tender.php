@@ -50,6 +50,11 @@ class Tender extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
+    public function collectedTender(): BelongsTo
+    {
+        return $this->belongsTo(CollectedTender::class);
+    }
+
     public function documents(): HasMany
     {
         return $this->hasMany(TenderDocument::class)->orderBy('position');

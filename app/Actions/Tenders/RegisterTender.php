@@ -14,6 +14,7 @@ final class RegisterTender
         'mode', 'type', 'category', 'tender_code', 'title', 'client', 'scope',
         'pic_id', 'owner_id', 'publish_date', 'closing_date',
         'has_briefing', 'briefing_date', 'estimated_value_sen',
+        'collected_tender_id',
     ];
 
     public function __construct(private GenerateWoNumber $woNumbers, private AssignmentNotifier $notifier) {}
