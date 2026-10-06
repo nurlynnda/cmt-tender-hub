@@ -6,6 +6,11 @@ RUN apt-get update \
  && pecl install pcov && docker-php-ext-enable pcov \
  && rm -rf /var/lib/apt/lists/*
 
+# MongoDB driver — only used by the one-time import from the old tms-v2 collector.
+RUN apt-get update && apt-get install -y --no-install-recommends libssl-dev pkg-config \
+ && pecl install mongodb && docker-php-ext-enable mongodb \
+ && rm -rf /var/lib/apt/lists/*
+
 # Cache compiled PHP between runs (the project folder is shared from Windows, which is slow to read).
 RUN mkdir -p /tmp/opcache && printf '%s\n' \
     'opcache.enable=1' 'opcache.enable_cli=1' 'opcache.file_cache=/tmp/opcache' \

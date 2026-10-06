@@ -13,6 +13,7 @@
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.4",
+        "mongodb/mongodb": "^2.5",
         "symfony/css-selector": "^8.1",
         "symfony/dom-crawler": "^8.1"
     },
