@@ -125,7 +125,8 @@ class TenderPd extends Component
         $this->validate([
             'header.project_type_id' => ['nullable', Rule::exists('project_types', 'id')],
             'header.start_date' => ['nullable', 'date_format:Y-m-d'],
-            'header.end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:header.start_date'],
+            // Only compare with the start date when there is one; an end date alone is fine.
+            'header.end_date' => ['nullable', 'date_format:Y-m-d', Rule::when(($this->header['start_date'] ?? '') !== '', 'after_or_equal:header.start_date')],
         ], [], ['header.project_type_id' => 'project type', 'header.start_date' => 'start date', 'header.end_date' => 'end date']);
         $this->run(function () {
             $p = app(UpdateProjectDetails::class)->handle(auth()->user(), $this->project(), $this->projectVersion, [

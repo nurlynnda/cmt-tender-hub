@@ -166,6 +166,15 @@ it('is read-only for other staff and when closed', function () {
         ->assertDontSee('+ Add line')->assertSee('This project is closed');
 });
 
+it('accepts an end date before any start date is set', function () {
+    [$pic, $tender, $project] = pdTab();
+
+    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+        ->set('header.end_date', '2026-06-30')->assertHasNoErrors();
+
+    expect($project->fresh()->end_date->format('Y-m-d'))->toBe('2026-06-30');
+});
+
 it('handles a line a colleague added after the tab was opened', function () {
     [$pic, $tender, $project] = pdTab();
     $c = Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender]);
