@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Actions\Tenders\{AddDocument, CancelTender, MarkTenderAwarded, MarkTenderDone, MarkTenderLost, RemoveDocument, ReopenTender, ToggleDocument, UpdateTender};
-use App\Enums\{TenderCategory, TenderMode, TenderType};
+use App\Enums\{TenderCategory, TenderMode, TenderStatus, TenderType};
 use App\Exceptions\{CostingRequired, DocumentsIncomplete, InvalidTenderTransition, StaleTenderException};
 use App\Livewire\Forms\TenderForm;
 use App\Models\{Tender, User};
@@ -217,6 +217,7 @@ class TenderDetail extends Component
             'documents' => $documents,
             'doneCount' => $documents->where('is_done', true)->count(),
             'costing' => $this->modal === 'done' ? $this->tender->costingSummary() : null,
+            'hasPd' => $this->tender->status === TenderStatus::Awarded && $this->tender->project()->exists(),
             'activity' => $this->tender->activity()->with('user')->get(),
             'canEdit' => Gate::allows('update', $this->tender),
             'canReopen' => Gate::allows('reopen', $this->tender),

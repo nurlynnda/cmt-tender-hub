@@ -55,7 +55,10 @@
     </header>
 
     <nav class="flex gap-1 border-b border-line text-sm">
-        @foreach (['overview' => 'Overview', 'costing' => 'Costing', 'documents' => 'Documents', 'activity' => 'Activity'] as $key => $label)
+        @php
+            $tabs = ['overview' => 'Overview', 'costing' => 'Costing'] + ($hasPd ? ['pd' => 'PD'] : []) + ['documents' => 'Documents', 'activity' => 'Activity'];
+        @endphp
+        @foreach ($tabs as $key => $label)
             <button type="button" wire:click="$set('tab', '{{ $key }}')" @class([
                 'px-3 py-2 -mb-px border-b-2',
                 'border-ink font-medium' => $tab === $key,
@@ -64,7 +67,10 @@
         @endforeach
     </nav>
 
-    @if ($tab !== 'costing')
+    @if ($tab === 'pd' && $hasPd)
+        {{-- PD edits save immediately, so it only needs mounting while shown --}}
+        <livewire:tender-pd :tender="$tender" wire:key="pd-{{ $tender->id }}" />
+    @elseif ($tab !== 'costing')
         @include('livewire.tender-detail.'.(in_array($tab, ['overview', 'documents', 'activity'], true) ? $tab : 'overview'))
     @endif
     {{-- Always mounted, so unsaved costing edits survive switching tabs --}}
