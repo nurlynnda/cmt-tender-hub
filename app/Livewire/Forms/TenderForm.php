@@ -93,6 +93,21 @@ class TenderForm extends Form
         $this->estimatedValue = Money::toInput($t->estimated_value_sen);
     }
 
+    /** Pre-fill from a collected government tender (Find Tenders → Register this tender). */
+    public function fillFromCollected(\App\Models\CollectedTender $c): void
+    {
+        $this->reset();
+        $this->tenderCode = $c->reference_no;
+        $this->title = $c->title;
+        $this->client = (string) ($c->agency ?? $c->ministry ?? '');
+        $this->publishDate = (string) $c->advertised_date?->toDateString();
+        $this->closingDate = (string) $c->closing_date?->toDateString();
+        $this->estimatedValue = Money::toInput($c->indicative_price_sen);
+        $this->type = $c->procurement_type === 'tender' ? 'TENDER' : 'QUOTATION'; // requisition → Quotation
+        $this->mode = $c->sources->contains('source', 'myprocurement') ? 'EP' : 'NON_EP';
+        $this->category = 'General';
+    }
+
     /** Call only after validate(). */
     public function toData(): array
     {

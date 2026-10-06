@@ -7,6 +7,11 @@
                     <button type="button" wire:click="$set('open', false)" class="text-muted hover:text-ink" aria-label="Close">✕</button>
                 </header>
 
+                @if ($collectedTenderId)
+                    <p class="rounded-lg bg-info-bg px-3 py-2 text-sm text-info-ink">Filled in from Find Tenders — check the details and choose a PIC.</p>
+                @endif
+                @error('collectedTenderId') <p class="text-sm text-bad-ink">{{ $message }}</p> @enderror
+
                 @include('livewire.partials.tender-fields')
 
                 @if ($confirmDuplicate)

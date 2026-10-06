@@ -5,7 +5,7 @@ namespace App\Livewire;
 use App\Actions\Tenders\RegisterTender;
 use App\Enums\{TenderCategory, TenderMode, TenderType};
 use App\Livewire\Forms\TenderForm;
-use App\Models\{Tender, User};
+use App\Models\{CollectedTender, Tender, User};
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -15,14 +15,20 @@ class RegisterTenderModal extends Component
     public bool $open = false;
     public bool $confirmDuplicate = false;
     public array $duplicateWoNumbers = [];
+    public ?int $collectedTenderId = null;
 
     #[On('open-register-tender')]
-    public function show(): void
+    public function show(?int $collectedTenderId = null): void
     {
         $this->form->reset();
         $this->resetValidation();
         $this->confirmDuplicate = false;
         $this->duplicateWoNumbers = [];
+        $this->collectedTenderId = null;
+        if ($collectedTenderId !== null && ($c = CollectedTender::with('sources')->find($collectedTenderId))) {
+            $this->form->fillFromCollected($c);
+            $this->collectedTenderId = $c->id;
+        }
         $this->open = true;
     }
 
@@ -36,6 +42,7 @@ class RegisterTenderModal extends Component
 
     public function save()
     {
+        $this->validate(['collectedTenderId' => ['nullable', 'integer', 'exists:collected_tenders,id']]);
         $this->form->validate();
 
         if (! $this->confirmDuplicate) {
@@ -48,7 +55,10 @@ class RegisterTenderModal extends Component
             }
         }
 
-        $tender = app(RegisterTender::class)->handle(auth()->user(), $this->form->toData());
+        $tender = app(RegisterTender::class)->handle(auth()->user(), [
+            ...$this->form->toData(),
+            'collected_tender_id' => $this->collectedTenderId,
+        ]);
 
         return $this->redirectRoute('tenders.show', $tender);
     }

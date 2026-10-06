@@ -42,5 +42,11 @@
             <p class="text-xs uppercase tracking-wide text-muted">Scope of work</p>
             <p class="mt-1 whitespace-pre-line text-sm">{{ $tender->scope ?: '—' }}</p>
         </div>
+        @if ($tender->collectedTender)
+            <p class="mt-4 text-sm text-muted">
+                Collected from {{ implode(', ', $tender->collectedTender->sourceNames()) }} —
+                <a href="{{ route('find-tenders.show', $tender->collectedTender) }}" class="text-info-ink underline">view original</a>
+            </p>
+        @endif
     @endif
 </section>
