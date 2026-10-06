@@ -1,9 +1,58 @@
 @import 'tailwindcss';
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../views';
+@source '../../app/Livewire';
+@source '../../vendor/livewire/livewire/src/Features/SupportPagination/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    --body: #E7E6E2; --surface: #FFFFFF; --canvas: #F5F4FA; --subtle: #FAFAFB;
+    --line: #EDEAF5; --hover: #F3F1FB;
+    --ink: #1E1B2E; --muted: #6B7280;
+    --chip: #1F1E1C; --chip-hover: #333230; --chip-ink: #FFFFFF;
+    --accent: #8BE36B; --accent-ink: #16330B; --accent-tint: #EFF9E8;
+    --good-bg: #E6F7EA; --good-ink: #18794E; --warn-bg: #FDF0E3; --warn-ink: #A35A12;
+    --bad-bg: #FDECEA; --bad-ink: #C0342B; --info-bg: #E8F0FD; --info-ink: #2F6FD0;
+    color-scheme: light;
 }
+
+.dark {
+    --body: #121210; --surface: #1B1A18; --canvas: #141312; --subtle: #201F1D;
+    --line: #2A2926; --hover: #2A2926;
+    --ink: #F5F4F0; --muted: #96958D;
+    --chip: #2E2D29; --chip-hover: #3A3934; --chip-ink: #F5F4F0;
+    --accent: #8BE36B; --accent-ink: #16330B; --accent-tint: #1E2A18;
+    --good-bg: #17301F; --good-ink: #6FD39A; --warn-bg: #33240F; --warn-ink: #EDA75C;
+    --bad-bg: #351A17; --bad-ink: #F28C81; --info-bg: #1B2A3F; --info-ink: #7FAAE8;
+    color-scheme: dark;
+}
+
+@theme inline {
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --color-body: var(--body);
+    --color-surface: var(--surface);
+    --color-canvas: var(--canvas);
+    --color-subtle: var(--subtle);
+    --color-line: var(--line);
+    --color-hover: var(--hover);
+    --color-ink: var(--ink);
+    --color-muted: var(--muted);
+    --color-chip: var(--chip);
+    --color-chip-hover: var(--chip-hover);
+    --color-chip-ink: var(--chip-ink);
+    --color-accent: var(--accent);
+    --color-accent-ink: var(--accent-ink);
+    --color-accent-tint: var(--accent-tint);
+    --color-good-bg: var(--good-bg);
+    --color-good-ink: var(--good-ink);
+    --color-warn-bg: var(--warn-bg);
+    --color-warn-ink: var(--warn-ink);
+    --color-bad-bg: var(--bad-bg);
+    --color-bad-ink: var(--bad-ink);
+    --color-info-bg: var(--info-bg);
+    --color-info-ink: var(--info-ink);
+}
+
+[x-cloak] { display: none !important; }

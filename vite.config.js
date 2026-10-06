@@ -12,6 +12,7 @@ export default defineConfig({
         port: 5173,
         origin: 'http://localhost:5173',
         hmr: { host: 'localhost' },
+        cors: { origin: ['http://localhost:8080'] },
         watch: { usePolling: true, ignored: ['**/storage/framework/views/**', '**/vendor/**'] },
     },
 });
