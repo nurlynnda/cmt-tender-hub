@@ -5,10 +5,9 @@
             @switch($modal)
                 @case('done')
                     <h2 class="text-lg font-semibold">Mark as Done</h2>
-                    <p class="text-sm text-muted">This records that the bid was submitted and locks the tender.</p>
-                    <label class="block text-sm"><span class="text-muted">Submitted price (RM) *</span>
-                        <input wire:model="submittedPrice" inputmode="decimal" class="{{ $input }}"></label>
-                    @error('submittedPrice') <p class="text-xs text-bad-ink">{{ $message }}</p> @enderror
+                    <p class="text-sm text-muted">This records that the bid was submitted and locks the tender and its costing.</p>
+                    <p class="text-sm">Submitted price (the costing's bid price):
+                        <strong>{{ \App\Support\Money::format($costing['bid_price_sen'] ?? null) }}</strong></p>
                     @php $confirm = ['markDone', 'Mark Done']; @endphp
                     @break
                 @case('cancel')

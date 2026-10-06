@@ -2,8 +2,8 @@
 
 use App\Actions\Tenders\{CancelTender, MarkTenderAwarded, MarkTenderDone, MarkTenderLost, ReopenTender};
 use App\Enums\TenderStatus;
-use App\Exceptions\{DocumentsIncomplete, InvalidTenderTransition, StaleTenderException};
-use App\Models\{Tender, TenderDocument, User};
+use App\Exceptions\{CostingRequired, DocumentsIncomplete, InvalidTenderTransition, StaleTenderException};
+use App\Models\{CostingLine, Tender, TenderDocument, User};
 use Illuminate\Auth\Access\AuthorizationException;
 
 function tenderWithDocs(TenderStatus $status = TenderStatus::InProgress, bool $allDone = true): array
@@ -12,27 +12,28 @@ function tenderWithDocs(TenderStatus $status = TenderStatus::InProgress, bool $a
     $tender = Tender::factory()->create(['pic_id' => $pic->id, 'status' => $status]);
     TenderDocument::factory()->for($tender)->create(['name' => 'Borang ISI (Tender Form)', 'position' => 1, 'is_done' => true]);
     TenderDocument::factory()->for($tender)->create(['name' => 'Bid Bond / Bank Guarantee', 'position' => 2, 'is_done' => $allDone]);
+    CostingLine::factory()->for($tender)->create(['unit_cost_sen' => 10000000, 'margin_bp' => 2000]); // bid RM 125,000
 
     return [$pic, $tender];
 }
 
-it('marks a tender Done with its submitted price', function () {
+it('marks a tender Done with its costing bid price', function () {
     [$pic, $tender] = tenderWithDocs();
 
-    $done = app(MarkTenderDone::class)->handle($pic, $tender, 1, 16605900);
+    $done = app(MarkTenderDone::class)->handle($pic, $tender, 1);
 
     expect($done->status)->toBe(TenderStatus::Done)
-        ->and($done->submitted_price_sen)->toBe(16605900)
+        ->and($done->submitted_price_sen)->toBe(12500000)
         ->and($done->done_at)->not->toBeNull()
         ->and($done->version)->toBe(2)
-        ->and($done->activity->first()->description)->toBe('Marked Done — submitted price RM 166,059.00');
+        ->and($done->activity->first()->description)->toBe('Marked Done — submitted price RM 125,000.00');
 });
 
 it('blocks Mark Done while documents are unticked and names them', function () {
     [$pic, $tender] = tenderWithDocs(allDone: false);
 
     try {
-        app(MarkTenderDone::class)->handle($pic, $tender, 1, 100);
+        app(MarkTenderDone::class)->handle($pic, $tender, 1);
         $this->fail('Expected DocumentsIncomplete');
     } catch (DocumentsIncomplete $e) {
         expect($e->pending)->toBe(['Bid Bond / Bank Guarantee']);
@@ -40,11 +41,12 @@ it('blocks Mark Done while documents are unticked and names them', function () {
     expect($tender->fresh()->status)->toBe(TenderStatus::InProgress);
 });
 
-it('requires a positive submitted price', function () {
+it('refuses Mark Done without a costing', function () {
     [$pic, $tender] = tenderWithDocs();
+    $tender->costingLines()->delete();
 
-    app(MarkTenderDone::class)->handle($pic, $tender, 1, 0);
-})->throws(InvalidArgumentException::class);
+    app(MarkTenderDone::class)->handle($pic, $tender, 1);
+})->throws(CostingRequired::class);
 
 it('cancels an in-progress tender into Lost with a reason', function () {
     [$pic, $tender] = tenderWithDocs(allDone: false);
@@ -89,7 +91,7 @@ it('marks a Done tender Lost with optional winning price and reason', function (
 it('refuses transitions the lifecycle does not allow', function (string $action, TenderStatus $from) {
     [$pic, $tender] = tenderWithDocs($from);
     $call = match ($action) {
-        'done' => fn () => app(MarkTenderDone::class)->handle($pic, $tender, 1, 100),
+        'done' => fn () => app(MarkTenderDone::class)->handle($pic, $tender, 1),
         'cancel' => fn () => app(CancelTender::class)->handle($pic, $tender, 1, 'x'),
         'awarded' => fn () => app(MarkTenderAwarded::class)->handle($pic, $tender, 1),
         'lost' => fn () => app(MarkTenderLost::class)->handle($pic, $tender, 1, null, null),

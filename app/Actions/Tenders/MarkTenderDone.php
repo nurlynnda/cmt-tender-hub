@@ -4,23 +4,19 @@ namespace App\Actions\Tenders;
 
 use App\Actions\Tenders\Concerns\GuardsTender;
 use App\Enums\TenderStatus;
-use App\Exceptions\DocumentsIncomplete;
+use App\Exceptions\{CostingRequired, DocumentsIncomplete};
 use App\Models\{ActivityLog, Tender, User};
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 final class MarkTenderDone
 {
     use GuardsTender;
 
-    public function handle(User $actor, Tender $tender, int $expectedVersion, int $submittedPriceSen): Tender
+    /** The submitted price is always the saved costing's bid price. */
+    public function handle(User $actor, Tender $tender, int $expectedVersion): Tender
     {
-        if ($submittedPriceSen <= 0) {
-            throw new InvalidArgumentException('Submitted price must be more than zero.');
-        }
-
-        return DB::transaction(function () use ($actor, $tender, $expectedVersion, $submittedPriceSen) {
+        return DB::transaction(function () use ($actor, $tender, $expectedVersion) {
             $t = $this->lockForChange($actor, $tender, $expectedVersion);
             $this->requireStatus($t, TenderStatus::InProgress, 'mark as Done');
 
@@ -28,15 +24,19 @@ final class MarkTenderDone
             if ($pending !== []) {
                 throw new DocumentsIncomplete($pending);
             }
+            if (! $t->hasCosting()) {
+                throw new CostingRequired;
+            }
+            $price = $t->costingSummary()['bid_price_sen'];
 
             $t->forceFill([
                 'status' => TenderStatus::Done,
-                'submitted_price_sen' => $submittedPriceSen,
+                'submitted_price_sen' => $price,
                 'done_at' => now(),
                 'version' => $t->version + 1,
             ])->save();
 
-            ActivityLog::record($t, $actor, 'marked_done', 'Marked Done — submitted price '.Money::format($submittedPriceSen));
+            ActivityLog::record($t, $actor, 'marked_done', 'Marked Done — submitted price '.Money::format($price));
 
             return $t->fresh();
         });

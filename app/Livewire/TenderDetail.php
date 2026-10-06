@@ -4,7 +4,7 @@ namespace App\Livewire;
 
 use App\Actions\Tenders\{AddDocument, CancelTender, MarkTenderAwarded, MarkTenderDone, MarkTenderLost, RemoveDocument, ReopenTender, ToggleDocument, UpdateTender};
 use App\Enums\{TenderCategory, TenderMode, TenderType};
-use App\Exceptions\{DocumentsIncomplete, InvalidTenderTransition, StaleTenderException};
+use App\Exceptions\{CostingRequired, DocumentsIncomplete, InvalidTenderTransition, StaleTenderException};
 use App\Livewire\Forms\TenderForm;
 use App\Models\{Tender, User};
 use App\Rules\MoneyAmount;
@@ -27,7 +27,7 @@ class TenderDetail extends Component
     public ?string $conflict = null;
     public array $pendingDocuments = [];
 
-    public string $submittedPrice = '';
+    public ?string $costingProblem = null;
     public string $cancelReason = '';
     public string $winningPrice = '';
     public string $lostReason = '';
@@ -71,11 +71,22 @@ class TenderDetail extends Component
         $this->authorize($ability, $this->tender);
         $this->resetValidation();
         $this->pendingDocuments = [];
+        $this->costingProblem = null;
 
         if ($name === 'done') {
             $pending = $this->tender->documents()->where('is_done', false)->pluck('name')->all();
             if ($pending !== []) {
                 $this->pendingDocuments = $pending;
+
+                return;
+            }
+            if ($this->costingDirty) {
+                $this->costingProblem = 'Save your costing changes first.';
+
+                return;
+            }
+            if (! $this->tender->fresh()->hasCosting()) {
+                $this->costingProblem = (new CostingRequired)->getMessage();
 
                 return;
             }
@@ -91,8 +102,7 @@ class TenderDetail extends Component
 
     public function markDone(): void
     {
-        $this->validate(['submittedPrice' => ['required', new MoneyAmount(mustBePositive: true)]]);
-        $this->apply(fn () => app(MarkTenderDone::class)->handle(auth()->user(), $this->tender, $this->version, Money::parse($this->submittedPrice)));
+        $this->apply(fn () => app(MarkTenderDone::class)->handle(auth()->user(), $this->tender, $this->version));
     }
 
     public function cancelTender(): void
@@ -169,6 +179,11 @@ class TenderDetail extends Component
             $this->modal = null;
 
             return false;
+        } catch (CostingRequired $e) {
+            $this->costingProblem = $e->getMessage();
+            $this->modal = null;
+
+            return false;
         }
 
         if ($fresh->status !== $this->tender->status) {
@@ -181,7 +196,8 @@ class TenderDetail extends Component
         $this->conflict = null;
         $this->modal = null;
         $this->pendingDocuments = [];
-        $this->reset('submittedPrice', 'cancelReason', 'winningPrice', 'lostReason');
+        $this->costingProblem = null;
+        $this->reset('cancelReason', 'winningPrice', 'lostReason');
 
         return true;
     }
@@ -193,6 +209,7 @@ class TenderDetail extends Component
         return view('livewire.tender-detail', [
             'documents' => $documents,
             'doneCount' => $documents->where('is_done', true)->count(),
+            'costing' => $this->modal === 'done' ? $this->tender->costingSummary() : null,
             'activity' => $this->tender->activity()->with('user')->get(),
             'canEdit' => Gate::allows('update', $this->tender),
             'canReopen' => Gate::allows('reopen', $this->tender),

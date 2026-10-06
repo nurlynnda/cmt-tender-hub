@@ -80,18 +80,17 @@ it('blocks Mark Done with the list of unticked documents', function () {
 it('marks Done after all documents are ticked', function () {
     [$pic, $tender] = detailFixture();
     $tender->documents()->update(['is_done' => true]);
+    \App\Models\CostingLine::factory()->for($tender)->create(['unit_cost_sen' => 13284500, 'margin_bp' => 2000]);
 
     Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
         ->call('openModal', 'done')
         ->assertSet('modal', 'done')
-        ->set('submittedPrice', '0')
-        ->call('markDone')->assertHasErrors('submittedPrice')
-        ->set('submittedPrice', '166,059.00')
+        ->assertSee('RM 166,057.00') // 132,845 ÷ 0.8 = 166,056.25, rounded up to the ringgit
         ->call('markDone')
         ->assertHasNoErrors();
 
     expect($tender->fresh()->status)->toBe(TenderStatus::Done)
-        ->and($tender->fresh()->submitted_price_sen)->toBe(16605900);
+        ->and($tender->fresh()->submitted_price_sen)->toBe(16605700);
 });
 
 it('ticks, adds and removes documents', function () {

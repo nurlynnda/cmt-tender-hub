@@ -22,6 +22,15 @@
         </div>
     @endif
 
+    @if ($costingProblem)
+        <div class="rounded-lg bg-bad-bg p-3 text-sm text-bad-ink" role="alert">
+            {{ $costingProblem }}
+            @if ($tab !== 'costing')
+                <button type="button" wire:click="$set('tab', 'costing')" class="ml-1 font-medium underline">Go to Costing</button>
+            @endif
+        </div>
+    @endif
+
     <header class="rounded-xl border border-line bg-surface p-4">
         <div class="flex flex-wrap items-center gap-2">
             <span class="font-semibold">{{ $tender->wo_number }}</span>
