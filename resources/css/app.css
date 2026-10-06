@@ -2,7 +2,6 @@
 
 @source '../views';
 @source '../../app/Livewire';
-@source '../../vendor/livewire/livewire/src/Features/SupportPagination/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @custom-variant dark (&:where(.dark, .dark *));

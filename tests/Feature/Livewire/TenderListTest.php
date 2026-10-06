@@ -42,6 +42,14 @@ it('paginates ten per page', function () {
     Livewire::test(TenderList::class, ['list' => 'in-progress'])->assertSee('Showing 1–10 of 12');
 });
 
+it('shows simple page buttons without a second summary line', function () {
+    Tender::factory()->count(12)->create();
+
+    Livewire::test(TenderList::class, ['list' => 'in-progress'])
+        ->assertSeeInOrder(['Prev', '1', '2', 'Next'])
+        ->assertDontSee('results');
+});
+
 it('highlights tenders closing soon and overdue', function () {
     Tender::factory()->create(['wo_number' => 'SOON-1', 'closing_date' => now('Asia/Kuala_Lumpur')->addDays(2)->toDateString()]);
     Tender::factory()->create(['wo_number' => 'LATE-1', 'closing_date' => now('Asia/Kuala_Lumpur')->subDay()->toDateString()]);

@@ -119,10 +119,10 @@
                 Showing {{ $tenders->firstItem() }}–{{ $tenders->lastItem() }} of {{ $tenders->total() }}
             @endif
         </span>
-        {{ $tenders->links() }}
+        {{ $tenders->links('pagination.pager') }}
     </footer>
 
     @if ($isOpen)
-        {{-- register modal --}}
+        <livewire:register-tender-modal />
     @endif
 </div>

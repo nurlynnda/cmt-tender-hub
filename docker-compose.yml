@@ -36,7 +36,7 @@ services:
     working_dir: /app
     command: sh -c "npm install && npm run dev"
     ports: ["5173:5173"]
-    volumes: [".:/app", "node_modules:/app/node_modules", "vendor:/app/vendor:ro"]
+    volumes: [".:/app", "node_modules:/app/node_modules"]
 
   mailpit:
     image: axllent/mailpit
