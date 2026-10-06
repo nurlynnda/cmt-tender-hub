@@ -55,7 +55,7 @@ final class CostingCalculator
             'margin_sen' => $margin,
             'margin_bp' => $marginBp,
             'below_target' => $bid > 0 && $marginBp < self::COMPANY_TARGET_MARGIN_BP,
-            'under_budget_bp' => $estimatedSen ? (int) round(($estimatedSen - $bid) * 10000 / $estimatedSen) : null,
+            'under_budget_bp' => $estimatedSen && $bid > 0 ?(int) round(($estimatedSen - $bid) * 10000 / $estimatedSen) : null,
             'guide' => array_map(
                 fn ($m) => ['margin_bp' => $m, 'max_cost_sen' => intdiv($bid * (10000 - $m), 10000)],
                 range(1200, 2100, 100),

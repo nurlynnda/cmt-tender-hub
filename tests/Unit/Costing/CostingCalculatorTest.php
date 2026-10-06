@@ -70,6 +70,11 @@ it('handles a loss, an empty costing and a zero bid without dividing by zero', f
         ->and(C::summary([oneOff(0)], null, null)['margin_bp'])->toBe(0);
 });
 
+it('shows no under-budget figure while there is no bid price yet', function () {
+    expect(C::summary([], null, 10000000)['under_budget_bp'])->toBeNull()
+        ->and(C::summary([oneOff(0)], null, 10000000)['under_budget_bp'])->toBeNull();
+});
+
 it('reports over-budget bids as negative under-budget', function () {
     expect(C::summary([oneOff(10000000)], null, 10000000)['under_budget_bp'])->toBe(-2500);
 });

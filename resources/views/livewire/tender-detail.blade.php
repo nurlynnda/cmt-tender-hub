@@ -46,7 +46,7 @@
     </header>
 
     <nav class="flex gap-1 border-b border-line text-sm">
-        @foreach (['overview' => 'Overview', 'documents' => 'Documents', 'activity' => 'Activity'] as $key => $label)
+        @foreach (['overview' => 'Overview', 'costing' => 'Costing', 'documents' => 'Documents', 'activity' => 'Activity'] as $key => $label)
             <button type="button" wire:click="$set('tab', '{{ $key }}')" @class([
                 'px-3 py-2 -mb-px border-b-2',
                 'border-ink font-medium' => $tab === $key,
@@ -55,6 +55,12 @@
         @endforeach
     </nav>
 
-    @include('livewire.tender-detail.'.(in_array($tab, ['overview', 'documents', 'activity'], true) ? $tab : 'overview'))
+    @if ($tab !== 'costing')
+        @include('livewire.tender-detail.'.(in_array($tab, ['overview', 'documents', 'activity'], true) ? $tab : 'overview'))
+    @endif
+    {{-- Always mounted, so unsaved costing edits survive switching tabs --}}
+    <div @class(['hidden' => $tab !== 'costing'])>
+        <livewire:tender-costing :tender="$tender" :version="$version" :can-edit="$canEdit" wire:key="costing-{{ $tender->id }}" />
+    </div>
     @include('livewire.tender-detail.modals')
 </div>

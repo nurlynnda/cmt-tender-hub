@@ -10,7 +10,7 @@ use App\Models\{Tender, User};
 use App\Rules\MoneyAmount;
 use App\Support\Money;
 use Illuminate\Support\Facades\Gate;
-use Livewire\Attributes\{Layout, Url};
+use Livewire\Attributes\{Layout, On, Url};
 use Livewire\Component;
 
 #[Layout('layouts.app')]
@@ -32,6 +32,9 @@ class TenderDetail extends Component
     public string $winningPrice = '';
     public string $lostReason = '';
     public string $newDocument = '';
+
+    /** Set by the Costing tab while it holds unsaved edits. */
+    public bool $costingDirty = false;
 
     public function mount(Tender $tender): void
     {
@@ -135,6 +138,20 @@ class TenderDetail extends Component
     public function removeDocument(int $documentId): void
     {
         $this->apply(fn () => app(RemoveDocument::class)->handle(auth()->user(), $this->tender, $this->version, $documentId));
+    }
+
+    #[On('costing-dirty')]
+    public function costingDirty(bool $dirty): void
+    {
+        $this->costingDirty = $dirty;
+    }
+
+    #[On('costing-saved')]
+    public function costingSaved(int $version): void
+    {
+        $this->version = $version;
+        $this->costingDirty = false;
+        $this->tender = $this->tender->fresh();
     }
 
     /** Runs an action; on success refreshes local state. Returns false when the change was refused. */
