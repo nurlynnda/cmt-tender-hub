@@ -3,11 +3,15 @@
 namespace App\Queries;
 
 use App\Models\CollectedTender;
+use App\Support\MalaysiaTime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\{Cache, DB};
 
 final class CollectedTenderQuery
 {
+    /** InnoDB's default full-text stopwords of 3+ letters (never indexed, so "+the*" would match nothing useful). */
+    private const STOPWORDS = ['about', 'are', 'com', 'for', 'from', 'how', 'that', 'the', 'this', 'was', 'what', 'when', 'where', 'who', 'will', 'with', 'und', 'www'];
+
     public static function build(array $f): Builder
     {
         $q = CollectedTender::query()->with(['sources', 'pipelineTenders:id,wo_number,collected_tender_id']);
@@ -15,14 +19,33 @@ final class CollectedTenderQuery
         if ($status !== 'all') {
             $q->where('status', $status);
         }
+        if ($status === 'open') {
+            // Never show a tender as open once its closing time (12:01pm MYT on the closing day) has
+            // passed — even mid-run, before StaleOpenCloser has corrected its status.
+            $now = MalaysiaTime::now();
+            $today = $now->toDateString();
+            $q->where(fn (Builder $w) => $w->whereNull('closing_date')
+                ->orWhere('closing_date', '>', $today)
+                ->when($now->format('H:i') < '12:01', fn ($w) => $w->orWhere('closing_date', $today)));
+        }
 
         $search = trim((string) ($f['search'] ?? ''));
         if ($search !== '') {
-            // Turn free text into safe FULLTEXT terms: letters/digits only, each "+word*".
-            $words = array_filter(preg_split('/[^\p{L}\p{N}]+/u', $search), fn ($w) => mb_strlen($w) >= 3);
-            $q->where(function (Builder $w) use ($words, $search) {
+            // Safe FULLTEXT terms: letters/digits only, each "+word*". Words the index never stores
+            // (MySQL's stopwords like "for"/"the") are dropped; words under 3 letters use a text match.
+            $parts = array_values(array_filter(preg_split('/[^\p{L}\p{N}]+/u', $search), fn ($w) => $w !== ''));
+            $words = array_filter($parts, fn ($w) => mb_strlen($w) >= 3 && ! in_array(mb_strtolower($w), self::STOPWORDS, true));
+            $short = array_filter($parts, fn ($w) => mb_strlen($w) < 3);
+            $q->where(function (Builder $w) use ($words, $short, $search) {
                 if ($words !== []) {
                     $w->whereRaw('MATCH(title, reference_no, agency) AGAINST(? IN BOOLEAN MODE)', [implode(' ', array_map(fn ($x) => "+{$x}*", $words))]);
+                } elseif ($short !== []) {
+                    $w->where(function (Builder $s) use ($short) {
+                        foreach ($short as $term) {
+                            $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+                            $s->where(fn ($t) => $t->where('title', 'like', $like)->orWhere('reference_no', 'like', $like));
+                        }
+                    });
                 }
                 $w->orWhere('reference_no', $search);
             });
@@ -49,7 +72,8 @@ final class CollectedTenderQuery
 
         return $status === 'open'
             ? $q->orderByRaw('closing_date IS NULL')->orderBy('closing_date')->orderBy('id')
-            : $q->orderByRaw('closing_date IS NULL')->orderByDesc('closing_date')->orderByDesc('id');
+            // Descending order already puts undated last; no expression, so the (status, closing_date, id) index is used.
+            : $q->orderByDesc('closing_date')->orderByDesc('id');
     }
 
     /** @return list<string> */

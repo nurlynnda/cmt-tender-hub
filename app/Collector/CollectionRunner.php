@@ -16,7 +16,10 @@ final class CollectionRunner
         $results = [];
         foreach (app('collector.sources') as $source) {
             try {
-                $count = $source->collect($run->scope, fn (array $batch) => $this->merger->merge($batch));
+                $count = $source->collect($run->scope, function (array $batch) use ($run) {
+                    $this->merger->merge($batch);
+                    $run->forceFill(['heartbeat_at' => now()])->save(); // proof of life for StartCollection::failStuckRuns
+                });
                 $results[$source->name()] = ['count' => $count, 'error' => null];
             } catch (Throwable $e) {
                 report($e);

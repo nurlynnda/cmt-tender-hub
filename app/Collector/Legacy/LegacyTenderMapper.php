@@ -53,9 +53,9 @@ final class LegacyTenderMapper
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-            'sources' => array_map(fn ($s) => [
+            'sources' => array_values(array_map(fn ($s) => [
                 'source' => (string) $s['source'], 'source_id' => (string) $s['sourceId'], 'source_url' => (string) $s['sourceUrl'],
-            ], $d['sources'] ?? []),
+            ], array_filter($d['sources'] ?? [], fn ($s) => preg_match('#^https?://#i', (string) ($s['sourceUrl'] ?? ''))))),
             'codes' => array_values(array_unique(array_map('strval', $d['fieldCodes'] ?? []))),
         ];
     }

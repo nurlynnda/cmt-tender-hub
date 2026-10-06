@@ -13,7 +13,7 @@ class CollectionRun extends Model
 
     protected function casts(): array
     {
-        return ['results' => 'array', 'started_at' => 'immutable_datetime', 'finished_at' => 'immutable_datetime', 'closed_stale' => 'integer'];
+        return ['results' => 'array', 'started_at' => 'immutable_datetime', 'heartbeat_at' => 'immutable_datetime', 'finished_at' => 'immutable_datetime', 'closed_stale' => 'integer'];
     }
 
     public function starter(): BelongsTo

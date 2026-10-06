@@ -59,7 +59,7 @@ final class TenderPatch
         if (trim((string) $a['source_id']) === '' || trim((string) $a['source']) === '') {
             throw new InvalidArgumentException('Missing source id');
         }
-        if (filter_var($a['source_url'], FILTER_VALIDATE_URL) === false) {
+        if (filter_var($a['source_url'], FILTER_VALIDATE_URL) === false || ! preg_match('#^https?://#i', (string) $a['source_url'])) {
             throw new InvalidArgumentException("Bad source url {$a['source_url']}");
         }
         foreach ($a['winners'] ?? [] as $w) {

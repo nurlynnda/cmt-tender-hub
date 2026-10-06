@@ -20,7 +20,11 @@ class CollectDaily extends Command
         if ($now->lt($fireAt)) {
             return self::SUCCESS;
         }
-        if (CollectionRun::where('trigger', 'scheduled')->where('started_at', '>=', $fireAt->utc())->exists()) {
+        // A scheduled run that died part-way (worker/PC restarted) doesn't count — try again.
+        $done = CollectionRun::where('trigger', 'scheduled')->where('started_at', '>=', $fireAt->utc())->get()
+            ->reject(fn (CollectionRun $r) => $r->status === 'failed'
+                && str_starts_with((string) ($r->results['error'] ?? ''), StartCollection::DIED_PREFIX));
+        if ($done->isNotEmpty()) {
             return self::SUCCESS;
         }
 
