@@ -4,7 +4,7 @@ namespace App\Actions\Tenders;
 
 use App\Enums\TenderStatus;
 use App\Models\{ActivityLog, Tender, TenderDocument, User};
-use App\Support\MalaysiaTime;
+use App\Support\{AssignmentNotifier, MalaysiaTime};
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\{DB, Gate};
 
@@ -16,13 +16,13 @@ final class RegisterTender
         'has_briefing', 'briefing_date', 'estimated_value_sen',
     ];
 
-    public function __construct(private GenerateWoNumber $woNumbers) {}
+    public function __construct(private GenerateWoNumber $woNumbers, private AssignmentNotifier $notifier) {}
 
     public function handle(User $actor, array $data): Tender
     {
         Gate::forUser($actor)->authorize('create', Tender::class);
 
-        return DB::transaction(function () use ($actor, $data) {
+        $tender = DB::transaction(function () use ($actor, $data) {
             $today = MalaysiaTime::today();
 
             $tender = new Tender(Arr::only($data, self::FIELDS));
@@ -41,5 +41,9 @@ final class RegisterTender
 
             return $tender->fresh();
         });
+
+        $this->notifier->notify($tender, $actor, null, null);
+
+        return $tender;
     }
 }

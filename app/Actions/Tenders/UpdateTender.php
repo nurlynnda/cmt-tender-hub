@@ -5,6 +5,7 @@ namespace App\Actions\Tenders;
 use App\Actions\Tenders\Concerns\GuardsTender;
 use App\Enums\TenderStatus;
 use App\Models\{ActivityLog, Tender, User};
+use App\Support\AssignmentNotifier;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -20,18 +21,22 @@ final class UpdateTender
         'estimated_value_sen' => 'estimated value',
     ];
 
+    public function __construct(private AssignmentNotifier $notifier) {}
+
     public function handle(User $actor, Tender $tender, int $expectedVersion, array $data): Tender
     {
-        return DB::transaction(function () use ($actor, $tender, $expectedVersion, $data) {
+        [$fresh, $oldPicId, $oldOwnerId, $changed] = DB::transaction(function () use ($actor, $tender, $expectedVersion, $data) {
             $t = $this->lockForChange($actor, $tender, $expectedVersion);
             $this->requireStatus($t, TenderStatus::InProgress, 'edit');
 
+            $oldPicId = $t->pic_id;
+            $oldOwnerId = $t->owner_id;
             $oldPicName = $t->pic->name;
             $oldOwnerName = $t->owner?->name ?? 'nobody';
 
             $t->fill(Arr::only($data, RegisterTender::FIELDS));
             if (! $t->isDirty()) {
-                return $t;
+                return [$t, null, null, []];
             }
 
             $changed = array_keys($t->getDirty());
@@ -59,7 +64,13 @@ final class UpdateTender
                 ActivityLog::record($t, $actor, 'updated', 'Details updated: '.implode(', ', $labels));
             }
 
-            return $t->fresh();
+            return [$t->fresh(), $oldPicId, $oldOwnerId, $changed];
         });
+
+        if (array_intersect(['pic_id', 'owner_id'], $changed) !== []) {
+            $this->notifier->notify($fresh, $actor, $oldPicId, $oldOwnerId);
+        }
+
+        return $fresh;
     }
 }

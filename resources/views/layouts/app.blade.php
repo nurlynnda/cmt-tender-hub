@@ -36,7 +36,7 @@
                         @click="const d = document.documentElement.classList.toggle('dark'); localStorage.theme = d ? 'dark' : 'light'">
                     <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
                 </button>
-                {{-- bell --}}
+                <livewire:notification-bell />
             </div>
         </nav>
         <div class="p-4 md:p-6">
