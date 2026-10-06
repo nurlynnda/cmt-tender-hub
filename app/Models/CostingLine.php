@@ -21,6 +21,7 @@ class CostingLine extends Model
             'project_year' => 'integer',
             'unit_cost_sen' => 'integer',
             'margin_bp' => 'integer',
+            'pd_group' => \App\Enums\PdGroup::class,
         ];
     }
 

@@ -8,7 +8,7 @@ use App\Support\{MalaysiaTime, Money};
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, HasOne};
 
 class Tender extends Model
 {
@@ -56,6 +56,12 @@ class Tender extends Model
     public function collectedTender(): BelongsTo
     {
         return $this->belongsTo(CollectedTender::class);
+    }
+
+    /** The PD, created when the tender is first awarded. */
+    public function project(): HasOne
+    {
+        return $this->hasOne(Project::class);
     }
 
     public function documents(): HasMany
