@@ -17,6 +17,9 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->name('tenders.index');
     Route::get('/tenders/{tender}', \App\Livewire\TenderDetail::class)
         ->whereNumber('tender')->name('tenders.show');
+    Route::get('/find-tenders', \App\Livewire\FindTenders::class)->name('find-tenders.index');
+    // Placeholder until Task 14 builds the detail screen.
+    Route::get('/find-tenders/{collectedTender}', fn () => '')->whereNumber('collectedTender')->name('find-tenders.show');
     Route::get('/settings', \App\Livewire\Settings::class)->name('settings');
     Route::get('/settings/users', \App\Livewire\ManageUsers::class)
         ->middleware('can:manage-users')->name('users.index');

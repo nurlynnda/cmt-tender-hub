@@ -1,0 +1,82 @@
+<?php
+
+use App\Livewire\FindTenders;
+use App\Models\{CollectedTender, CollectionRun, Tender, User};
+use App\Queries\CollectedTenderQuery;
+use Illuminate\Support\Facades\Queue;
+use Livewire\Livewire;
+
+beforeEach(fn () => $this->actingAs(User::factory()->create()));
+
+function refs(array $filters): array
+{
+    return CollectedTenderQuery::build($filters)->pluck('reference_no')->all();
+}
+
+it('shows open tenders closing soonest first by default, undated last', function () {
+    CollectedTender::factory()->create(['reference_no' => 'B', 'closing_date' => '2026-12-01']);
+    CollectedTender::factory()->create(['reference_no' => 'A', 'closing_date' => '2026-11-01']);
+    CollectedTender::factory()->create(['reference_no' => 'N', 'closing_date' => null]);
+    CollectedTender::factory()->create(['reference_no' => 'C', 'status' => 'closed']);
+
+    expect(refs([]))->toBe(['A', 'B', 'N'])
+        ->and(refs(['status' => 'all']))->toContain('C');
+});
+
+it('filters by source, type, ministry, field codes and closing range', function () {
+    $span = CollectedTender::factory()->forSource('span')->create(['reference_no' => 'S', 'procurement_type' => 'tender', 'ministry' => 'KKM', 'closing_date' => '2026-11-10']);
+    $span->fieldCodes()->create(['code' => '210103']);
+    CollectedTender::factory()->forSource('myprocurement')->create(['reference_no' => 'M', 'closing_date' => '2026-12-20']);
+
+    expect(refs(['source' => 'span']))->toBe(['S'])
+        ->and(refs(['type' => 'tender']))->toBe(['S'])
+        ->and(refs(['ministry' => 'KKM']))->toBe(['S'])
+        ->and(refs(['codes' => 'E05, 210103']))->toBe(['S'])
+        ->and(refs(['from' => '2026-12-01', 'to' => '2026-12-31']))->toBe(['M'])
+        ->and(refs(['type' => 'bogus', 'from' => 'garbage', 'status' => 'weird']))->toBe(['S', 'M']);
+});
+
+it('renders the list with sources, days left, price and the registered badge', function () {
+    $c = CollectedTender::factory()->forSource('span')->create(['reference_no' => 'SPAN/1', 'indicative_price_sen' => 2880000]);
+    Tender::factory()->create(['collected_tender_id' => $c->id, 'wo_number' => '200-07102026-001']);
+
+    $this->get('/find-tenders')->assertOk()
+        ->assertSee('Find Tenders')
+        ->assertSee('SPAN/1')->assertSee('SPAN')
+        ->assertSee('RM 28,800.00')
+        ->assertSee('10 days left')
+        ->assertSee('Registered as WO 200-07102026-001');
+});
+
+it('shows the latest run on the status line, including failures', function () {
+    CollectionRun::create(['trigger' => 'scheduled', 'scope' => 'daily', 'status' => 'partial', 'started_at' => now(), 'finished_at' => now(),
+        'results' => ['myprocurement' => ['count' => 1523, 'error' => null], 'span' => ['count' => 0, 'error' => 'SPAN is down']]]);
+
+    Livewire::test(FindTenders::class)
+        ->assertSee('MyProcurement 1,523')
+        ->assertSee('SPAN failed: SPAN is down');
+});
+
+it('shows Collect now only to managers and admins, and starts an open-tenders run', function () {
+    Queue::fake();
+    Livewire::test(FindTenders::class)->assertDontSee('Collect now')->call('collectNow')->assertForbidden();
+
+    Livewire::actingAs(User::factory()->manager()->create())->test(FindTenders::class)
+        ->assertSee('Collect now')
+        ->call('collectNow')
+        ->assertSee('Collecting now');
+
+    expect(CollectionRun::sole()->scope)->toBe('open');
+});
+
+it('tells the user when a collection is already running', function () {
+    CollectionRun::create(['trigger' => 'scheduled', 'scope' => 'daily', 'status' => 'running', 'started_at' => now()]);
+
+    Livewire::actingAs(User::factory()->admin()->create())->test(FindTenders::class)
+        ->call('collectNow')
+        ->assertSee('Already collecting');
+});
+
+it('appears in the sidebar for everyone', function () {
+    $this->get('/tenders/in-progress')->assertSee('Find Tenders');
+});

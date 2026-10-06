@@ -4,7 +4,10 @@
         'active' => url()->current() === route($route, $params),
     ];
     $groups = [
-        'Operations' => [$item('tenders.index', ['in-progress'], 'In Progress', $counts['in_progress'])],
+        'Operations' => [
+            ['href' => route('find-tenders.index'), 'label' => 'Find Tenders', 'count' => null, 'active' => request()->routeIs('find-tenders.*')],
+            $item('tenders.index', ['in-progress'], 'In Progress', $counts['in_progress']),
+        ],
         'Pipeline' => [
             $item('tenders.index', ['done'], 'Done', $counts['done']),
             $item('tenders.index', ['awarded'], 'Awarded', $counts['awarded']),
@@ -29,7 +32,9 @@
                         'hover:bg-hover' => ! $i['active'],
                     ])>
                         <span>{{ $i['label'] }}</span>
-                        <span class="rounded-full bg-subtle px-2 text-xs text-muted">{{ $i['count'] }}</span>
+                        @if (! is_null($i['count']))
+                            <span class="rounded-full bg-subtle px-2 text-xs text-muted">{{ $i['count'] }}</span>
+                        @endif
                     </a>
                 @endforeach
             </div>
