@@ -1,0 +1,6 @@
+#!/bin/sh
+echo "Running test suite before commit..."
+docker compose exec -T app ./vendor/bin/pest || {
+  echo "Tests failed - commit blocked. Fix the failing tests first."
+  exit 1
+}

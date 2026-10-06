@@ -1,0 +1,48 @@
+services:
+  app:
+    build: { context: ., dockerfile: docker/php/Dockerfile }
+    command: php artisan serve --host=0.0.0.0 --port=8000
+    environment:
+      PHP_CLI_SERVER_WORKERS: 4
+    ports: ["8080:8000"]
+    volumes: [".:/var/www/html", "vendor:/var/www/html/vendor"]
+    depends_on:
+      mysql: { condition: service_healthy }
+
+  scheduler:
+    build: { context: ., dockerfile: docker/php/Dockerfile }
+    command: php artisan schedule:work
+    volumes: [".:/var/www/html", "vendor:/var/www/html/vendor"]
+    depends_on:
+      mysql: { condition: service_healthy }
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: tender_hub
+      MYSQL_USER: tenderhub
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootsecret
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootsecret"]
+      interval: 5s
+      retries: 30
+
+  vite:
+    image: node:24-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    ports: ["5173:5173"]
+    volumes: [".:/app", "node_modules:/app/node_modules"]
+
+  mailpit:
+    image: axllent/mailpit
+    ports: ["8025:8025"]
+
+volumes:
+  mysql-data: {}
+  vendor: {}
+  node_modules: {}
