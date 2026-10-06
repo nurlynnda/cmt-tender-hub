@@ -1,58 +1,49 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CMT Tender Hub
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Internal web app for CMT's sales team to register government tenders, track the
+documents each bid needs, and record whether each bid was won or lost.
 
-## About Laravel
+## Running it (everything runs in Docker — PHP does not need to be installed)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+    docker compose up -d
+    docker compose run --rm app composer install
+    docker compose exec -T app php artisan key:generate
+    docker compose exec -T app php artisan migrate:fresh --seed
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- App: http://localhost:8080
+- Test mailbox (catches password-reset emails): http://localhost:8025
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Sample accounts (development only), password = `SEED_USER_PASSWORD` in `.env`:
+`admin@cmt.test` (Admin), `manager@cmt.test` (Manager),
+`ahmad.faizal@cmt.test`, `nurul.ain@cmt.test`, `siti.aisyah@cmt.test`,
+`muhammad.hafiz@cmt.test` (Staff).
 
-## Learning Laravel
+PHP libraries (`vendor/`) and JavaScript libraries (`node_modules/`) live in Docker
+volumes, not in this folder — reading thousands of small files through the
+Windows↔Docker file share was ~10× slower.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Tests
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+    docker compose exec -T app composer test            # all tests
+    docker compose exec -T app composer test:coverage   # with the 80% coverage gate
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Tests use a separate MySQL database (`tender_hub_test`). The git pre-commit hook
+runs the suite with the coverage gate — enable it once with
+`git config core.hooksPath .githooks`.
 
-## Agentic Development
+## Reminders
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+The `scheduler` container runs `php artisan tenders:send-reminders` every hour
+("closes in 3 days" and "briefing tomorrow" notifications).
 
-```bash
-composer require laravel/boost --dev
+## Before going live
 
-php artisan boost:install
-```
+- `php artisan serve` is for development; put a proper web server (e.g. Nginx +
+  PHP-FPM or FrankenPHP) in front for production.
+- Set real SMTP details for password-reset emails.
+- Never run `db:seed` in production (it refuses anyway).
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Design documents
 
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- Spec: `docs/superpowers/specs/2026-10-06-cmt-tender-hub-stage1-design.md`
+- Plan: `docs/superpowers/plans/2026-10-06-cmt-tender-hub-stage1.md`
