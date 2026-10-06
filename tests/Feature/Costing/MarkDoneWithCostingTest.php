@@ -66,6 +66,19 @@ it('blocks Mark Done without a costing, or with unsaved costing edits', function
         ->call('openModal', 'done')->assertSet('modal', null)->assertSee('Save your costing changes first');
 });
 
+it('refuses to confirm Mark Done when costing edits arrived after the dialog opened', function () {
+    [$pic, $tender] = readyTender();
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
+        ->call('openModal', 'done')->assertSet('modal', 'done')
+        ->dispatch('costing-dirty', dirty: true)
+        ->call('markDone')
+        ->assertSet('modal', null)
+        ->assertSee('Save your costing changes first');
+
+    expect($tender->fresh()->status)->toBe(TenderStatus::InProgress);
+});
+
 it('explains when the costing was removed after the dialog opened', function () {
     [$pic, $tender] = readyTender();
     $c = Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])->call('openModal', 'done');

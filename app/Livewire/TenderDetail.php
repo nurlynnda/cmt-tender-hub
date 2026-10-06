@@ -102,6 +102,13 @@ class TenderDetail extends Component
 
     public function markDone(): void
     {
+        // Costing edits may have arrived after the dialog opened; never submit an out-of-date price.
+        if ($this->costingDirty) {
+            $this->costingProblem = 'Save your costing changes first.';
+            $this->modal = null;
+
+            return;
+        }
         $this->apply(fn () => app(MarkTenderDone::class)->handle(auth()->user(), $this->tender, $this->version));
     }
 

@@ -6,9 +6,11 @@
     $costPct = $bid > 0 ? (int) min(100, max(0, round($cost * 100 / $bid))) : 0;
     $card = 'rounded-xl border border-line bg-surface p-3';
 @endphp
-{{-- "typed" covers edits still in the box that have not reached the server yet --}}
+{{-- "typed" covers edits still in the box that have not reached the server yet; the page is told
+     on the first keystroke so Mark Done is blocked straight away. The import box is not an edit. --}}
 <section class="space-y-4" x-data="{ typed: false }"
-         x-on:input="typed = true" x-on:costing-saved.window="typed = false"
+         x-on:input="if ($event.target.tagName !== 'TEXTAREA' && ! typed) { typed = true; $wire.$dispatch('costing-dirty', { dirty: true }) }"
+         x-on:costing-saved.window="typed = false"
          x-init="window.addEventListener('beforeunload', e => { if (typed || $wire.unsaved) { e.preventDefault(); e.returnValue = ''; } })">
     @if ($conflict)
         <div class="flex items-center justify-between gap-3 rounded-lg bg-warn-bg p-3 text-sm text-warn-ink" role="alert">
