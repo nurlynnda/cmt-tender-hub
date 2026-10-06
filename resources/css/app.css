@@ -1,8 +1,9 @@
-@import 'tailwindcss';
+/* source(none): only scan the folders below — scanning the whole project over the
+   Windows↔Docker file share took ~85s per rebuild. */
+@import 'tailwindcss' source(none);
 
 @source '../views';
 @source '../../app/Livewire';
-@source '../../storage/framework/views/*.php';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
