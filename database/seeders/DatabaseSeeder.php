@@ -3,7 +3,8 @@
 namespace Database\Seeders;
 
 use App\Enums\{Role, TenderCategory, TenderMode, TenderStatus, TenderType};
-use App\Models\{ActivityLog, Tender, TenderDocument, User};
+use App\Actions\Pd\CreateProjectFromCosting;
+use App\Models\{ActivityLog, ProjectType, Tender, TenderDocument, User};
 use App\Support\Money;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -98,6 +99,45 @@ class DatabaseSeeder extends Seeder
         }
 
         self::seedJpninCosting(Tender::where('wo_number', '200-10092026-001')->firstOrFail());
+        self::seedSamplePd();
+    }
+
+    /** Every awarded sample tender gets a project; 200-15122025-006 gets the prototype's PD. */
+    private static function seedSamplePd(): void
+    {
+        $pic = User::where('email', 'ahmad.faizal@cmt.test')->firstOrFail();
+        foreach (Tender::where('status', TenderStatus::Awarded)->get() as $t) {
+            app(CreateProjectFromCosting::class)->handle($t, $pic);
+        }
+
+        $project = Tender::where('wo_number', '200-15122025-006')->firstOrFail()->project;
+        $project->lines()->delete(); // replaced by the fuller sample below (none have entries yet)
+        $project->update([
+            'project_type_id' => ProjectType::where('name', 'Managed Services')->value('id'),
+            'approved_margin_bp' => 1500, 'start_date' => '2026-01-01', 'end_date' => '2026-06-30',
+        ]);
+
+        $position = 0;
+        $add = function (string $group, string $name, int $budget, array $entries = [], ?string $scheduled = null, ?string $ref = null) use ($project, $pic, &$position) {
+            $line = $project->lines()->create([
+                'position' => ++$position, 'pd_group' => $group, 'name' => $name, 'reference' => $ref,
+                'budget_sen' => $budget, 'scheduled_date' => $scheduled, 'updated_by' => $pic->id,
+            ]);
+            foreach ($entries as [$type, $number, $date, $amount]) {
+                $line->entries()->create(['type' => $type, 'number' => $number, 'date' => $date, 'amount_sen' => $amount, 'created_by' => $pic->id]);
+            }
+        };
+        $add('collection', 'Payment 1 (Down Payment)', 37500000,
+            [['invoice', 'INV-001', '2026-01-20', 37500000], ['receipt', 'RCV-001', '2026-01-28', 37500000]], '2026-01-20');
+        $add('collection', 'Payment 2 (Progress)', 37500000, [['invoice', 'INV-002', '2026-04-15', 37500000]], '2026-04-15');
+        $add('collection', 'Payment 3 (Final)', 50000000, [], '2026-07-15');
+        $add('principal', 'Workstations and laptops', 45000000, [
+            ['pr', 'PR-101', '2026-01-05', 45000000], ['po', 'PO-101', '2026-01-08', 45000000],
+            ['invoice', 'SI-5531', '2026-02-10', 45000000], ['payment', 'PV-201', '2026-02-25', 26300000],
+        ], null, 'Dell');
+        $add('distributor', 'Software licences', 20100000, [['pr', 'PR-102', '2026-01-05', 20100000], ['po', 'PO-102', '2026-01-09', 20100000]]);
+        $add('internal', 'Project engineer (6 manmonths)', 9000000);
+        $add('tax', 'SST on costs', 4200000);
     }
 
     /** The prototype's JPNIN costing: 12 one-off lines at 20% (bid RM 166,059.00). */

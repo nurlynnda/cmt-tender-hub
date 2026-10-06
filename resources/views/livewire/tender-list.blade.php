@@ -57,6 +57,9 @@
                         <th class="px-3 py-2 text-right">Submitted Price</th>
                         <th class="px-3 py-2 text-right">Win Price</th>
                         <th class="px-3 py-2 text-right">Win Variant</th>
+                    @elseif ($status === TenderStatus::Awarded)
+                        <th class="px-3 py-2 text-right">Submit Price</th>
+                        <th class="px-3 py-2 text-right" title="Actual gross profit from the PD">Actual GP</th>
                     @else
                         <th class="px-3 py-2 text-right">Documents</th>
                     @endif
@@ -104,6 +107,22 @@
                         <td class="px-3 py-2 text-right whitespace-nowrap">{{ Money::format($t->submitted_price_sen) }}</td>
                         <td class="px-3 py-2 text-right whitespace-nowrap">{{ Money::format($t->winning_price_sen) }}</td>
                         <td class="px-3 py-2 text-right">{{ $t->winVariant() ?? '—' }}</td>
+                    @elseif ($status === TenderStatus::Awarded)
+                        @php $pd = $t->project?->summary(); @endphp
+                        <td class="px-3 py-2 text-right whitespace-nowrap">{{ Money::format($t->submitted_price_sen) }}</td>
+                        <td class="px-3 py-2 text-right whitespace-nowrap">
+                            @if ($pd)
+                                {{-- No percentage until the customer has been invoiced: 0% would read as "no profit" --}}
+                                @if ($pd['pnl']['actual']['revenue'] > 0)
+                                    <span @class(['text-bad-ink' => $pd['below_margin']])>{{ \App\Support\Percent::format($pd['pnl']['actual']['gp_bp']) }}</span>
+                                @else
+                                    <span class="text-muted" title="Nothing invoiced to the customer yet">—</span>
+                                @endif
+                                @if (! $t->project->isOpen()) <span class="ml-1 rounded-full bg-subtle px-2 py-0.5 text-xs">Closed</span> @endif
+                            @else
+                                —
+                            @endif
+                        </td>
                     @else
                         <td class="px-3 py-2 text-right">{{ $t->documentPercent() }}%</td>
                     @endif

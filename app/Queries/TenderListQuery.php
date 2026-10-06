@@ -14,7 +14,8 @@ final class TenderListQuery
             ->where('status', $status)
             ->with(['pic', 'owner'])
             ->withDocumentCounts()
-            ->when($status === TenderStatus::Done, fn (Builder $q) => $q->with('costingLines')); // for the Gross column
+            ->when($status === TenderStatus::Done, fn (Builder $q) => $q->with('costingLines')) // for the Gross column
+            ->when($status === TenderStatus::Awarded, fn (Builder $q) => $q->with('project.lines')); // for Actual GP
 
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {

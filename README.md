@@ -58,6 +58,19 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
 - Margins under 18% are flagged. Rows can be pasted straight from Excel (Bulk import).
 - **Mark Done** needs a saved costing and records its bid price as the submitted price.
 - All maths lives in `app/Costing/CostingCalculator.php` (whole sen, no rounding drift).
+- Each costing line has a **Group** (Principal, Distributor, …) that decides where it lands in the PD budget.
+
+## PD (project finance)
+
+- When a tender is marked **Awarded** it gets a **PD tab**. Its budget is copied from the costing
+  (each line goes to its Group) plus a "Contract value" collection line; after that the PD is independent.
+- Budget vs actual Profit & Loss: GP = revenue − costs − project charges; commission =
+  (GP − approved margin) × commission share; net = GP − commission. Actual figures use invoices.
+- Each line keeps its documents (PR, PO, invoice, payment; or invoice and receipt for collections).
+  Every change saves immediately; two people only clash if they edit the same line.
+- Admins manage project types (approved margins) and company defaults under **Finance Settings**.
+- Managers/Admins can adjust a single project's rates and close/reopen it.
+- All maths lives in `app/Pd/PdCalculator.php`.
 
 ## Before going live
 
