@@ -69,10 +69,10 @@
     </div>
 
     <div class="relative overflow-x-auto rounded-xl border border-line bg-surface">
-        <table class="w-full min-w-[1550px] text-sm">
+        <table class="w-full min-w-[1720px] text-sm">
             <thead class="bg-subtle text-left text-xs uppercase text-muted">
                 <tr>
-                    <th class="px-2 py-2">Item</th><th class="px-2">Qty</th><th class="px-2">Unit</th><th class="px-2">Frequency</th><th class="px-2">Year</th>
+                    <th class="px-2 py-2">Item</th><th class="px-2">Qty</th><th class="px-2">Unit</th><th class="px-2">Frequency</th><th class="px-2">Year</th><th class="px-2">Group</th>
                     <th class="px-2 text-right">Unit cost</th><th class="px-2 text-right">Line cost</th><th class="px-2">Margin %</th>
                     <th class="px-2 text-right">Price/unit</th><th class="px-2 text-right">Selling price</th><th class="px-2">Vendor</th>
                     <th class="px-2">Quotation link</th><th class="px-2"><span class="sr-only">Actions</span></th>
@@ -107,6 +107,11 @@
                     <td class="px-2 py-1">
                         <select wire:model.live="lines.{{ $i }}.project_year" @disabled(! $editable) class="{{ $in }} w-20" aria-label="Year">
                             @foreach (range(1, 7) as $y) <option value="{{ $y }}">Y{{ $y }}</option> @endforeach
+                        </select>
+                    </td>
+                    <td class="px-2 py-1">
+                        <select wire:model.live="lines.{{ $i }}.pd_group" @disabled(! $editable) class="{{ $in }} w-40" aria-label="Group" title="Where this cost goes in the PD budget once the tender is awarded">
+                            @foreach (\App\Enums\PdGroup::costGroups() as $g) <option value="{{ $g->value }}">{{ $g->label() }}</option> @endforeach
                         </select>
                     </td>
                     <td class="whitespace-nowrap px-2 py-1 text-right">
@@ -155,7 +160,7 @@
                             @error("lines.$i.sub_items.$j.quantity") <span class="text-bad-ink">{{ $message }}</span> @enderror
                         </td>
                         <td class="px-2 py-1"><input wire:model.live.blur="lines.{{ $i }}.sub_items.{{ $j }}.unit" @disabled(! $editable) class="{{ $in }} w-16" aria-label="Sub-item unit"></td>
-                        <td colspan="2"></td>
+                        <td colspan="3"></td>
                         <td class="whitespace-nowrap px-2 py-1 text-right">
                             <input wire:model.live.blur="lines.{{ $i }}.sub_items.{{ $j }}.unit_cost" @disabled(! $editable) class="{{ $in }} w-28 text-right" aria-label="Sub-item unit cost">
                             @error("lines.$i.sub_items.$j.unit_cost") <span class="text-bad-ink">{{ $message }}</span> @enderror
@@ -178,7 +183,7 @@
                     </tr>
                 @endforeach
             @empty
-                <tr><td colspan="13" class="px-3 py-8 text-center text-muted">No cost lines yet.</td></tr>
+                <tr><td colspan="14" class="px-3 py-8 text-center text-muted">No cost lines yet.</td></tr>
             @endforelse
             </tbody>
         </table>

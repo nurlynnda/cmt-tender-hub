@@ -126,6 +126,16 @@ it('refuses staff who are not the PIC, closed tenders, and out-of-date pages', f
     expect($tender->fresh()->costingLines)->toHaveCount(0);
 });
 
+it('saves each costing line\'s PD group and rejects unknown groups', function () {
+    [$pic, $tender] = picTender();
+    $t = app(SaveCosting::class)->handle($pic, $tender, 1, CostingForm::toData(costingState(['pd_group' => 'partner'])));
+
+    expect($t->costingLines->first()->pd_group)->toBe(\App\Enums\PdGroup::Partner)
+        ->and(CostingForm::fromTender($t)['lines'][0]['pd_group'])->toBe('partner')
+        ->and(Validator::make(costingState(['pd_group' => 'collection']), CostingForm::rules())->errors()->has('lines.0.pd_group'))->toBeTrue()
+        ->and(CostingForm::toData(costingState(['pd_group' => 'bogus']), lenient: true)['lines'][0]['pd_group'])->toBe('principal');
+});
+
 it('has no costing until there is a line and a bid price above zero', function () {
     [, $tender] = picTender();
     expect($tender->hasCosting())->toBeFalse()->and($tender->costingSummary())->toBeNull();

@@ -2,9 +2,11 @@
 
 namespace App\Costing;
 
+use App\Enums\PdGroup;
 use App\Models\Tender;
 use App\Rules\{MoneyAmount, Percentage};
 use App\Support\{Money, Percent};
+use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 
 /** Converts between saved costing rows, on-screen text inputs and calculator/saver data; owns the validation rules. */
@@ -15,7 +17,7 @@ final class CostingForm
         return [
             'description' => '', 'unit' => 'unit', 'quantity' => '1', 'frequency' => 'one_off', 'months' => '1',
             'project_year' => '1', 'unit_cost' => '0', 'margin' => Percent::toInput($defaultBp),
-            'vendor' => '', 'quote_url' => '', 'sub_items' => [],
+            'vendor' => '', 'quote_url' => '', 'sub_items' => [], 'pd_group' => PdGroup::Principal->value,
         ];
     }
 
@@ -40,6 +42,7 @@ final class CostingForm
                 'margin' => Percent::toInput($l->margin_bp),
                 'vendor' => (string) $l->vendor,
                 'quote_url' => (string) $l->quote_url,
+                'pd_group' => $l->pd_group->value,
                 'sub_items' => $l->subItems->map(fn ($s) => [
                     'description' => $s->description,
                     'unit' => $s->unit,
@@ -50,6 +53,12 @@ final class CostingForm
                 ])->all(),
             ])->all(),
         ];
+    }
+
+    /** The PD groups a costing line can go to (all but Collection). */
+    private static function costGroupValues(): array
+    {
+        return array_map(fn (PdGroup $g) => $g->value, PdGroup::costGroups());
     }
 
     public static function rules(): array
@@ -72,6 +81,7 @@ final class CostingForm
             'lines.*.months' => ['required', 'integer', 'min:1', 'max:600'],
             'lines.*.project_year' => ['required', 'integer', 'between:1,7'],
             'lines.*.margin' => ['required', new Percentage],
+            'lines.*.pd_group' => ['required', Rule::in(self::costGroupValues())],
             'lines.*.sub_items' => ['array'],
             ...$common('lines.*.sub_items.*'),
         ];
@@ -85,7 +95,7 @@ final class CostingForm
             'lines.*.description' => 'description', 'lines.*.unit' => 'unit', 'lines.*.quantity' => 'quantity',
             'lines.*.months' => 'months', 'lines.*.project_year' => 'year', 'lines.*.unit_cost' => 'unit cost',
             'lines.*.margin' => 'margin', 'lines.*.vendor' => 'vendor', 'lines.*.quote_url' => 'quotation link',
-            'lines.*.frequency' => 'frequency',
+            'lines.*.frequency' => 'frequency', 'lines.*.pd_group' => 'group',
             'lines.*.sub_items.*.description' => 'description', 'lines.*.sub_items.*.unit' => 'unit',
             'lines.*.sub_items.*.quantity' => 'quantity', 'lines.*.sub_items.*.unit_cost' => 'unit cost',
             'lines.*.sub_items.*.vendor' => 'vendor', 'lines.*.sub_items.*.quote_url' => 'quotation link',
@@ -114,6 +124,7 @@ final class CostingForm
                     'margin_bp' => self::bp($l['margin'] ?? '', $default, $lenient),
                     'vendor' => trim((string) ($l['vendor'] ?? '')) ?: null,
                     'quote_url' => trim((string) ($l['quote_url'] ?? '')) ?: null,
+                    'pd_group' => in_array($l['pd_group'] ?? '', self::costGroupValues(), true) ? $l['pd_group'] : PdGroup::Principal->value,
                     'sub_items' => array_map(fn (array $s) => [
                         'description' => trim((string) ($s['description'] ?? '')),
                         'unit' => trim((string) ($s['unit'] ?? '')) ?: 'unit',

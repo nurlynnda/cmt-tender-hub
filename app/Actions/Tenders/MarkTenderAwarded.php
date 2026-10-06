@@ -2,6 +2,7 @@
 
 namespace App\Actions\Tenders;
 
+use App\Actions\Pd\CreateProjectFromCosting;
 use App\Actions\Tenders\Concerns\GuardsTender;
 use App\Enums\TenderStatus;
 use App\Models\{ActivityLog, Tender, User};
@@ -24,6 +25,7 @@ final class MarkTenderAwarded
             ])->save();
 
             ActivityLog::record($t, $actor, 'marked_awarded', 'Marked Awarded');
+            app(CreateProjectFromCosting::class)->handle($t, $actor);
 
             return $t->fresh();
         });
