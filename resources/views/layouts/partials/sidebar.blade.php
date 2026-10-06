@@ -46,6 +46,9 @@
             @can('manage-users')
                 <a href="{{ route('users.index') }}" class="block rounded-lg px-2 py-1.5 text-sm hover:bg-hover">Manage Users</a>
             @endcan
+            @can('manage-finance')
+                <a href="{{ route('finance.settings') }}" class="block rounded-lg px-2 py-1.5 text-sm hover:bg-hover">Finance Settings</a>
+            @endcan
         </div>
     </nav>
 

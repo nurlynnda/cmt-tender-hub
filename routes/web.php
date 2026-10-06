@@ -23,5 +23,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/settings', \App\Livewire\Settings::class)->name('settings');
     Route::get('/settings/users', \App\Livewire\ManageUsers::class)
         ->middleware('can:manage-users')->name('users.index');
+    Route::get('/settings/finance', \App\Livewire\FinanceSettings::class)
+        ->middleware('can:manage-finance')->name('finance.settings');
     Route::post('/logout', LogoutController::class)->name('logout');
 });
