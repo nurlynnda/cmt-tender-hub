@@ -23,6 +23,16 @@ it('rejects invalid amounts', function (string $input) {
     Money::parse($input);
 })->with(['-5', '1.234', '1,23', 'abc', '12a', '1,2345'])->throws(InvalidArgumentException::class);
 
+it('accepts amounts up to RM 999,999,999,999.99', function () {
+    expect(Money::parse('999,999,999,999.99'))->toBe(99999999999999)
+        ->and(Money::parse('999999999999'))->toBe(99999999999900);
+});
+
+it('rejects absurdly large amounts instead of overflowing', function (string $input) {
+    Money::parse($input);
+})->with(['99999999999999999999', '1000000000000', '1,000,000,000,000', '92233720368547758'])
+    ->throws(InvalidArgumentException::class);
+
 it('formats sen as ringgit', function () {
     expect(Money::format(123456))->toBe('RM 1,234.56')
         ->and(Money::format(5))->toBe('RM 0.05')

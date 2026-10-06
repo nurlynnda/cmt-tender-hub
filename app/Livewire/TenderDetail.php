@@ -55,6 +55,7 @@ class TenderDetail extends Component
     public function save(): void
     {
         $this->authorize('update', $this->tender);
+        $this->form->keepPeople([$this->tender->pic_id, $this->tender->owner_id]);
         $this->form->validate();
         if ($this->apply(fn () => app(UpdateTender::class)->handle(auth()->user(), $this->tender, $this->version, $this->form->toData()))) {
             $this->editing = false;
@@ -178,7 +179,9 @@ class TenderDetail extends Component
             'activity' => $this->tender->activity()->with('user')->get(),
             'canEdit' => Gate::allows('update', $this->tender),
             'canReopen' => Gate::allows('reopen', $this->tender),
-            'people' => User::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'people' => User::where('is_active', true)
+                ->orWhereIn('id', array_filter([$this->tender->pic_id, $this->tender->owner_id]))
+                ->orderBy('name')->get(['id', 'name', 'is_active']),
             'ministries' => config('tenderhub.ministries'),
             'modes' => TenderMode::cases(),
             'types' => TenderType::cases(),

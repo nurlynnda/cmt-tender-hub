@@ -17,7 +17,8 @@ final class Money
             return null;
         }
 
-        if (! preg_match('/^(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?$/', $clean, $m)) {
+        // At most 12 ringgit digits (RM 999,999,999,999.99) so the sen value always fits in an integer.
+        if (! preg_match('/^(\d{1,3}(?:,\d{3}){1,3}|\d{1,12})(?:\.(\d{1,2}))?$/', $clean, $m)) {
             throw new InvalidArgumentException("Not a valid ringgit amount: {$input}");
         }
 

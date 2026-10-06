@@ -1,5 +1,6 @@
 @php
     $input = 'mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm';
+    $personLabel = fn ($p) => $p->name.($p->is_active === false ? ' (deactivated)' : '');
     $err = fn ($f) => $errors->first("form.$f");
 @endphp
 <div class="grid gap-4 sm:grid-cols-2">
@@ -36,14 +37,14 @@
     <label class="text-sm"><span class="text-muted">Person in charge (PIC) *</span>
         <select wire:model="form.picId" class="{{ $input }}">
             <option value="">Choose…</option>
-            @foreach ($people as $p) <option value="{{ $p->id }}">{{ $p->name }}</option> @endforeach
+            @foreach ($people as $p) <option value="{{ $p->id }}">{{ $personLabel($p) }}</option> @endforeach
         </select>
         @if ($e = $err('picId')) <span class="text-xs text-bad-ink">{{ $e }}</span> @endif
     </label>
     <label class="text-sm"><span class="text-muted">Opportunity owner</span>
         <select wire:model="form.ownerId" class="{{ $input }}">
             <option value="">None</option>
-            @foreach ($people as $p) <option value="{{ $p->id }}">{{ $p->name }}</option> @endforeach
+            @foreach ($people as $p) <option value="{{ $p->id }}">{{ $personLabel($p) }}</option> @endforeach
         </select>
         @if ($e = $err('ownerId')) <span class="text-xs text-bad-ink">{{ $e }}</span> @endif
     </label>

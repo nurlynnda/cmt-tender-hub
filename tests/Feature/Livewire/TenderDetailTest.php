@@ -135,6 +135,37 @@ it('marks a Done tender Awarded or Lost', function () {
     expect($lost->fresh()->status)->toBe(TenderStatus::Lost)->and($lost->fresh()->winning_price_sen)->toBe(86617900);
 });
 
+it('lets a manager edit a tender whose PIC and owner have since been deactivated', function () {
+    [$pic, $tender] = detailFixture();
+    $owner = User::factory()->create(['name' => 'Left Company']);
+    $tender->update(['owner_id' => $owner->id]);
+    $pic->update(['is_active' => false]);
+    $owner->update(['is_active' => false]);
+
+    Livewire::actingAs(User::factory()->manager()->create())->test(TenderDetail::class, ['tender' => $tender->fresh()])
+        ->call('startEdit')
+        ->assertSee('Siti Aisyah (deactivated)')
+        ->assertSee('Left Company (deactivated)')
+        ->set('form.closingDate', '2026-12-31')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($tender->fresh()->closing_date->toDateString())->toBe('2026-12-31')
+        ->and($tender->fresh()->pic_id)->toBe($pic->id)
+        ->and($tender->fresh()->owner_id)->toBe($owner->id);
+});
+
+it('still refuses switching a tender to a different deactivated person', function () {
+    [$pic, $tender] = detailFixture();
+    $leaver = User::factory()->inactive()->create();
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
+        ->call('startEdit')
+        ->set('form.picId', (string) $leaver->id)
+        ->call('save')
+        ->assertHasErrors('form.picId');
+});
+
 it('reloads the page after a status change so the sidebar counts update', function () {
     [$pic, $tender] = detailFixture(['status' => TenderStatus::Done]);
 

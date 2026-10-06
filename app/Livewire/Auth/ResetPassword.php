@@ -3,6 +3,7 @@
 namespace App\Livewire\Auth;
 
 use App\Models\User;
+use App\Support\SignOutElsewhere;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\{Layout, Title};
@@ -39,6 +40,7 @@ class ResetPassword extends Component
             ],
             function (User $user, string $password) {
                 $user->forceFill(['password' => $password])->save();
+                SignOutElsewhere::for($user);
             },
         );
 

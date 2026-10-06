@@ -26,9 +26,19 @@ class TenderForm extends Form
     public string $briefingDate = '';
     public string $estimatedValue = '';
 
+    /** Ids allowed even if deactivated (a tender's existing PIC/owner). Server-side only, set per request. */
+    private array $keepUserIds = [];
+
+    public function keepPeople(array $userIds): void
+    {
+        $this->keepUserIds = array_values(array_filter($userIds));
+    }
+
     public function rules(): array
     {
-        $activeUser = Rule::exists('users', 'id')->where('is_active', true);
+        $keep = $this->keepUserIds;
+        $activeUser = Rule::exists('users', 'id')
+            ->where(fn ($q) => $q->where('is_active', true)->when($keep !== [], fn ($q) => $q->orWhereIn('id', $keep)));
 
         return [
             'mode' => ['required', Rule::enum(TenderMode::class)],

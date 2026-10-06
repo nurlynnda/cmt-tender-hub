@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Support\SignOutElsewhere;
 use Livewire\Attributes\{Layout, Title};
 use Livewire\Component;
 
@@ -34,6 +35,7 @@ class Settings extends Component
             'newPassword' => ['required', 'min:8', 'confirmed'],
         ]);
         auth()->user()->update(['password' => $this->newPassword]);
+        SignOutElsewhere::for(auth()->user(), session()->getId());
         $this->reset('currentPassword', 'newPassword', 'newPassword_confirmation');
         $this->status = 'Password changed.';
     }

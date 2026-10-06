@@ -3,7 +3,7 @@
 use App\Livewire\Auth\{ForgotPassword, ResetPassword};
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword as ResetNotification;
-use Illuminate\Support\Facades\{Hash, Notification, Password};
+use Illuminate\Support\Facades\{DB, Hash, Notification, Password};
 use Livewire\Livewire;
 
 it('emails a reset link and shows the same message whether or not the email exists', function () {
@@ -30,6 +30,20 @@ it('resets the password with a valid token', function () {
         ->assertRedirect(route('login'));
 
     expect(Hash::check('brand-new-pass-9', $user->fresh()->password))->toBeTrue();
+});
+
+it('signs the user out everywhere when the password is reset', function () {
+    $user = User::factory()->create(['remember_token' => 'old-remember-token']);
+    DB::table('sessions')->insert(['id' => 'their-laptop', 'user_id' => $user->id, 'payload' => '', 'last_activity' => time()]);
+
+    Livewire::test(ResetPassword::class, ['token' => Password::createToken($user)])
+        ->set('email', $user->email)
+        ->set('password', 'brand-new-pass-9')
+        ->set('password_confirmation', 'brand-new-pass-9')
+        ->call('resetPassword');
+
+    expect(DB::table('sessions')->where('user_id', $user->id)->count())->toBe(0)
+        ->and($user->fresh()->remember_token)->not->toBe('old-remember-token');
 });
 
 it('refuses an invalid token', function () {
