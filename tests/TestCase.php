@@ -10,5 +10,7 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
         $this->withoutVite();
+        // No test may ever contact a real website (government sites included).
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
     }
 }

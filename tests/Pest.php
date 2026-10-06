@@ -8,6 +8,11 @@ pest()->extend(Tests\TestCase::class)
 
 pest()->extend(Tests\TestCase::class)->in('Unit');
 
+// Tests that need committed rows (MySQL FULLTEXT ignores uncommitted ones) truncate instead of rolling back.
+pest()->extend(Tests\TestCase::class)
+    ->use(Illuminate\Foundation\Testing\DatabaseTruncation::class)
+    ->in('Integration');
+
 function tenderData(array $overrides = []): array
 {
     return array_merge([
