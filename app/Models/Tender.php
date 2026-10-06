@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Costing\CostingCalculator;
 use App\Enums\{TenderCategory, TenderMode, TenderStatus, TenderType};
 use App\Support\{MalaysiaTime, Money};
 use Illuminate\Database\Eloquent\Builder;
@@ -65,6 +66,30 @@ class Tender extends Model
     public function costingLines(): HasMany
     {
         return $this->hasMany(CostingLine::class)->orderBy('position')->with('subItems');
+    }
+
+    /** Totals for the saved costing, or null when it has no lines. */
+    public function costingSummary(): ?array
+    {
+        $lines = $this->costingLines;
+        if ($lines->isEmpty()) {
+            return null;
+        }
+
+        return CostingCalculator::summary(
+            $lines->map(fn (CostingLine $l) => [
+                'quantity' => $l->quantity, 'frequency' => $l->frequency, 'months' => $l->months,
+                'project_year' => $l->project_year, 'unit_cost_sen' => $l->unit_cost_sen, 'margin_bp' => $l->margin_bp,
+                'sub_items' => $l->subItems->map(fn ($s) => ['quantity' => $s->quantity, 'unit_cost_sen' => $s->unit_cost_sen])->all(),
+            ])->all(),
+            $this->bid_price_override_sen,
+            $this->estimated_value_sen,
+        );
+    }
+
+    public function hasCosting(): bool
+    {
+        return ($this->costingSummary()['bid_price_sen'] ?? 0) > 0;
     }
 
     public function activity(): HasMany
