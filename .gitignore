@@ -27,3 +27,4 @@ Homestead.yaml
 Thumbs.db
 /.superpowers
 /.playwright-mcp
+/storage/app/span-ca-bundle.pem
