@@ -31,6 +31,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(fn (User $user) => $user->is_active ? null : false);
         Gate::define('manage-users', fn (User $user) => $user->role === Role::Admin);
         Gate::define('collect-now', fn (User $user) => $user->role->canManageAllTenders());
+        Gate::define('manage-projects', fn (User $user) => $user->role->canManageAllTenders());
+        Gate::define('manage-finance', fn (User $user) => $user->role === Role::Admin);
         // Livewire's in-page requests skip route middleware unless it is registered here.
         Livewire::addPersistentMiddleware([EnsureUserIsActive::class]);
         View::composer('layouts.partials.sidebar', SidebarComposer::class);
