@@ -13,7 +13,8 @@ final class TenderListQuery
         $query = Tender::query()
             ->where('status', $status)
             ->with(['pic', 'owner'])
-            ->withDocumentCounts();
+            ->withDocumentCounts()
+            ->when($status === TenderStatus::Done, fn (Builder $q) => $q->with('costingLines')); // for the Gross column
 
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {

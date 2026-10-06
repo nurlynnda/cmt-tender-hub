@@ -52,6 +52,7 @@
                     @if ($status === TenderStatus::Done)
                         <th class="px-3 py-2 text-right">Submit Price</th>
                         <th class="px-3 py-2 text-right">Company Variant</th>
+                        <th class="px-3 py-2 text-right" title="Margin from the costing">Gross</th>
                     @elseif ($status === TenderStatus::Lost)
                         <th class="px-3 py-2 text-right">Submitted Price</th>
                         <th class="px-3 py-2 text-right">Win Price</th>
@@ -98,6 +99,7 @@
                     @if ($status === TenderStatus::Done)
                         <td class="px-3 py-2 text-right whitespace-nowrap">{{ Money::format($t->submitted_price_sen) }}</td>
                         <td class="px-3 py-2 text-right">{{ $t->companyVariant() ?? '—' }}</td>
+                        <td class="px-3 py-2 text-right">{{ ($g = $t->costingSummary()) ? \App\Support\Percent::format($g['margin_bp']) : '—' }}</td>
                     @elseif ($status === TenderStatus::Lost)
                         <td class="px-3 py-2 text-right whitespace-nowrap">{{ Money::format($t->submitted_price_sen) }}</td>
                         <td class="px-3 py-2 text-right whitespace-nowrap">{{ Money::format($t->winning_price_sen) }}</td>

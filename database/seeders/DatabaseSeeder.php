@@ -96,5 +96,20 @@ class DatabaseSeeder extends Seeder
         foreach ($maxSeq as $date => $seq) {
             DB::table('wo_sequences')->updateOrInsert(['date' => $date], ['last_seq' => $seq]);
         }
+
+        self::seedJpninCosting(Tender::where('wo_number', '200-10092026-001')->firstOrFail());
+    }
+
+    /** The prototype's JPNIN costing: 12 one-off lines at 20% (bid RM 166,059.00). */
+    public static function seedJpninCosting(Tender $tender): void
+    {
+        $lines = json_decode(file_get_contents(database_path('seeders/data/jpnin-costing.json')), true);
+        foreach ($lines as $i => $line) {
+            $tender->costingLines()->create([
+                'position' => $i + 1, 'description' => $line['description'], 'unit' => 'Unit', 'quantity' => 1,
+                'frequency' => 'one_off', 'months' => 1, 'project_year' => 1,
+                'unit_cost_sen' => $line['unit_cost_sen'], 'margin_bp' => 2000,
+            ]);
+        }
     }
 }

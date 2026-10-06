@@ -48,6 +48,17 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
 - Tests never contact the real sites (`Http::preventStrayRequests()`); the page readers are
   tested on saved pages in `tests/Fixtures/collector`.
 
+## Costing
+
+- Each In Progress tender has a **Costing** tab: cost lines (with optional sub-items), a
+  margin % per line, one-off or monthly × N months, and the project year (1–7) the cost falls in.
+- Price per unit = cost ÷ (1 − margin), rounded **up** to the whole ringgit — the same as the
+  Excel sheet. The lines' selling prices add up to the suggested bid price; you can type your
+  own price instead, and the margin is always worked out from the price actually used.
+- Margins under 18% are flagged. Rows can be pasted straight from Excel (Bulk import).
+- **Mark Done** needs a saved costing and records its bid price as the submitted price.
+- All maths lives in `app/Costing/CostingCalculator.php` (whole sen, no rounding drift).
+
 ## Before going live
 
 - `php artisan serve` is for development; put a proper web server (e.g. Nginx +

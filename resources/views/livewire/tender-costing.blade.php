@@ -67,7 +67,7 @@
     </div>
 
     <div class="relative overflow-x-auto rounded-xl border border-line bg-surface">
-        <table class="w-full min-w-[1450px] text-sm">
+        <table class="w-full min-w-[1550px] text-sm">
             <thead class="bg-subtle text-left text-xs uppercase text-muted">
                 <tr>
                     <th class="px-2 py-2">Item</th><th class="px-2">Qty</th><th class="px-2">Unit</th><th class="px-2">Frequency</th><th class="px-2">Year</th>
@@ -81,7 +81,7 @@
                 @php $calc = $summary['lines'][$i] ?? null; $hasSubs = ! empty($line['sub_items']); @endphp
                 <tr wire:key="line-{{ $i }}" class="border-t border-line align-top">
                     <td class="px-2 py-1">
-                        <input wire:model.live.blur="lines.{{ $i }}.description" @disabled(! $editable) class="{{ $in }} w-full min-w-56" aria-label="Item">
+                        <input wire:model.live.blur="lines.{{ $i }}.description" @disabled(! $editable) class="{{ $in }} w-full min-w-80" aria-label="Item">
                         @error("lines.$i.description") <span class="text-xs text-bad-ink">{{ $message }}</span> @enderror
                     </td>
                     <td class="px-2 py-1">
