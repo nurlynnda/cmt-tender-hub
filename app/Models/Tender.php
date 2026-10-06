@@ -31,6 +31,8 @@ class Tender extends Model
             'estimated_value_sen' => 'integer',
             'submitted_price_sen' => 'integer',
             'winning_price_sen' => 'integer',
+            'default_margin_bp' => 'integer',
+            'bid_price_override_sen' => 'integer',
             'version' => 'integer',
             'done_at' => 'immutable_datetime',
             'awarded_at' => 'immutable_datetime',
@@ -58,6 +60,11 @@ class Tender extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(TenderDocument::class)->orderBy('position');
+    }
+
+    public function costingLines(): HasMany
+    {
+        return $this->hasMany(CostingLine::class)->orderBy('position')->with('subItems');
     }
 
     public function activity(): HasMany
