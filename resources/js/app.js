@@ -1,1 +1,1 @@
-//
+import './resizable-columns';
