@@ -183,3 +183,27 @@ it('links Quotations from the sidebar and opens the pages', function () {
     $this->actingAs($u)->get(route('quotations.index'))->assertOk()->assertSee($q->number);
     $this->actingAs($u)->get(route('quotations.show', $q))->assertOk()->assertSee($q->number);
 });
+
+it('counts quotations per status for the current search, matching what each status button shows', function () {
+    $this->actingAs(User::factory()->create());
+    Quotation::factory()->create(['customer_name' => 'ALPHA', 'status' => \App\Enums\QuotationStatus::Draft]);
+    Quotation::factory()->create(['customer_name' => 'ALPHA', 'status' => \App\Enums\QuotationStatus::Sent,
+        'quote_date' => now()->subDays(60), 'validity_days' => 30]);                         // expired
+    Quotation::factory()->create(['customer_name' => 'BETA', 'status' => \App\Enums\QuotationStatus::Draft]);
+
+    $c = Livewire::test(\App\Livewire\QuotationList::class)->set('search', 'ALPHA');
+    $c->assertSeeHtml('data-status-count="all">2<')->assertSeeHtml('data-status-count="draft">1<')
+      ->assertSeeHtml('data-status-count="expired">1<')->assertSeeHtml('data-status-count="sent">0<');
+    $c->set('status', 'draft')->assertSee('ALPHA')->assertDontSee('BETA');
+});
+
+it('sorts quotations by date when the Date heading is clicked', function () {
+    $this->actingAs(User::factory()->create());
+    Quotation::factory()->create(['subject' => 'OLDER ONE', 'quote_date' => '2026-01-01']);
+    Quotation::factory()->create(['subject' => 'NEWER ONE', 'quote_date' => '2026-06-01']);
+
+    Livewire::test(\App\Livewire\QuotationList::class)
+        ->assertSeeInOrder(['NEWER ONE', 'OLDER ONE'])
+        ->call('toggleDateSort')->assertSet('sort', 'date_asc')->assertSeeInOrder(['OLDER ONE', 'NEWER ONE'])
+        ->set('sort', 'bogus')->assertSeeInOrder(['NEWER ONE', 'OLDER ONE']);
+});

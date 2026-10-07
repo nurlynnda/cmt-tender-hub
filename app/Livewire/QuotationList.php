@@ -18,9 +18,17 @@ class QuotationList extends Component
     #[Url] public string $search = '';
     #[Url] public string $status = 'all';
     #[Url] public bool $mine = false;
+    /** date_desc (newest first) or date_asc, toggled from the Date heading. */
+    #[Url] public string $sort = 'date_desc';
 
     public function updated(): void
     {
+        $this->resetPage();
+    }
+
+    public function toggleDateSort(): void
+    {
+        $this->sort = $this->sort === 'date_asc' ? 'date_desc' : 'date_asc';
         $this->resetPage();
     }
 
@@ -32,8 +40,13 @@ class QuotationList extends Component
 
     public function render()
     {
+        $today = MalaysiaTime::today();
+        $sort = $this->sort === 'date_asc' ? 'date_asc' : 'date_desc';
+
         return view('livewire.quotation-list', [
-            'quotations' => QuotationListQuery::build($this->status, $this->search, $this->mine, auth()->user(), MalaysiaTime::today())->paginate(25),
+            'quotations' => QuotationListQuery::build($this->status, $this->search, $this->mine, auth()->user(), $today, $sort)->paginate(25),
+            'counts' => QuotationListQuery::counts($this->search, $this->mine, auth()->user(), $today),
+            'sortDir' => $sort,
         ]);
     }
 }
