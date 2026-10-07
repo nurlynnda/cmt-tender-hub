@@ -1,8 +1,8 @@
 <div class="relative" x-data="{ open: false }" wire:poll.60s data-unread="{{ $unread }}">
-    <button type="button" @click="open = !open" class="relative rounded-lg p-2 hover:bg-hover" aria-label="Notifications">
-        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <button type="button" @click="open = !open" class="relative grid h-9 w-9 place-items-center rounded-[11px] text-ink-2 hover:bg-hover" aria-label="Notifications">
+        <x-icon name="bell" class="h-[19px] w-[19px]" />
         @if ($unread)
-            <span class="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-bad-ink px-1 text-[10px] font-semibold text-white">{{ $unread }}</span>
+            <span class="absolute right-px top-0.5 grid h-[17px] min-w-[17px] place-items-center rounded-full border-2 border-surface bg-[#E0483B] px-1 text-[10px] font-bold text-white">{{ $unread }}</span>
         @endif
     </button>
     <div x-show="open" x-cloak @click.outside="open = false"
