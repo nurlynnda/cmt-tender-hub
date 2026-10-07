@@ -80,3 +80,12 @@ it('does not warn while a month or custom range is still being chosen', function
         ->set('period', 'month')->assertDontSee("That period wasn't valid", false)
         ->set('period', 'custom')->set('from', '2026-01-01')->assertDontSee("That period wasn't valid", false);
 });
+
+it('shows each PIC as a card on phones, with initials and the same drill-down links', function () {
+    $this->actingAs($u = \App\Models\User::factory()->create(['name' => 'Nurul Ain']));
+    \App\Models\Tender::factory()->status(\App\Enums\TenderStatus::Done)->create(['pic_id' => $u->id]);
+
+    \Livewire\Livewire::test(\App\Livewire\StatusReport::class)
+        ->assertSeeHtml('data-pic-card="'.$u->id.'"')->assertSeeHtml('>NA</span>')
+        ->assertSeeHtml('data-resizable="status"');
+});
