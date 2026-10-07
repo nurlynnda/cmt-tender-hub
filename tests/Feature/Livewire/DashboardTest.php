@@ -86,3 +86,10 @@ it('splits the submission-mode bar by EP and Non-EP count, and draws nothing wit
     \App\Models\Tender::factory()->create(['mode' => \App\Enums\TenderMode::NonEp]);
     \Livewire\Livewire::test(\App\Livewire\Dashboard::class)->assertSeeHtml('data-mode-bar')->assertSeeHtml('data-ep-pct="75"');
 });
+
+it('shows the portfolio value shortened, with the full amount beside it', function () {
+    $this->actingAs(\App\Models\User::factory()->create());
+    \App\Models\Tender::factory()->create(['estimated_value_sen' => 2389441110]);
+
+    \Livewire\Livewire::test(\App\Livewire\Dashboard::class)->assertSee('RM 23.9M')->assertSee('RM 23,894,411.10 bid value');
+});

@@ -17,7 +17,7 @@
         ['Done', $c['done'], 'awaiting result', route('tenders.index', ['done', ...$reportPeriod->listFilters()])],
         ['Lost', $c['lost'].($c['cancelled'] ? ' ('.$c['cancelled'].' cancelled)' : ''), 'incl. cancelled', route('tenders.index', ['lost', ...$reportPeriod->listFilters()])],
         ['Win rate', $rate, $r['decided'] ? $r['won'].' of '.$r['decided'].' decided' : 'no decided bids yet', null],
-        ['Portfolio value', Money::format($r['bid_value_sen']), $r['without_value'] ? $r['without_value'].' without a value' : 'bid value', null],
+        ['Portfolio value', Money::short($r['bid_value_sen']), Money::format($r['bid_value_sen']).' bid value'.($r['without_value'] ? ', '.$r['without_value'].' without a value' : ''), null],
     ];
     $modeTotal = $r['modes']['EP']['total'] + $r['modes']['NON_EP']['total'];
     $epPct = $modeTotal ? (int) round($r['modes']['EP']['total'] * 100 / $modeTotal) : 0;

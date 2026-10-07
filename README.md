@@ -95,6 +95,16 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
 - Win rate = Awarded ÷ (Awarded + Lost), cancelled left out. Bid value = submitted price, or the estimated
   value while a tender is in progress. Figures live in `app/Reports/`.
 
+## Look and feel
+
+The screens follow the Claude Design prototype (copy in `docs/superpowers/plans/assets/prototype-ui/`).
+- The sidebar folds to an icon strip (button beside the logo); the choice is kept in a `sidebar` cookie.
+- Drag the edge of a table heading to resize a column; widths are kept in this browser
+  (`localStorage`, key `tenderhub-cols:<table>`). Double-click the edge to reset.
+- Lists show a **Filters** panel; the number on the button is how many filters are on.
+- Shared pieces live in `resources/views/components/` (`icon`, `page-heading`, `filter-bar`, `data-table`)
+  and `resources/js/resizable-columns.js`.
+
 ## Before going live
 
 - `php artisan serve` is for development; put a proper web server (e.g. Nginx +

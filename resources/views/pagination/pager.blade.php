@@ -3,7 +3,7 @@
         $page = $paginator->getPageName();
         $btn = 'grid h-8 min-w-8 place-items-center rounded-[9px] border px-2.5 text-[12.5px] font-semibold disabled:opacity-40';
     @endphp
-    <nav class="flex items-center gap-1" aria-label="Pages">
+    <nav class="flex flex-wrap items-center justify-end gap-1" aria-label="Pages">
         <button type="button" wire:click="previousPage('{{ $page }}')" @disabled($paginator->onFirstPage()) class="{{ $btn }} border-line-2 text-ink-2 hover:bg-hover">Prev</button>
         @foreach ($elements as $element)
             @if (is_string($element))

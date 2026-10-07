@@ -25,3 +25,9 @@ it('wraps a table in a card and marks it resizable', function () {
     expect(Blade::render('<x-data-table resizable="list-done"><tbody></tbody></x-data-table>'))
         ->toContain('data-resizable="list-done"')->toContain('overflow-x-auto');
 });
+
+it('lets many page buttons wrap onto a second line instead of widening a phone screen', function () {
+    $html = (new Illuminate\Pagination\LengthAwarePaginator(range(1, 25), 1275, 25, 1))->links('pagination.pager')->toHtml();
+
+    expect($html)->toContain('aria-label="Pages"')->toMatch('/<nav class="[^"]*flex-wrap[^"]*" aria-label="Pages"/');
+});

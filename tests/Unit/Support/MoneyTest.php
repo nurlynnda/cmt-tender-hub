@@ -52,3 +52,13 @@ it('computes a variant percentage to one decimal place', function () {
         ->and(Money::variant(100, null))->toBeNull()
         ->and(Money::variant(100, 0))->toBeNull();
 });
+
+it('shortens millions for headline boxes, like the prototype', function (?int $sen, string $expected) {
+    expect(Money::short($sen))->toBe($expected);
+})->with([
+    [2389441110, 'RM 23.9M'],
+    [100000000, 'RM 1.0M'],
+    [99999999, 'RM 999,999.99'],
+    [0, 'RM 0.00'],
+    [null, '—'],
+]);
