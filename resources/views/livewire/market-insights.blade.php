@@ -2,7 +2,6 @@
     use App\Support\Money;
     $box = 'flex min-w-0 flex-col justify-between rounded-[14px] border border-line bg-surface px-[18px] py-4';
     $boxLink = $box.' hover:bg-subtle';
-    $select = 'rounded-[9px] border border-line-2 bg-surface px-2.5 py-1.5 text-[13px]';
     $label = 'text-[11px] font-bold uppercase tracking-[0.5px] text-muted';
     $maxValue = max(1, ...array_column($byYear, 'value_sen'), ...[0]);
     $maxCount = max(1, ...array_column($byYear, 'tenders'), ...[0]);
@@ -14,11 +13,7 @@
 <div class="space-y-5">
     <x-page-heading title="Market Insights" subtitle="Government tenders awarded — from the tenders collected in Find Tenders">
         <x-slot:actions>
-            <select wire:model.live="year" class="{{ $select }}" aria-label="Year">
-                <option value="all">All years</option>
-                @foreach ($years as $yy) <option value="{{ $yy }}">{{ $yy }}</option> @endforeach
-                @unless (in_array((int) $year, $years, true) || $year === 'all') <option value="{{ $year }}">{{ $year }}</option> @endunless
-            </select>
+            @include('livewire.partials.market-year-select')
         </x-slot:actions>
     </x-page-heading>
     @if ($yearNote) <p class="text-[13px] text-warn-ink" role="status">{{ $yearNote }}</p> @endif
@@ -97,7 +92,7 @@
     <div class="grid gap-5 xl:grid-cols-2">
         {{-- Spend by ministry --}}
         <x-card title="Spend by ministry" :subtitle="'Top 10 · '.$yearLabel" icon="chart">
-            @isset($ministriesLink) <x-slot:actions><a href="{{ $ministriesLink }}" class="btn btn-outline">See all</a></x-slot:actions> @endisset
+            <x-slot:actions><a href="{{ route('market.ministries', ['year' => $year]) }}" class="btn btn-outline">See all</a></x-slot:actions>
             <ul class="space-y-2.5 text-[13px]">
                 @forelse ($ministries as $m)
                     <li>
@@ -113,7 +108,7 @@
 
         {{-- Top contractors --}}
         <x-card title="Top contractors" :subtitle="'By awarded value · '.$yearLabel" icon="staff">
-            @isset($contractorsLink) <x-slot:actions><a href="{{ $contractorsLink }}" class="btn btn-outline">See all</a></x-slot:actions> @endisset
+            <x-slot:actions><a href="{{ route('market.contractors', ['year' => $year]) }}" class="btn btn-outline">See all</a></x-slot:actions>
             <ul class="space-y-1 text-[13px]">
                 @forelse ($top as $c)
                     @php $isOurs = in_array($c->name_key, $ownKeys, true); @endphp

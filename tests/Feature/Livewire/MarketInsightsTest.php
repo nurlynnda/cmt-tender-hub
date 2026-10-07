@@ -53,3 +53,36 @@ it('shows all years when asked, and links the right-now boxes to Find Tenders', 
         ->assertSee('Closing today')->assertSee(route('find-tenders.index', ['from' => '2026-10-07', 'to' => '2026-10-07']))
         ->set('year', '2025')->assertSee('ACME');
 });
+
+it('links to the See-all pages, keeping the year', function () {
+    $this->travelTo(\Carbon\CarbonImmutable::parse('2026-10-07 04:00:00', 'UTC'));
+    win('2026-02-01', 'ACME', 100);
+
+    Livewire::test(MarketInsights::class)
+        ->assertSee(route('market.ministries', ['year' => '2026']))->assertSee(route('market.contractors', ['year' => '2026']));
+});
+
+it('lists every ministry for the year', function () {
+    win('2026-02-01', 'ACME', 100);
+    win('2025-02-01', 'BETA', 100, 'KEMENTERIAN LAMA');
+
+    $this->get(route('market.ministries', ['year' => '2026']))->assertOk()->assertSee('Spend by ministry');
+    Livewire::withQueryParams(['year' => '2026'])->test(\App\Livewire\MarketMinistries::class)
+        ->assertSee('KEMENTERIAN A')->assertDontSee('KEMENTERIAN LAMA')->assertSee(route('market.index', ['year' => '2026']))
+        ->set('year', 'all')->assertSee('KEMENTERIAN LAMA');
+});
+
+it('lists every contractor with a search and 50 per page, our rows marked', function () {
+    foreach (range(1, 55) as $i) {
+        win('2026-02-01', "CONTRACTOR {$i}", 1000 + $i);
+    }
+    win('2026-02-01', '10 CREATIVE SOLUTIONS SDN. BHD.', 1);
+
+    $this->get(route('market.contractors', ['year' => '2026']))->assertOk()->assertSee('Top contractors');
+    Livewire::withQueryParams(['year' => '2026'])->test(\App\Livewire\MarketContractors::class)
+        ->assertSee('Showing 1–50 of 56 contractors')->assertSee('CONTRACTOR 55')->assertDontSee('10 CREATIVE SOLUTIONS')
+        ->call('gotoPage', 2)->assertSee('Showing 51–56 of 56')->assertSee('56. 10 CREATIVE SOLUTIONS SDN. BHD.')
+        ->set('search', 'creative')->assertSee('Showing 1–1 of 1')->assertSee('10 CREATIVE SOLUTIONS SDN. BHD.')->assertSeeHtml('data-ours')
+        ->assertDontSee('CONTRACTOR 7')
+        ->assertSee(route('find-tenders.index', ['status' => 'awarded', 'contractor' => '10 CREATIVE SOLUTIONS SDN. BHD.', 'from' => '2026-01-01', 'to' => '2026-12-31']));
+});

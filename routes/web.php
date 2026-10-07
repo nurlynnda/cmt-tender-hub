@@ -15,6 +15,8 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', \App\Livewire\Dashboard::class)->name('dashboard');
     Route::get('/status', \App\Livewire\StatusReport::class)->name('status');
     Route::get('/market-insights', \App\Livewire\MarketInsights::class)->name('market.index');
+    Route::get('/market-insights/ministries', \App\Livewire\MarketMinistries::class)->name('market.ministries');
+    Route::get('/market-insights/contractors', \App\Livewire\MarketContractors::class)->name('market.contractors');
     Route::get('/tenders/{list}', \App\Livewire\TenderList::class)
         ->whereIn('list', ['in-progress', 'done', 'awarded', 'lost', 'dropped'])
         ->name('tenders.index');
