@@ -48,6 +48,19 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
 - Tests never contact the real sites (`Http::preventStrayRequests()`); the page readers are
   tested on saved pages in `tests/Fixtures/collector`.
 
+## Market Insights and awarded tenders
+
+- **Find Tenders → Status: Awarded** lists closed tenders with a published winner, the price
+  won, a Contractor search box and an **Our wins** button. A green "Ours" tag marks our company.
+- **Market Insights** (sidebar → Insights) shows open tenders right now, then for a chosen year
+  (or all years): awarded tenders, value and contractors, our rank, awards by year, spend by
+  ministry and top contractors, with "See all" pages for every ministry and contractor.
+- Winners are copied into a searchable table, `collected_tender_winners`. The daily collection
+  keeps it current. **After `collector:import-legacy`, run `php artisan collector:index-winners`
+  once** (the import bulk-inserts and skips that step). It's safe to re-run at any time.
+- "Our company" is set in **Finance Settings → Our company names in tender results** (one name
+  per line). Names match regardless of capitals, dots, commas and spaces.
+
 ## Costing
 
 - Each In Progress tender has a **Costing** tab: cost lines (with optional sub-items), a
