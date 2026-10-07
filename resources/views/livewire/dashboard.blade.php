@@ -11,10 +11,10 @@
     ];
     $circumference = 2 * M_PI * 40;
     $overview = [
-        ['In Progress', $c['in_progress'], $r['due_this_week'].' due this week', route('tenders.index', 'in-progress')],
-        ['Awarded', $c['awarded'], Money::format($r['won_value_sen']).' won', route('tenders.index', 'awarded')],
-        ['Done', $c['done'], 'awaiting result', route('tenders.index', 'done')],
-        ['Lost', $c['lost'].($c['cancelled'] ? ' ('.$c['cancelled'].' cancelled)' : ''), 'incl. cancelled', route('tenders.index', 'lost')],
+        ['In Progress', $c['in_progress'], $r['due_this_week'].' due this week', route('tenders.index', ['in-progress', ...$reportPeriod->listFilters()])],
+        ['Awarded', $c['awarded'], Money::format($r['won_value_sen']).' won', route('tenders.index', ['awarded', ...$reportPeriod->listFilters()])],
+        ['Done', $c['done'], 'awaiting result', route('tenders.index', ['done', ...$reportPeriod->listFilters()])],
+        ['Lost', $c['lost'].($c['cancelled'] ? ' ('.$c['cancelled'].' cancelled)' : ''), 'incl. cancelled', route('tenders.index', ['lost', ...$reportPeriod->listFilters()])],
         ['Win rate', $rate, $r['decided'] ? $r['won'].' of '.$r['decided'].' decided' : 'no decided bids yet', null],
         ['Portfolio value', Money::format($r['bid_value_sen']), $r['without_value'] ? $r['without_value'].' without a value' : 'bid value', null],
     ];
@@ -129,7 +129,7 @@
                     <tbody>
                     @foreach ($r['pics'] as $p)
                         <tr class="border-t border-line">
-                            <td class="px-3 py-2"><a href="{{ route('status') }}" class="hover:underline">{{ $p['name'] }}</a></td>
+                            <td class="px-3 py-2"><a href="{{ route('status', $reportPeriod->addressParams()) }}" class="hover:underline">{{ $p['name'] }}</a></td>
                             <td class="px-3 py-2 text-right">{{ $p['total'] }}</td>
                             <td class="px-3 py-2">
                                 <div class="h-2 w-40 overflow-hidden rounded-full bg-subtle"><div class="h-full bg-good-ink" style="width: {{ $p['share_bp'] / 100 }}%"></div></div>

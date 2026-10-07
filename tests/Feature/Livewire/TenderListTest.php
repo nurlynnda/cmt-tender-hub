@@ -67,3 +67,14 @@ it('resets to page 1 when the search changes', function () {
         ->set('search', 'x')
         ->assertSet('paginators.page', 1);
 });
+
+it('filters by when the tender was registered (WO date), for dashboard drill-downs', function () {
+    Tender::factory()->create(['wo_date' => '2026-10-01', 'title' => 'REGISTERED IN OCTOBER']);
+    Tender::factory()->create(['wo_date' => '2026-09-30', 'title' => 'REGISTERED IN SEPTEMBER']);
+
+    Livewire::test(TenderList::class, ['list' => 'in-progress'])
+        ->set('wo_from', '2026-10-01')->set('wo_to', '2026-10-31')
+        ->assertSee('REGISTERED IN OCTOBER')->assertDontSee('REGISTERED IN SEPTEMBER')
+        ->assertSee('Registered 01 Oct 2026 – 31 Oct 2026')
+        ->call('clearFilters')->assertSee('REGISTERED IN SEPTEMBER');
+});

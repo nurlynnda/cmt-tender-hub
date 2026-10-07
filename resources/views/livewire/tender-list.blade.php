@@ -37,6 +37,12 @@
         <label class="flex items-center gap-1">to <input type="date" wire:model.live="to" class="rounded-lg border border-line bg-surface px-2 py-1"></label>
         <button type="button" wire:click="clearFilters" class="text-muted hover:text-ink">Clear</button>
     </section>
+    @if ($wo_from !== '' && $wo_to !== '')
+        <p class="text-sm text-muted">
+            Registered {{ \Carbon\CarbonImmutable::parse($wo_from)->format('d M Y') }} – {{ \Carbon\CarbonImmutable::parse($wo_to)->format('d M Y') }}
+            (from the Dashboard / Status) · <button type="button" wire:click="$set('wo_from', ''); $set('wo_to', '')" class="underline">show all dates</button>
+        </p>
+    @endif
 
     <div class="overflow-x-auto rounded-xl border border-line bg-surface">
         <table class="w-full min-w-[900px] text-sm">

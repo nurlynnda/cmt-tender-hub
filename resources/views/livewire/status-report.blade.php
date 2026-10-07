@@ -35,7 +35,7 @@
                     @foreach ($cols as $k => $label)
                         <td @class(['whitespace-nowrap px-3 py-2', 'text-right' => $k !== 'name'])>
                             @if (isset($lists[$k]) && $row[$k] > 0)
-                                <a href="{{ route('tenders.index', [$lists[$k], 'pic' => $row['user_id']]) }}" class="underline">{{ $row[$k] }}</a>
+                                <a href="{{ route('tenders.index', [$lists[$k], 'pic' => $row['user_id'], ...$reportPeriod->listFilters()]) }}" class="underline">{{ $row[$k] }}</a>
                             @else
                                 {{ $cell($row, $k) }}
                             @endif

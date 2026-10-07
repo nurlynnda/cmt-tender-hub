@@ -14,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias(['active' => \App\Http\Middleware\EnsureUserIsActive::class]);
         $middleware->redirectGuestsTo('/login');
-        $middleware->redirectUsersTo('/tenders/in-progress');
+        $middleware->redirectUsersTo('/dashboard');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -64,3 +64,7 @@ it('says so when nothing was registered in the period', function () {
     Livewire::actingAs(User::factory()->create())->test(Dashboard::class)->set('period', 'last_month')
         ->assertSee('No tenders registered in this period.')->assertSee('no decided bids yet');
 });
+
+it('sends a signed-in visitor of the login page to the dashboard', function () {
+    $this->actingAs(User::factory()->create())->get('/login')->assertRedirect('/dashboard');
+});

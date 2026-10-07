@@ -23,6 +23,9 @@ class TenderList extends Component
     #[Url] public string $category = '';
     #[Url] public string $from = '';
     #[Url] public string $to = '';
+    /** Registered between (WO date), set by Dashboard / Status links. */
+    #[Url] public string $wo_from = '';
+    #[Url] public string $wo_to = '';
 
     public function mount(string $list): void
     {
@@ -31,14 +34,14 @@ class TenderList extends Component
 
     public function updated(string $property): void
     {
-        if (in_array($property, ['search', 'mine', 'mode', 'pic', 'category', 'from', 'to'], true)) {
+        if (in_array($property, ['search', 'mine', 'mode', 'pic', 'category', 'from', 'to', 'wo_from', 'wo_to'], true)) {
             $this->resetPage();
         }
     }
 
     public function clearFilters(): void
     {
-        $this->reset(['search', 'mine', 'mode', 'pic', 'category', 'from', 'to']);
+        $this->reset(['search', 'mine', 'mode', 'pic', 'category', 'from', 'to', 'wo_from', 'wo_to']);
         $this->resetPage();
     }
 
@@ -46,7 +49,8 @@ class TenderList extends Component
     {
         $status = TenderStatus::fromSlug($this->list);
         $filters = ['search' => $this->search, 'mine' => $this->mine, 'mode' => $this->mode,
-            'pic' => $this->pic, 'category' => $this->category, 'from' => $this->from, 'to' => $this->to];
+            'pic' => $this->pic, 'category' => $this->category, 'from' => $this->from, 'to' => $this->to,
+            'wo_from' => $this->wo_from, 'wo_to' => $this->wo_to];
 
         return view('livewire.tender-list', [
             'status' => $status,

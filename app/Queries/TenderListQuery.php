@@ -45,6 +45,13 @@ final class TenderListQuery
                 $query->where('closing_date', $operator, $date);
             }
         }
+        // Registered between (WO date) — used by the Dashboard and Status drill-down links.
+        foreach (['wo_from' => '>=', 'wo_to' => '<='] as $key => $operator) {
+            $date = (string) ($filters[$key] ?? '');
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                $query->where('wo_date', $operator, $date);
+            }
+        }
 
         $direction = $status === TenderStatus::InProgress ? 'asc' : 'desc';
 

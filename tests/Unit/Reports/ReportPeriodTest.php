@@ -51,6 +51,15 @@ it('falls back to all time for anything it cannot read', function (array $in) {
     'end before start' => [['period' => 'custom', 'from' => '2026-12-01', 'to' => '2026-01-01']],
     'bad month' => [['period' => 'month', 'month' => 'banana']],
     'bad date' => [['period' => 'custom', 'from' => '2026-02-30', 'to' => '2026-03-01']],
-    'missing date' => [['period' => 'custom', 'from' => '2026-02-01']],
     'unknown kind' => [['period' => 'forever']],
+]);
+
+it('treats a month or custom range not chosen yet as all time without a warning', function (array $in) {
+    $p = period($in);
+
+    expect($p->isAllTime())->toBeTrue()->and($p->invalid)->toBeFalse();
+})->with([
+    'month empty' => [['period' => 'month', 'month' => '']],
+    'custom empty' => [['period' => 'custom', 'from' => '', 'to' => '']],
+    'custom half filled' => [['period' => 'custom', 'from' => '2026-01-01', 'to' => '']],
 ]);

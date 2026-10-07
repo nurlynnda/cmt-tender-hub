@@ -62,3 +62,21 @@ it('does not run more queries as tenders pile up', function () {
 
     expect($count())->toBe($few);
 });
+
+it('keeps the chosen period on every drill-down link', function () {
+    $u = User::factory()->create(['name' => 'Siti Aisyah']);
+    Tender::factory()->status(TenderStatus::Done)->create(['pic_id' => $u->id, 'wo_date' => '2001-01-05']);
+
+    Livewire::actingAs($u)->test(StatusReport::class)->set('period', 'month')->set('month', '2001-01')
+        ->assertSeeHtml(e(route('tenders.index', ['done', 'pic' => $u->id, 'wo_from' => '2001-01-01', 'wo_to' => '2001-01-31'])));
+
+    Livewire::actingAs($u)->test(Dashboard::class)->set('period', 'month')->set('month', '2001-01')
+        ->assertSeeHtml(e(route('tenders.index', ['done', 'wo_from' => '2001-01-01', 'wo_to' => '2001-01-31'])))
+        ->assertSeeHtml(e(route('status', ['period' => 'month', 'month' => '2001-01'])));
+});
+
+it('does not warn while a month or custom range is still being chosen', function () {
+    Livewire::actingAs(User::factory()->create())->test(StatusReport::class)
+        ->set('period', 'month')->assertDontSee("That period wasn't valid", false)
+        ->set('period', 'custom')->set('from', '2026-01-01')->assertDontSee("That period wasn't valid", false);
+});

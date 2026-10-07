@@ -37,6 +37,9 @@ final class ReportPeriod
 
     private static function month(string $month): self
     {
+        if ($month === '') {
+            return new self('all', null, null); // not chosen yet: no warning
+        }
         if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
             return self::invalid();
         }
@@ -47,6 +50,9 @@ final class ReportPeriod
 
     private static function custom(string $from, string $to): self
     {
+        if ($from === '' || $to === '') {
+            return new self('all', null, null); // still being filled in: no warning
+        }
         if (! self::isDate($from) || ! self::isDate($to) || $to < $from) {
             return self::invalid();
         }
@@ -72,6 +78,23 @@ final class ReportPeriod
     public function isAllTime(): bool
     {
         return $this->from === null;
+    }
+
+    /** Filters for the tender lists, so a drill-down shows the same tenders as the number clicked. */
+    public function listFilters(): array
+    {
+        return $this->isAllTime() ? [] : ['wo_from' => $this->from, 'wo_to' => $this->to];
+    }
+
+    /** The page-address settings that recreate this period on another report page. */
+    public function addressParams(): array
+    {
+        return match ($this->kind) {
+            'this_month', 'last_month', 'this_year' => ['period' => $this->kind],
+            'month' => ['period' => 'month', 'month' => substr($this->from, 0, 7)],
+            'custom' => ['period' => 'custom', 'from' => $this->from, 'to' => $this->to],
+            default => [],
+        };
     }
 
     public function contains(string $date): bool
