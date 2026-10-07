@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Collector\SourceName;
+use App\Collector\WinnerIndex;
 use App\Support\MalaysiaTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,18 @@ class CollectedTender extends Model
     use HasFactory;
 
     protected $guarded = ['id'];
+
+    protected static function booted(): void
+    {
+        // Keep the searchable winners list in step with the published winners.
+        // (wasRecentlyCreated stays true for the object's lifetime, so it can't tell creation from a later update.)
+        static::created(fn (self $t) => WinnerIndex::sync($t));
+        static::updated(function (self $t) {
+            if ($t->wasChanged('winners')) {
+                WinnerIndex::sync($t);
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -32,6 +45,11 @@ class CollectedTender extends Model
     public function fieldCodes(): HasMany
     {
         return $this->hasMany(CollectedTenderFieldCode::class)->orderBy('code');
+    }
+
+    public function winnerRows(): HasMany
+    {
+        return $this->hasMany(CollectedTenderWinner::class)->orderBy('position');
     }
 
     public function pipelineTenders(): HasMany
