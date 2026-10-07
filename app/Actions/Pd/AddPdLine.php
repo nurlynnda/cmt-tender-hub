@@ -4,7 +4,7 @@ namespace App\Actions\Pd;
 
 use App\Actions\Pd\Concerns\GuardsProject;
 use App\Enums\PdGroup;
-use App\Models\{ActivityLog, PdLine, Project, User};
+use App\Models\{PdLine, Project, User};
 use Illuminate\Support\Facades\DB;
 
 final class AddPdLine
@@ -23,7 +23,7 @@ final class AddPdLine
                 'updated_by' => $actor->id,
                 'version' => 1,
             ]);
-            ActivityLog::record($p->tender, $actor, 'pd_line_added', "PD line added — {$group->label()}");
+            $p->logActivity($actor, 'pd_line_added', "PD line added — {$group->label()}");
 
             return $line->fresh();
         });

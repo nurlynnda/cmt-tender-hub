@@ -3,7 +3,7 @@
 namespace App\Actions\Pd;
 
 use App\Actions\Pd\Concerns\GuardsProject;
-use App\Models\{ActivityLog, PdLine, User};
+use App\Models\{PdLine, User};
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -30,7 +30,7 @@ final class UpdatePdLine
                 'updated_by' => $actor->id,
                 'version' => $l->version + 1,
             ])->save();
-            ActivityLog::record($l->project->tender, $actor, 'pd_line_updated',
+            $l->project->logActivity($actor, 'pd_line_updated',
                 "PD line updated — {$l->pd_group->label()}: {$l->name}, budget ".Money::format($l->budget_sen));
 
             return $l->fresh();

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\{QuotationStatus, TenderStatus};
 use App\Pd\PdCalculator;
 use App\Support\MalaysiaTime;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
-/** The PD of an awarded tender. */
+/** The PD of an awarded tender or an accepted quotation (its "owner"). */
 class Project extends Model
 {
     use HasFactory;
@@ -61,6 +62,29 @@ class Project extends Model
     public function isOpen(): bool
     {
         return $this->closed_at === null;
+    }
+
+    public function owner(): Tender|Quotation
+    {
+        return $this->tender ?? $this->quotation;
+    }
+
+    /** Tender still Awarded / quotation still Accepted. */
+    public function isActive(): bool
+    {
+        $owner = $this->owner();
+
+        return $owner instanceof Tender ? $owner->status === TenderStatus::Awarded : $owner->status === QuotationStatus::Accepted;
+    }
+
+    public function logActivity(?User $user, string $event, string $description): void
+    {
+        ActivityLog::record($this->owner(), $user, $event, $description);
+    }
+
+    public function pdUrl(): string
+    {
+        return $this->tender ? route('tenders.show', $this->tender).'?tab=pd' : route('quotations.pd', $this->quotation);
     }
 
     /** @see PdCalculator::summary() */

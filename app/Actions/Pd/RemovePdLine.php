@@ -3,7 +3,7 @@
 namespace App\Actions\Pd;
 
 use App\Actions\Pd\Concerns\GuardsProject;
-use App\Models\{ActivityLog, PdLine, User};
+use App\Models\{PdLine, User};
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -18,9 +18,9 @@ final class RemovePdLine
             if ($l->entries()->exists()) {
                 throw new DomainException("Remove this line's documents first.");
             }
-            $tender = $l->project->tender;
+            $project = $l->project;
             $l->delete();
-            ActivityLog::record($tender, $actor, 'pd_line_removed', "PD line removed — {$l->pd_group->label()}: {$l->name}");
+            $project->logActivity($actor, 'pd_line_removed', "PD line removed — {$l->pd_group->label()}: {$l->name}");
         });
     }
 }

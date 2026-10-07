@@ -4,7 +4,7 @@ namespace App\Actions\Pd;
 
 use App\Actions\Pd\Concerns\GuardsProject;
 use App\Exceptions\ProjectLocked;
-use App\Models\{ActivityLog, Project, User};
+use App\Models\{Project, User};
 use Illuminate\Support\Facades\DB;
 
 final class CloseProject
@@ -19,7 +19,7 @@ final class CloseProject
                 throw ProjectLocked::closed();
             }
             $p->forceFill(['closed_at' => now(), 'closed_by' => $actor->id, 'updated_by' => $actor->id, 'version' => $p->version + 1])->save();
-            ActivityLog::record($p->tender, $actor, 'project_closed', 'Project closed');
+            $p->logActivity($actor, 'project_closed', 'Project closed');
 
             return $p->fresh();
         });

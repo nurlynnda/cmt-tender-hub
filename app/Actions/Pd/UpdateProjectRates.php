@@ -4,7 +4,7 @@ namespace App\Actions\Pd;
 
 use App\Actions\Pd\Concerns\GuardsProject;
 use App\Exceptions\ProjectLocked;
-use App\Models\{ActivityLog, Project, User};
+use App\Models\{Project, User};
 use App\Support\Percent;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -34,7 +34,7 @@ final class UpdateProjectRates
                 'version' => $p->version + 1,
             ])->save();
 
-            ActivityLog::record($p->tender, $actor, 'project_rates_changed', sprintf(
+            $p->logActivity($actor, 'project_rates_changed', sprintf(
                 'Project rates changed — approved margin %s, project charges %s, commission share %s',
                 Percent::format($approvedBp), Percent::format($chargeBp), Percent::format($shareBp),
             ));

@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\{PdGroup, TenderStatus};
-use App\Livewire\{TenderDetail, TenderPd};
+use App\Livewire\{TenderDetail, ProjectPd};
 use App\Models\{PdEntry, PdLine, Project, ProjectType, Tender, User};
 use Livewire\Livewire;
 
@@ -19,18 +19,18 @@ function pdTab(): array
 it('shows the PD tab only for awarded tenders with a project', function () {
     [$pic, $tender] = pdTab();
     Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
-        ->assertSeeHtml("\$set('tab', 'pd')")->set('tab', 'pd')->assertSeeLivewire(TenderPd::class);
+        ->assertSeeHtml("\$set('tab', 'pd')")->set('tab', 'pd')->assertSeeLivewire(ProjectPd::class);
 
     $other = Tender::factory()->create(['pic_id' => $pic->id]);
     Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $other])
-        ->assertDontSeeHtml("\$set('tab', 'pd')")->set('tab', 'pd')->assertDontSeeLivewire(TenderPd::class);
+        ->assertDontSeeHtml("\$set('tab', 'pd')")->set('tab', 'pd')->assertDontSeeLivewire(ProjectPd::class);
 });
 
 it('shows the P&L figures and lines', function () {
     [$pic, $tender, $project] = pdTab();
     $collectionId = $project->lines[0]->id;
 
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->assertSee('Profit & Loss')
         ->assertSee('RM 1,250,000.00')   // revenue
         ->assertSee('RM 112,500.00')     // 9% project charges
@@ -43,7 +43,7 @@ it('edits a line in place and saves it straight away', function () {
     [$pic, $tender, $project] = pdTab();
     $id = $project->lines[1]->id;
 
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->call('selectGroup', 'principal')
         ->set("rows.l{$id}.budget", '700,000')
         ->assertHasNoErrors()
@@ -56,7 +56,7 @@ it('shows field errors and saves nothing for bad input', function () {
     [$pic, $tender, $project] = pdTab();
     $id = $project->lines[1]->id;
 
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->set("rows.l{$id}.budget", 'abc')->assertHasErrors("rows.l{$id}.budget")
         ->set("rows.l{$id}.name", '')->assertHasErrors("rows.l{$id}.name");
 
@@ -66,7 +66,7 @@ it('shows field errors and saves nothing for bad input', function () {
 it('adds lines to the selected group and removes empty ones', function () {
     [$pic, $tender] = pdTab();
 
-    $c = Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    $c = Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->call('selectGroup', 'tax')->call('addLine');
     $line = PdLine::where('pd_group', 'tax')->first();
     expect($line)->not->toBeNull();
@@ -79,7 +79,7 @@ it('records, edits and removes documents on a line', function () {
     [$pic, $tender, $project] = pdTab();
     $id = $project->lines[1]->id;
 
-    $c = Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    $c = Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->call('selectGroup', 'principal')->call('openDocuments', $id)
         ->set('entry.type', 'invoice')->set('entry.number', 'INV-9')->set('entry.date', '2026-02-01')->set('entry.amount', '50,000')
         ->call('saveEntry')->assertHasNoErrors()
@@ -100,7 +100,7 @@ it('rejects a document type the line does not take', function () {
     [$pic, $tender, $project] = pdTab();
     $collectionId = $project->lines[0]->id;
 
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->call('openDocuments', $collectionId)
         ->set('entry.type', 'po')->set('entry.date', '2026-02-01')->set('entry.amount', '10')
         ->call('saveEntry')
@@ -113,14 +113,14 @@ it('explains why a line with documents cannot be removed', function () {
     $line = $project->lines[1];
     PdEntry::factory()->for($line, 'line')->create();
 
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->call('removeLine', $line->id)->assertSee("Remove this line's documents first.");
 });
 
 it('keeps the typed value and explains when someone else changed the line', function () {
     [$pic, $tender, $project] = pdTab();
     $line = $project->lines[1];
-    $c = Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender]);
+    $c = Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project]);
     $line->update(['version' => 5, 'updated_by' => User::factory()->manager()->create(['name' => 'Ahmad Faizal'])->id]);
 
     $c->set("rows.l{$line->id}.name", 'Mine')
@@ -133,14 +133,14 @@ it('picks a project type and dates, and lets managers change rates and close', f
     $type = ProjectType::where('name', 'Networking')->first();
     $manager = User::factory()->manager()->create();
 
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->set('header.project_type_id', (string) $type->id)
         ->assertSet('rates.approved', '20')
         ->set('header.start_date', '2026-01-01')->set('header.end_date', '2025-12-01')
         ->assertHasErrors('header.end_date')
         ->assertDontSee('Close project');
 
-    Livewire::actingAs($manager)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($manager)->test(ProjectPd::class, ['project' => $tender->project])
         ->set('rates.charge', '10')->assertHasNoErrors()
         ->call('closeProject')->assertSee('Reopen project')->assertSee('This project is closed')
         ->call('reopenProject')->assertSee('Close project');
@@ -151,25 +151,25 @@ it('picks a project type and dates, and lets managers change rates and close', f
 it('refuses rate changes from staff even if the page is crafted', function () {
     [$pic, $tender] = pdTab();
 
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->set('rates.charge', '1')->assertForbidden();
 });
 
 it('is read-only for other staff and when closed', function () {
     [$pic, $tender, $project] = pdTab();
 
-    Livewire::actingAs(User::factory()->create())->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs(User::factory()->create())->test(ProjectPd::class, ['project' => $tender->project])
         ->assertDontSee('+ Add line');
 
     $project->update(['closed_at' => now()]);
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender->fresh()])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->fresh()->project])
         ->assertDontSee('+ Add line')->assertSee('This project is closed');
 });
 
 it('accepts an end date before any start date is set', function () {
     [$pic, $tender, $project] = pdTab();
 
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->set('header.end_date', '2026-06-30')->assertHasNoErrors();
 
     expect($project->fresh()->end_date->format('Y-m-d'))->toBe('2026-06-30');
@@ -177,7 +177,7 @@ it('accepts an end date before any start date is set', function () {
 
 it('handles a line a colleague added after the tab was opened', function () {
     [$pic, $tender, $project] = pdTab();
-    $c = Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender]);
+    $c = Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project]);
     $new = PdLine::factory()->for($project)->create(['pd_group' => PdGroup::Principal, 'name' => 'Added by Ahmad']);
 
     $c->call('selectGroup', 'principal')
@@ -192,7 +192,7 @@ it('handles a line a colleague added after the tab was opened', function () {
 it('explains when a colleague removed the line you are working on', function () {
     [$pic, $tender, $project] = pdTab();
     $line = $project->lines[1];
-    $c = Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])->call('openDocuments', $line->id);
+    $c = Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])->call('openDocuments', $line->id);
     $line->delete();
 
     $c->set('entry.type', 'invoice')->set('entry.date', '2026-02-01')->set('entry.amount', '100')
@@ -206,7 +206,7 @@ it('ignores lines and documents from another project', function () {
     $otherLine = PdLine::factory()->create(['name' => 'Not yours']);
     $otherEntry = PdEntry::factory()->for($otherLine, 'line')->create();
 
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->call('removeLine', $otherLine->id)->assertOk()->assertSee('This line was removed by someone else')
         ->call('editEntry', $otherEntry->id)->assertOk()->assertSet('editingEntry', null)
         ->call('removeEntry', $otherEntry->id)->assertOk();
@@ -218,6 +218,6 @@ it('shows the cash flow', function () {
     [$pic, $tender, $project] = pdTab();
     $project->lines[0]->update(['scheduled_date' => '2026-03-01']);
 
-    Livewire::actingAs($pic)->test(TenderPd::class, ['tender' => $tender])
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->assertSee('Cash flow')->assertSee('Mar 2026');
 });

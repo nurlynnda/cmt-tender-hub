@@ -69,7 +69,7 @@
 
     @if ($tab === 'pd' && $hasPd)
         {{-- PD edits save immediately, so it only needs mounting while shown --}}
-        <livewire:tender-pd :tender="$tender" wire:key="pd-{{ $tender->id }}" />
+        <livewire:project-pd :project="$tender->project" wire:key="pd-{{ $tender->id }}" />
     @elseif ($tab !== 'costing')
         @include('livewire.tender-detail.'.(in_array($tab, ['overview', 'documents', 'activity'], true) ? $tab : 'overview'))
     @endif

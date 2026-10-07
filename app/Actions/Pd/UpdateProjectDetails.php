@@ -3,7 +3,7 @@
 namespace App\Actions\Pd;
 
 use App\Actions\Pd\Concerns\GuardsProject;
-use App\Models\{ActivityLog, Project, ProjectType, User};
+use App\Models\{Project, ProjectType, User};
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -41,7 +41,7 @@ final class UpdateProjectDetails
             ])->save();
 
             $fmt = fn (?string $d) => $d ? CarbonImmutable::parse($d)->format('d M Y') : '—';
-            ActivityLog::record($p->tender, $actor, 'project_updated',
+            $p->logActivity($actor, 'project_updated',
                 'Project details updated — '.($type?->name ?? 'no type').', '.$fmt($start).' to '.$fmt($end));
 
             return $p->fresh();

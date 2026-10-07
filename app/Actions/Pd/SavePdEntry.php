@@ -4,7 +4,7 @@ namespace App\Actions\Pd;
 
 use App\Actions\Pd\Concerns\GuardsProject;
 use App\Enums\PdEntryType;
-use App\Models\{ActivityLog, PdEntry, PdLine, User};
+use App\Models\{PdEntry, PdLine, User};
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -48,7 +48,7 @@ final class SavePdEntry
             }
             $l->forceFill(['updated_by' => $actor->id, 'version' => $l->version + 1])->save();
 
-            ActivityLog::record($l->project->tender, $actor, $entry ? 'pd_entry_updated' : 'pd_entry_added', sprintf(
+            $l->project->logActivity($actor, $entry ? 'pd_entry_updated' : 'pd_entry_added', sprintf(
                 '%s %s %s on %s: %s',
                 trim($type->label().' '.($values['number'] ?? '')), Money::format($values['amount_sen']),
                 $entry ? 'updated' : 'recorded', $l->pd_group->label(), $l->name,

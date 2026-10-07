@@ -5,7 +5,7 @@ namespace App\Livewire;
 use App\Actions\Pd\{AddPdLine, CloseProject, RemovePdEntry, RemovePdLine, ReopenProject, SavePdEntry, UpdatePdLine, UpdateProjectDetails, UpdateProjectRates};
 use App\Enums\{PdEntryType, PdGroup};
 use App\Exceptions\{ProjectLocked, StalePdRecord};
-use App\Models\{PdEntry, PdLine, Project, ProjectType, Tender};
+use App\Models\{PdEntry, PdLine, Project, ProjectType};
 use App\Rules\{MoneyAmount, Percentage};
 use App\Support\{Money, Percent};
 use DomainException;
@@ -16,9 +16,9 @@ use InvalidArgumentException;
 use Livewire\Component;
 
 /** The PD tab. Every edit is saved straight away; only edits to the same line can conflict. */
-class TenderPd extends Component
+class ProjectPd extends Component
 {
-    public Tender $tender;
+    public Project $project;
     public string $group = 'collection';
     /** On-screen line fields, keyed "l{id}". */
     public array $rows = [];
@@ -39,7 +39,7 @@ class TenderPd extends Component
 
     private function project(): Project
     {
-        return $this->tender->project()->firstOrFail();
+        return Project::findOrFail($this->project->id);
     }
 
     private function loadProject(): void
@@ -272,7 +272,8 @@ class TenderPd extends Component
 
     public function render()
     {
-        $project = $this->project()->load(['projectType', 'closedBy']);
+        // Keep the public property fresh too: Livewire hands public properties to the view over our own data.
+        $project = $this->project = $this->project()->load(['projectType', 'closedBy']);
         foreach ($project->lines as $l) {
             if (! isset($this->rows["l{$l->id}"])) {
                 $this->loadLine($l); // added by a colleague since this tab opened
@@ -280,7 +281,7 @@ class TenderPd extends Component
         }
         $summary = $project->summary();
 
-        return view('livewire.tender-pd', [
+        return view('livewire.project-pd', [
             'project' => $project,
             'summary' => $summary,
             'groupLines' => array_values(array_filter($summary['lines'], fn ($l) => $l['group'] === $this->group)),
@@ -288,7 +289,7 @@ class TenderPd extends Component
             'groupEnum' => PdGroup::from($this->group),
             'entries' => $this->openLine ? PdEntry::where('pd_line_id', $this->openLine)->orderBy('date')->orderBy('id')->get() : collect(),
             'types' => ProjectType::where('is_active', true)->orWhere('id', $project->project_type_id)->orderBy('name')->get(),
-            'canEdit' => Gate::allows('update', $this->tender) && $project->isOpen(),
+            'canEdit' => Gate::allows('update', $project->owner()) && $project->isOpen(),
             'canManage' => Gate::allows('manage-projects'),
         ]);
     }

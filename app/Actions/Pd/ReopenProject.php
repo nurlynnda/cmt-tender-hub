@@ -3,7 +3,7 @@
 namespace App\Actions\Pd;
 
 use App\Actions\Pd\Concerns\GuardsProject;
-use App\Models\{ActivityLog, Project, User};
+use App\Models\{Project, User};
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -19,7 +19,7 @@ final class ReopenProject
                 throw new InvalidArgumentException('This project is already open.');
             }
             $p->forceFill(['closed_at' => null, 'closed_by' => null, 'updated_by' => $actor->id, 'version' => $p->version + 1])->save();
-            ActivityLog::record($p->tender, $actor, 'project_reopened', 'Project reopened');
+            $p->logActivity($actor, 'project_reopened', 'Project reopened');
 
             return $p->fresh();
         });

@@ -17,7 +17,7 @@
     @if ($problem)
         <div class="flex items-center justify-between gap-3 rounded-lg bg-warn-bg p-3 text-sm text-warn-ink" role="alert">
             <span>{{ $problem }}</span>
-            <a href="{{ route('tenders.show', $tender) }}?tab=pd" class="shrink-0 font-medium underline">Reload</a>
+            <a href="{{ $project->pdUrl() }}" class="shrink-0 font-medium underline">Reload</a>
         </div>
     @endif
     @error('form') <div class="rounded-lg bg-bad-bg p-3 text-sm text-bad-ink" role="alert">{{ $message }}</div> @enderror
