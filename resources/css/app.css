@@ -68,3 +68,12 @@
 }
 
 [x-cloak] { display: none !important; }
+
+/* Buttons in the prototype style: btn + one of primary (green), dark, outline, danger (red). */
+@layer components {
+    .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-[11px] px-4 py-2.5 text-[12.5px] font-bold whitespace-nowrap disabled:opacity-50; }
+    .btn-primary { @apply bg-accent text-accent-ink hover:bg-accent-solid; }
+    .btn-dark { @apply bg-chip text-chip-ink hover:bg-chip-hover; }
+    .btn-outline { @apply border border-line-2 bg-surface text-ink-2 hover:bg-hover; }
+    .btn-danger { @apply bg-bad-ink text-white hover:opacity-90; }
+}
