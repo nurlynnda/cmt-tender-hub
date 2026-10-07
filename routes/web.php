@@ -11,7 +11,9 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['auth', 'active'])->group(function () {
-    Route::redirect('/', '/tenders/in-progress');
+    Route::redirect('/', '/dashboard');
+    Route::get('/dashboard', \App\Livewire\Dashboard::class)->name('dashboard');
+    Route::get('/status', \App\Livewire\StatusReport::class)->name('status');
     Route::get('/tenders/{list}', \App\Livewire\TenderList::class)
         ->whereIn('list', ['in-progress', 'done', 'awarded', 'lost'])
         ->name('tenders.index');

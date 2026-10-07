@@ -5,6 +5,7 @@
     ];
     $groups = [
         'Operations' => [
+            ['href' => route('dashboard'), 'label' => 'Dashboard', 'count' => null, 'active' => request()->routeIs('dashboard')],
             ['href' => route('find-tenders.index'), 'label' => 'Find Tenders', 'count' => null, 'active' => request()->routeIs('find-tenders.*')],
             $item('tenders.index', ['in-progress'], 'In Progress', $counts['in_progress']),
         ],
@@ -16,10 +17,13 @@
         'Quotation' => [
             ['href' => route('quotations.index'), 'label' => 'Quotations', 'count' => null, 'active' => request()->routeIs('quotations.*')],
         ],
+        'Insights' => [
+            ['href' => route('status'), 'label' => 'Status', 'count' => null, 'active' => request()->routeIs('status')],
+        ],
     ];
 @endphp
 <div class="flex h-full flex-col p-4">
-    <a href="{{ route('tenders.index', 'in-progress') }}" class="mb-6 flex items-center gap-2">
+    <a href="{{ route('dashboard') }}" class="mb-6 flex items-center gap-2">
         <span class="grid h-8 w-8 place-items-center rounded-lg bg-accent font-bold text-accent-ink">T</span>
         <span class="font-semibold">TenderHub</span>
     </a>

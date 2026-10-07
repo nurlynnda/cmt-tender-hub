@@ -14,7 +14,7 @@ it('shows the sidebar with live counts and the signed-in user', function () {
         ->assertSee('Siti Aisyah')
         ->assertSee('Staff')
         ->assertSee(route('quotations.index'))   // Quotations arrived in Stage 5
-        ->assertDontSee('Dashboard');
+        ->assertSee(route('dashboard'));   // the Dashboard arrived in Stage 6
 });
 
 it('shows Manage Users only to admins', function () {

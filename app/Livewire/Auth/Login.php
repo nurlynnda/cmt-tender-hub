@@ -38,7 +38,7 @@ class Login extends Component
         RateLimiter::clear($key);
         session()->regenerate();
 
-        return $this->redirectIntended(route('tenders.index', 'in-progress'));
+        return $this->redirectIntended(route('dashboard'));
     }
 
     public function render()

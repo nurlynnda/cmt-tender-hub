@@ -19,7 +19,7 @@ it('logs in an active user and lands on In Progress', function () {
         ->set('email', $user->email)
         ->set('password', 'secret-pass-1')
         ->call('login')
-        ->assertRedirect(route('tenders.index', 'in-progress'));
+        ->assertRedirect(route('dashboard'));
 
     $this->assertAuthenticatedAs($user);
 });
