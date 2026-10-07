@@ -93,3 +93,10 @@ it('shows the portfolio value shortened, with the full amount beside it', functi
 
     \Livewire\Livewire::test(\App\Livewire\Dashboard::class)->assertSee('RM 23.9M')->assertSee('RM 23,894,411.10 bid value');
 });
+
+it('shows Dropped as its own slice in the status ring', function () {
+    $this->actingAs(\App\Models\User::factory()->create());
+    \App\Models\Tender::factory()->create(['status' => \App\Enums\TenderStatus::Dropped]);
+
+    \Livewire\Livewire::test(\App\Livewire\Dashboard::class)->assertSeeInOrder(['Lost', 'Dropped', '1 (100%)']);
+});

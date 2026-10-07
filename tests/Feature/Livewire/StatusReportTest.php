@@ -89,3 +89,11 @@ it('shows each PIC as a card on phones, with initials and the same drill-down li
         ->assertSeeHtml('data-pic-card="'.$u->id.'"')->assertSeeHtml('>NA</span>')
         ->assertSeeHtml('data-resizable="status"');
 });
+
+it('shows a Dropped column that links to that PIC\'s dropped tenders', function () {
+    $this->actingAs($u = \App\Models\User::factory()->create());
+    \App\Models\Tender::factory()->create(['pic_id' => $u->id, 'status' => \App\Enums\TenderStatus::Dropped]);
+
+    \Livewire\Livewire::test(\App\Livewire\StatusReport::class)
+        ->assertSee('Dropped')->assertSeeHtml(e(route('tenders.index', ['dropped', 'pic' => $u->id])));
+});

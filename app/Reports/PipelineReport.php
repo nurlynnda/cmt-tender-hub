@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 /** Tender figures for the Dashboard and Status pages, from one grouped query. */
 final class PipelineReport
 {
-    private const STATUSES = ['in_progress', 'done', 'awarded', 'lost'];
+    private const STATUSES = ['in_progress', 'done', 'awarded', 'lost', 'dropped'];
 
     public function build(ReportPeriod $period, CarbonImmutable $today): array
     {
@@ -19,11 +19,11 @@ final class PipelineReport
             ->groupBy('pic_id', 'mode', 'status', 'was_cancelled')
             ->select('pic_id', 'mode', 'status', 'was_cancelled')
             ->selectRaw('COUNT(*) AS n')
-            // Bid value: estimated value while in progress, otherwise the submitted price; cancelled tenders count 0.
-            ->selectRaw("SUM(CASE WHEN status = 'in_progress' THEN COALESCE(estimated_value_sen, 0)
+            // Bid value: estimated value while in progress, otherwise the submitted price; dropped and cancelled tenders count 0.
+            ->selectRaw("SUM(CASE WHEN status = 'dropped' THEN 0 WHEN status = 'in_progress' THEN COALESCE(estimated_value_sen, 0)
                 WHEN was_cancelled = 1 THEN 0 ELSE COALESCE(submitted_price_sen, 0) END) AS bid")
             ->selectRaw("SUM(CASE WHEN status = 'awarded' THEN COALESCE(submitted_price_sen, 0) ELSE 0 END) AS won_value")
-            ->selectRaw("SUM(CASE WHEN was_cancelled = 1 THEN 0
+            ->selectRaw("SUM(CASE WHEN was_cancelled = 1 OR status = 'dropped' THEN 0
                 WHEN status = 'in_progress' THEN estimated_value_sen IS NULL ELSE submitted_price_sen IS NULL END) AS no_value")
             ->toBase()->get();
 
@@ -85,7 +85,7 @@ final class PipelineReport
 
         return [
             'user_id' => $id, 'name' => $name, 'initials' => $initials,
-            'total' => $b['total'], 'in_progress' => $b['in_progress'], 'done' => $b['done'], 'awarded' => $b['awarded'], 'lost' => $b['lost'],
+            'total' => $b['total'], 'in_progress' => $b['in_progress'], 'done' => $b['done'], 'awarded' => $b['awarded'], 'lost' => $b['lost'], 'dropped' => $b['dropped'],
             'won' => $b['awarded'], 'decided' => $decided, 'win_rate_bp' => self::rate($b['awarded'], $decided),
             'bid_value_sen' => $b['bid_value_sen'], 'won_value_sen' => $b['won_value_sen'],
             'share_bp' => $grandBid > 0 ? (int) round($b['bid_value_sen'] * 10000 / $grandBid) : 0,
@@ -94,7 +94,7 @@ final class PipelineReport
 
     private static function blank(): array
     {
-        return ['in_progress' => 0, 'done' => 0, 'awarded' => 0, 'lost' => 0, 'cancelled' => 0, 'total' => 0,
+        return ['in_progress' => 0, 'done' => 0, 'awarded' => 0, 'lost' => 0, 'dropped' => 0, 'cancelled' => 0, 'total' => 0,
             'bid_value_sen' => 0, 'won_value_sen' => 0, 'without_value' => 0];
     }
 

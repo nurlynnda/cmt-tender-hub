@@ -1,8 +1,8 @@
 @php
     use App\Support\{Money, Percent};
     $cols = ['name' => 'PIC', 'total' => 'Total', 'in_progress' => 'In Progress', 'done' => 'Done', 'awarded' => 'Awarded', 'lost' => 'Lost',
-        'win_rate_bp' => 'Win rate', 'bid_value_sen' => 'Bid value', 'won_value_sen' => 'Won value'];
-    $lists = ['in_progress' => 'in-progress', 'done' => 'done', 'awarded' => 'awarded', 'lost' => 'lost'];
+        'dropped' => 'Dropped', 'win_rate_bp' => 'Win rate', 'bid_value_sen' => 'Bid value', 'won_value_sen' => 'Won value'];
+    $lists = ['in_progress' => 'in-progress', 'done' => 'done', 'awarded' => 'awarded', 'lost' => 'lost', 'dropped' => 'dropped'];
     $cell = fn (array $row, string $k) => match ($k) {
         'win_rate_bp' => $row[$k] === null ? '—' : Percent::format($row[$k], 0),
         'bid_value_sen', 'won_value_sen' => Money::format($row[$k]),

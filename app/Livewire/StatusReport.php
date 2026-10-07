@@ -15,7 +15,7 @@ class StatusReport extends Component
 {
     use HasReportPeriod;
 
-    public const COLUMNS = ['name', 'total', 'in_progress', 'done', 'awarded', 'lost', 'win_rate_bp', 'bid_value_sen', 'won_value_sen'];
+    public const COLUMNS = ['name', 'total', 'in_progress', 'done', 'awarded', 'lost', 'dropped', 'win_rate_bp', 'bid_value_sen', 'won_value_sen'];
 
     #[Url] public string $sort = 'bid_value_sen';
     #[Url] public string $dir = 'desc';

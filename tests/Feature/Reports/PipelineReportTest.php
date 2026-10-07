@@ -29,7 +29,7 @@ it('counts statuses, win rate and values, leaving cancelled out', function () {
 
     $r = pipeline();
 
-    expect($r['counts'])->toBe(['in_progress' => 1, 'done' => 1, 'awarded' => 1, 'lost' => 2, 'cancelled' => 1, 'total' => 5])
+    expect($r['counts'])->toBe(['in_progress' => 1, 'done' => 1, 'awarded' => 1, 'lost' => 2, 'dropped' => 0, 'cancelled' => 1, 'total' => 5])
         ->and([$r['won'], $r['decided'], $r['win_rate_bp']])->toBe([1, 2, 5000])
         ->and($r['bid_value_sen'])->toBe(1000000)      // 1,000 + 2,000 + 3,000 + 4,000; cancelled excluded
         ->and($r['won_value_sen'])->toBe(300000)
@@ -120,4 +120,18 @@ it('matches the prototype sample data', function () {
         ->and([$r['modes']['EP']['total'], $r['modes']['NON_EP']['total']])->toBe([40, 1])
         ->and(collect($r['pics'])->whereIn('name', ['Ahmad Faizal', 'Nurul Ain', 'Siti Aisyah', 'Muhammad Hafiz'])->pluck('total', 'name')->all())
         ->toEqualCanonicalizing(['Ahmad Faizal' => 11, 'Nurul Ain' => 10, 'Siti Aisyah' => 10, 'Muhammad Hafiz' => 10]);
+});
+
+it('counts Dropped tenders but leaves them out of the win rate and the bid and won values', function () {
+    $u = \App\Models\User::factory()->create();
+    \App\Models\Tender::factory()->status(\App\Enums\TenderStatus::Awarded)->create(['pic_id' => $u->id, 'submitted_price_sen' => 100000]);
+    \App\Models\Tender::factory()->create(['pic_id' => $u->id, 'status' => \App\Enums\TenderStatus::Dropped,
+        'estimated_value_sen' => 999900, 'submitted_price_sen' => 888800]);
+
+    $r = pipeline();
+
+    expect($r['counts']['dropped'])->toBe(1)->and($r['counts']['total'])->toBe(2)
+        ->and($r['bid_value_sen'])->toBe(100000)->and($r['without_value'])->toBe(0)
+        ->and($r['win_rate_bp'])->toBe(10000);
+    expect(collect($r['pics'])->firstWhere('user_id', $u->id)['dropped'])->toBe(1);
 });

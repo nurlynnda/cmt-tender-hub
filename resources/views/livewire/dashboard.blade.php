@@ -9,6 +9,7 @@
         ['Awarded', $c['awarded'], 'var(--color-good-ink)'],
         ['Done', $c['done'], 'var(--color-muted)'],
         ['Lost', $c['lost'], 'var(--color-bad-ink)'],
+        ['Dropped', $c['dropped'], 'var(--color-muted-2)'],
     ];
     $circumference = 2 * M_PI * 40;
     $overview = [
