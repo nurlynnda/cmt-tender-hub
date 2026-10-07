@@ -102,3 +102,51 @@ it('stops with a plain message for a file that is not the register', function ()
     $this->artisan('tenders:import-register', ['file' => $path, '--commit' => true])
         ->expectsOutputToContain('missing columns')->assertFailed();
 });
+
+it('replaces the samples but keeps the admin, the manager and Find Tenders data', function () {
+    $manager = User::factory()->manager()->create(['email' => 'manager@cmt.test']);
+    $sampleStaff = User::factory()->create(['name' => 'Sample Person']);
+    $sample = Tender::factory()->create(['pic_id' => $sampleStaff->id]);
+    $quote = \App\Models\Quotation::factory()->create(['prepared_by' => $sampleStaff->id]);
+    \App\Models\Project::factory()->create(['tender_id' => null, 'quotation_id' => $quote->id]);   // a project on a quotation
+    $entry = \App\Models\PdEntry::factory()->create();                                           // money entry on a sample tender's PD
+    $collected = \App\Models\CollectedTender::factory()->create();
+    $runner = User::factory()->create(['name' => 'Ran A Collection']);
+    \App\Models\CollectionRun::create(['trigger' => 'manual', 'scope' => 'open', 'started_by' => $runner->id, 'status' => 'done', 'started_at' => now()]);
+
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--replace-samples' => true])
+        ->expectsOutputToContain('Will remove sample tenders: 2')->assertSuccessful();
+    expect(Tender::count())->toBe(2); // the preview removed nothing
+
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--commit' => true, '--replace-samples' => true])
+        ->expectsOutputToContain('Removed quotations: 1')->assertSuccessful();
+
+    expect(Tender::find($sample->id))->toBeNull()
+        ->and(\App\Models\Quotation::count())->toBe(0)
+        ->and(\App\Models\Project::count())->toBe(0)
+        ->and(\App\Models\PdEntry::find($entry->id))->toBeNull()
+        ->and(User::find($sampleStaff->id))->toBeNull()
+        ->and(User::find($runner->id)->is_active)->toBeFalse()           // still referenced by a collection run
+        ->and(User::where('email', 'admin@cmt.test')->exists())->toBeTrue()
+        ->and($manager->fresh())->not->toBeNull()
+        ->and(\App\Models\CollectedTender::find($collected->id))->not->toBeNull()
+        ->and(Tender::count())->toBe(7);
+});
+
+it('replaces a sample tender that shares a WO number with the register, instead of keeping its made-up details', function () {
+    $sampleStaff = User::factory()->create(['name' => 'Sample Person']);
+    $sample = Tender::factory()->create(['wo_number' => '200-01012026-001', 'pic_id' => $sampleStaff->id, 'category' => TenderCategory::CivilWorks]);
+    $sample->documents()->create(['name' => 'Sample doc', 'position' => 1, 'is_done' => true]);
+    $sample->costingLines()->create(['position' => 1, 'description' => 'Sample costing', 'unit_cost_sen' => 5]);
+    \App\Models\ActivityLog::record($sample, $sampleStaff, 'registered', 'Sample history');
+
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--commit' => true, '--replace-samples' => true])->assertSuccessful();
+
+    $real = Tender::where('wo_number', '200-01012026-001')->sole();
+    expect($real->id)->not->toBe($sample->id)
+        ->and($real->category)->toBe(TenderCategory::General)
+        ->and($real->documents()->pluck('name')->all())->toBe(TenderDocument::STANDARD)
+        ->and($real->costingLines)->toHaveCount(0)
+        ->and($real->activity()->pluck('description')->all())->toBe(['Imported from the 2026 register'])
+        ->and(User::find($sampleStaff->id))->toBeNull();
+});

@@ -43,7 +43,7 @@ class ImportTenderRegister extends Command
         $accounts = $importer->accountsNeeded($read['rows']);
         $this->line('New switched-off accounts: '.($accounts ? implode(', ', $accounts) : 'none'));
         if ($this->option('replace-samples')) {
-            foreach ($samples->preview($rows->pluck('wo_number')->all()) as $label => $count) {
+            foreach ($samples->preview() as $label => $count) {
                 $this->line("Will remove {$label}: {$count}");
             }
         }

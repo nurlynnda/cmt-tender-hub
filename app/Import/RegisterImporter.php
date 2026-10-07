@@ -31,7 +31,7 @@ final class RegisterImporter
     public function import(array $rows, User $actor, bool $replaceSamples = false): array
     {
         return DB::transaction(function () use ($rows, $actor, $replaceSamples) {
-            $removed = $replaceSamples ? $this->samples->remove(array_column($rows, 'wo_number')) : [];
+            $removed = $replaceSamples ? $this->samples->remove() : [];
             $accounts = $this->accountsNeeded($rows);
             $people = [];
             $created = $updated = 0;
@@ -73,6 +73,10 @@ final class RegisterImporter
                 ActivityLog::record($tender, $actor, $isNew ? 'imported' : 'import_updated',
                     $isNew ? 'Imported from the 2026 register' : 'Updated from the register');
                 $isNew ? $created++ : $updated++;
+            }
+
+            if ($replaceSamples) {
+                $removed += $this->samples->removeStaff();
             }
 
             return ['created' => $created, 'updated' => $updated, 'accounts' => $accounts, 'removed' => $removed];
