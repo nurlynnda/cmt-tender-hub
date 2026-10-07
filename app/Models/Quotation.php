@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\QuotationStatus;
+use App\Quotations\QuotationTotals;
 use App\Support\MalaysiaTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -88,5 +89,14 @@ class Quotation extends Model
     public function isDraft(): bool
     {
         return $this->status === QuotationStatus::Draft;
+    }
+
+    /** @see QuotationTotals::of() */
+    public function totals(): array
+    {
+        return QuotationTotals::of(
+            $this->items->map(fn (QuotationItem $i) => ['quantity' => $i->quantity, 'unit_price_sen' => $i->unit_price_sen])->all(),
+            $this->sst_bp,
+        );
     }
 }

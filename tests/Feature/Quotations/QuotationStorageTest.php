@@ -36,6 +36,13 @@ it('stores a quotation with ordered items and works out validity', function () {
         ->and(Quotation::factory()->create(['status' => QuotationStatus::Draft, 'quote_date' => '2020-01-01'])->isExpired())->toBeFalse();
 });
 
+it('totals a saved quotation', function () {
+    $q = Quotation::factory()->create(['sst_bp' => 800]);
+    QuotationItem::factory()->for($q)->create(['quantity' => 6, 'unit_price_sen' => 485000]);
+
+    expect($q->fresh()->totals()['total_sen'])->toBe(3142800);
+});
+
 it('labels each status and shows Expired', function () {
     $expired = Quotation::factory()->make(['status' => QuotationStatus::Sent, 'quote_date' => '2020-01-01', 'validity_days' => 30]);
     $draft = Quotation::factory()->make(['status' => QuotationStatus::Draft]);
