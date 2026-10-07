@@ -25,14 +25,19 @@ function startDrag(event, table, index) {
     event.preventDefault();
     event.stopPropagation();
     const widths = headers(table).map((th) => th.getBoundingClientRect().width);
-    fix(table, widths);
     const startX = event.clientX;
     const startWidth = widths[index];
-    const move = (e) => { widths[index] = Math.max(MIN, startWidth + e.clientX - startX); fix(table, widths); };
+    let moved = false; // a plain click on the edge must not freeze the columns
+    const move = (e) => {
+        if (!moved && Math.abs(e.clientX - startX) < 3) return;
+        moved = true;
+        widths[index] = Math.max(MIN, startWidth + e.clientX - startX);
+        fix(table, widths);
+    };
     const up = () => {
         document.removeEventListener('pointermove', move);
         document.removeEventListener('pointerup', up);
-        write(table.dataset.resizable, widths.map(Math.round));
+        if (moved) write(table.dataset.resizable, widths.map(Math.round));
     };
     document.addEventListener('pointermove', move);
     document.addEventListener('pointerup', up);

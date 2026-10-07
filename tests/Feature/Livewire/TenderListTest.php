@@ -132,3 +132,10 @@ it('shows document progress as done out of total', function () {
 
     Livewire::test(TenderList::class, ['list' => 'in-progress'])->assertSee('1/2');
 });
+
+it('lets keyboard and screen-reader users sort by deadline', function () {
+    Livewire::test(TenderList::class, ['list' => 'in-progress'])
+        ->assertSeeHtml('aria-sort="none"')->assertSeeHtml('<button type="button" wire:click="toggleDeadlineSort"')
+        ->call('toggleDeadlineSort')->assertSeeHtml('aria-sort="ascending"')
+        ->call('toggleDeadlineSort')->assertSeeHtml('aria-sort="descending"');
+});

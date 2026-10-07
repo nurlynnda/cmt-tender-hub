@@ -81,7 +81,9 @@
                 <th class="{{ $th }}">Tender</th>
                 <th class="{{ $th }}">Agency</th>
                 <th class="{{ $th }}">Assigned To</th>
-                <th class="{{ $th }} cursor-pointer select-none hover:text-ink" wire:click="toggleDeadlineSort" title="Sort by deadline">Deadline <span class="text-ink">{{ $arrow }}</span></th>
+                <th class="{{ $th }}" aria-sort="{{ ['deadline_asc' => 'ascending', 'deadline_desc' => 'descending'][$sort] ?? 'none' }}">
+                    <button type="button" wire:click="toggleDeadlineSort" title="Sort by deadline" class="uppercase hover:text-ink">Deadline <span class="text-ink">{{ $arrow }}</span></button>
+                </th>
                 @if ($isOpen) <th class="{{ $th }}">Briefing</th> @endif
                 <th class="{{ $th }} text-right">Est. Value</th>
                 @if ($isOpen) <th class="{{ $th }}">Documents</th> @endif

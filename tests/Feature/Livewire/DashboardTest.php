@@ -24,7 +24,7 @@ it('shows the overview cards with links', function () {
     Livewire::actingAs($u)->test(Dashboard::class)
         ->assertSee('1 due this week')
         ->assertSee('RM 1,700,000.00 won')
-        ->assertSee('1 (1 cancelled)')
+        ->assertSee('(1 cancelled)')->assertDontSee('incl. cancelled') // one note in brackets, not two
         ->assertSee('100%')->assertSee('1 of 1 decided')
         ->assertSee('RM 2,200,000.00')          // portfolio = 1,700,000 + 500,000
         ->assertSeeHtml(route('tenders.index', 'awarded'));

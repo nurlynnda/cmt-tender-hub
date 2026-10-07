@@ -15,7 +15,7 @@
         ['In Progress', $c['in_progress'], $r['due_this_week'].' due this week', route('tenders.index', ['in-progress', ...$reportPeriod->listFilters()])],
         ['Awarded', $c['awarded'], Money::format($r['won_value_sen']).' won', route('tenders.index', ['awarded', ...$reportPeriod->listFilters()])],
         ['Done', $c['done'], 'awaiting result', route('tenders.index', ['done', ...$reportPeriod->listFilters()])],
-        ['Lost', $c['lost'].($c['cancelled'] ? ' ('.$c['cancelled'].' cancelled)' : ''), 'incl. cancelled', route('tenders.index', ['lost', ...$reportPeriod->listFilters()])],
+        ['Lost', $c['lost'], $c['cancelled'] ? $c['cancelled'].' cancelled' : 'incl. cancelled', route('tenders.index', ['lost', ...$reportPeriod->listFilters()])],
         ['Win rate', $rate, $r['decided'] ? $r['won'].' of '.$r['decided'].' decided' : 'no decided bids yet', null],
         ['Portfolio value', Money::short($r['bid_value_sen']), Money::format($r['bid_value_sen']).' bid value'.($r['without_value'] ? ', '.$r['without_value'].' without a value' : ''), null],
     ];
