@@ -105,6 +105,25 @@ The screens follow the Claude Design prototype (copy in `docs/superpowers/plans/
 - Shared pieces live in `resources/views/components/` (`icon`, `page-heading`, `filter-bar`, `data-table`)
   and `resources/js/resizable-columns.js`.
 
+## Importing the tender register
+
+The team's register spreadsheet (saved as CSV) is imported with a command — the file stays outside the project:
+
+    docker compose cp "/path/to/register.csv" app:/tmp/register.csv
+    docker compose exec app php artisan tenders:import-register /tmp/register.csv            # preview only
+    docker compose exec app php artisan tenders:import-register /tmp/register.csv --commit   # save
+
+- Statuses: Open/Assigned → In Progress, Submitted → Done, Won → Awarded, Lost → Lost,
+  Cancelled → Lost (cancelled), Drop → **Dropped** (left out of the win rate and bid values).
+- Matching is by WO number, so re-running with a newer register updates tenders instead of duplicating;
+  category, ticked documents and costing lines people added are kept.
+- New PICs become **switched-off** accounts (`name@import.invalid`); an admin sets the real email and
+  switches them on in Manage Users. Blank PIC → "Unassigned".
+- Submitted Cost becomes one costing line, "Imported cost (2026 register)", so Gross matches the sheet.
+- `--replace-samples` (first import only) removes **all** existing pipeline tenders, quotations, projects and
+  sample staff first — keeps admin@cmt.test, manager@cmt.test and Find Tenders data. One transaction:
+  if anything fails, nothing changes.
+
 ## Before going live
 
 - `php artisan serve` is for development; put a proper web server (e.g. Nginx +
