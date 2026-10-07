@@ -38,6 +38,7 @@ class Tender extends Model
             'done_at' => 'immutable_datetime',
             'awarded_at' => 'immutable_datetime',
             'lost_at' => 'immutable_datetime',
+            'dropped_at' => 'immutable_datetime',
             'closing_soon_notified_at' => 'immutable_datetime',
             'briefing_notified_at' => 'immutable_datetime',
         ];

@@ -10,6 +10,7 @@ enum TenderStatus: string
     case Done = 'done';
     case Awarded = 'awarded';
     case Lost = 'lost';
+    case Dropped = 'dropped';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum TenderStatus: string
             self::Done => 'Done',
             self::Awarded => 'Awarded',
             self::Lost => 'Lost',
+            self::Dropped => 'Dropped',
         };
     }
 
@@ -44,6 +46,7 @@ enum TenderStatus: string
             self::Done => 'Submitted tenders waiting for a result',
             self::Awarded => 'Tenders won and confirmed',
             self::Lost => 'Tenders lost, cancelled or with no award news',
+            self::Dropped => 'Tenders the company decided not to bid for',
         };
     }
 }

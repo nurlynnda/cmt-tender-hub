@@ -30,6 +30,8 @@ final class ReopenTender
                 'done_at' => null,
                 'awarded_at' => null,
                 'lost_at' => null,
+                'dropped_at' => null,
+                'drop_reason' => null,
                 'version' => $t->version + 1,
             ])->save();
 

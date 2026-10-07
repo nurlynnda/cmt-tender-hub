@@ -140,3 +140,40 @@ it('refuses status changes from an out-of-date page', function () {
 
     app(MarkTenderAwarded::class)->handle($pic, $tender, 7);
 })->throws(StaleTenderException::class);
+
+it('drops an In Progress tender with an optional reason and logs it', function () {
+    $pic = \App\Models\User::factory()->create();
+    $t = \App\Models\Tender::factory()->create(['pic_id' => $pic->id]);
+
+    $dropped = app(\App\Actions\Tenders\DropTender::class)->handle($pic, $t, $t->version, '  Not our field  ');
+
+    expect($dropped->status)->toBe(\App\Enums\TenderStatus::Dropped)
+        ->and($dropped->drop_reason)->toBe('Not our field')
+        ->and($dropped->dropped_at)->not->toBeNull()
+        ->and($dropped->version)->toBe($t->version + 1)
+        ->and($dropped->activity()->first()->description)->toBe('Dropped — reason: Not our field');
+});
+
+it('only drops In Progress tenders, checks the version and the permission', function () {
+    $pic = \App\Models\User::factory()->create();
+    $done = \App\Models\Tender::factory()->status(\App\Enums\TenderStatus::Done)->create(['pic_id' => $pic->id]);
+    expect(fn () => app(\App\Actions\Tenders\DropTender::class)->handle($pic, $done, $done->version, null))
+        ->toThrow(\App\Exceptions\InvalidTenderTransition::class);
+
+    $t = \App\Models\Tender::factory()->create(['pic_id' => $pic->id]);
+    expect(fn () => app(\App\Actions\Tenders\DropTender::class)->handle($pic, $t, $t->version + 5, null))
+        ->toThrow(\App\Exceptions\StaleTenderException::class);
+
+    $stranger = \App\Models\User::factory()->create();
+    expect(fn () => app(\App\Actions\Tenders\DropTender::class)->handle($stranger, $t, $t->version, null))
+        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class);
+});
+
+it('reopening a dropped tender clears the drop', function () {
+    $manager = \App\Models\User::factory()->manager()->create();
+    $t = \App\Models\Tender::factory()->create(['status' => \App\Enums\TenderStatus::Dropped, 'dropped_at' => now(), 'drop_reason' => 'x']);
+
+    $back = app(\App\Actions\Tenders\ReopenTender::class)->handle($manager, $t, $t->version);
+
+    expect($back->status)->toBe(\App\Enums\TenderStatus::InProgress)->and($back->dropped_at)->toBeNull()->and($back->drop_reason)->toBeNull();
+});
