@@ -78,3 +78,13 @@ it('filters by when the tender was registered (WO date), for dashboard drill-dow
         ->assertSee('Registered 01 Oct 2026 – 31 Oct 2026')
         ->call('clearFilters')->assertSee('REGISTERED IN SEPTEMBER');
 });
+
+it('keeps In Progress rows plain like the other lists and marks the deadline date instead', function () {
+    Tender::factory()->create(['wo_number' => 'SOON-2', 'closing_date' => now('Asia/Kuala_Lumpur')->addDays(2)->toDateString()]);
+    Tender::factory()->create(['wo_number' => 'LATE-2', 'closing_date' => now('Asia/Kuala_Lumpur')->subDay()->toDateString()]);
+
+    Livewire::test(TenderList::class, ['list' => 'in-progress'])
+        ->assertDontSeeHtml('bg-warn-bg/50')->assertDontSeeHtml('bg-bad-bg/60')
+        ->assertSeeHtml(['data-deadline="soon"', 'font-semibold text-warn-ink'])
+        ->assertSeeHtml(['data-deadline="overdue"', 'font-semibold text-bad-ink']);
+});

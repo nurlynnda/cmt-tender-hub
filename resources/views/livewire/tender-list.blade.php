@@ -76,11 +76,7 @@
                 @php $closing = $t->closingState(); @endphp
                 <tr wire:key="tender-{{ $t->id }}" data-closing="{{ $closing }}"
                     onclick="window.location='{{ route('tenders.show', $t) }}'"
-                    @class([
-                        'cursor-pointer border-t border-line align-top hover:bg-hover',
-                        'bg-warn-bg/50' => $closing === 'soon',
-                        'bg-bad-bg/60' => $closing === 'overdue',
-                    ])>
+                    class="cursor-pointer border-t border-line align-top hover:bg-hover">
                     <td class="px-3 py-2 whitespace-nowrap">
                         <a href="{{ route('tenders.show', $t) }}" class="font-medium hover:underline">{{ $t->wo_number }}</a>
                         <div class="text-xs text-muted">{{ $t->wo_date->format('d M Y') }}</div>
@@ -94,7 +90,12 @@
                     <td class="px-3 py-2">
                         <div class="flex items-center gap-2"><x-avatar :user="$t->pic" /> <span>{{ $t->pic->name }}</span></div>
                     </td>
-                    <td @class(['px-3 py-2 whitespace-nowrap', 'font-semibold text-bad-ink' => $closing === 'overdue'])>
+                    {{-- Rows stay plain like the other lists; only the date shows closing soon (amber) or overdue (red) --}}
+                    <td @if ($closing) data-deadline="{{ $closing }}" @endif @class([
+                        'whitespace-nowrap px-3 py-2',
+                        'font-semibold text-warn-ink' => $closing === 'soon',
+                        'font-semibold text-bad-ink' => $closing === 'overdue',
+                    ])>
                         {{ $t->closing_date->format('d M Y') }}
                     </td>
                     @if ($isOpen)
