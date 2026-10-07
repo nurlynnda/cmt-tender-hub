@@ -68,3 +68,21 @@ it('says so when nothing was registered in the period', function () {
 it('sends a signed-in visitor of the login page to the dashboard', function () {
     $this->actingAs(User::factory()->create())->get('/login')->assertRedirect('/dashboard');
 });
+
+it('lays out the six Quick Overview boxes like the prototype', function () {
+    $this->actingAs(\App\Models\User::factory()->create());
+
+    $html = \Livewire\Livewire::test(\App\Livewire\Dashboard::class)->html();
+    foreach (['In Progress', 'Awarded', 'Done', 'Lost', 'Win rate', 'Portfolio value'] as $k) {
+        expect($html)->toContain('data-kpi="'.$k.'"');
+    }
+});
+
+it('splits the submission-mode bar by EP and Non-EP count, and draws nothing without tenders', function () {
+    $this->actingAs(\App\Models\User::factory()->create());
+    \Livewire\Livewire::test(\App\Livewire\Dashboard::class)->assertDontSeeHtml('data-mode-bar');
+
+    \App\Models\Tender::factory()->count(3)->create(['mode' => \App\Enums\TenderMode::Ep]);
+    \App\Models\Tender::factory()->create(['mode' => \App\Enums\TenderMode::NonEp]);
+    \Livewire\Livewire::test(\App\Livewire\Dashboard::class)->assertSeeHtml('data-mode-bar')->assertSeeHtml('data-ep-pct="75"');
+});
