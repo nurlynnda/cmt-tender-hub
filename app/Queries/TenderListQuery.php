@@ -39,6 +39,9 @@ final class TenderListQuery
         if ($category = TenderCategory::tryFrom((string) ($filters['category'] ?? ''))) {
             $query->where('category', $category);
         }
+        if (($agency = (string) ($filters['agency'] ?? '')) !== '') {
+            $query->where('client', $agency);
+        }
         foreach (['from' => '>=', 'to' => '<='] as $key => $operator) {
             $date = (string) ($filters[$key] ?? '');
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
@@ -53,7 +56,11 @@ final class TenderListQuery
             }
         }
 
-        $direction = $status === TenderStatus::InProgress ? 'asc' : 'desc';
+        $direction = match ($filters['sort'] ?? '') {
+            'deadline_asc' => 'asc',
+            'deadline_desc' => 'desc',
+            default => $status === TenderStatus::InProgress ? 'asc' : 'desc',
+        };
 
         return $query->orderBy('closing_date', $direction)->orderBy('id', $direction);
     }

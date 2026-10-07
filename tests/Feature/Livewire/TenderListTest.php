@@ -88,3 +88,47 @@ it('keeps In Progress rows plain like the other lists and marks the deadline dat
         ->assertSeeHtml(['data-deadline="soon"', 'font-semibold text-warn-ink'])
         ->assertSeeHtml(['data-deadline="overdue"', 'font-semibold text-bad-ink']);
 });
+
+it('filters by agency, including names with & and apostrophes, and ignores an agency not in the list', function () {
+    Tender::factory()->create(['client' => "JABATAN KERJA RAYA & D'SERVIS", 'title' => 'JKR JOB']);
+    Tender::factory()->create(['client' => 'KEMENTERIAN KESIHATAN', 'title' => 'KKM JOB']);
+
+    Livewire::test(TenderList::class, ['list' => 'in-progress'])
+        ->assertSeeHtml('<option value="JABATAN KERJA RAYA &amp; D&#039;SERVIS">')
+        ->set('agency', "JABATAN KERJA RAYA & D'SERVIS")->assertSee('JKR JOB')->assertDontSee('KKM JOB')
+        ->set('agency', 'NOT AN AGENCY')->assertSee('JKR JOB')->assertSee('KKM JOB');
+});
+
+it('sorts by deadline when the Deadline heading is clicked, flipping on each click', function () {
+    Tender::factory()->create(['title' => 'EARLY ONE', 'closing_date' => '2026-11-01']);
+    Tender::factory()->create(['title' => 'LATE ONE', 'closing_date' => '2026-12-01']);
+
+    Livewire::test(TenderList::class, ['list' => 'in-progress'])
+        ->call('toggleDeadlineSort')->assertSet('sort', 'deadline_asc')->assertSeeInOrder(['EARLY ONE', 'LATE ONE'])
+        ->call('toggleDeadlineSort')->assertSet('sort', 'deadline_desc')->assertSeeInOrder(['LATE ONE', 'EARLY ONE'])
+        ->set('sort', 'bogus')->assertSeeInOrder(['EARLY ONE', 'LATE ONE']); // In Progress default: closing soonest first
+});
+
+it('counts the filters that are on, but not the Dashboard date range', function () {
+    $c = Livewire::test(TenderList::class, ['list' => 'in-progress']);
+    expect($c->instance()->filterCount())->toBe(0);
+
+    $c->set('mine', true)->set('mode', 'EP')->set('wo_from', '2026-10-01')->set('wo_to', '2026-10-31');
+    expect($c->instance()->filterCount())->toBe(2);
+    $c->assertSeeHtml('data-filter-count="2"')->assertSee('Registered 01 Oct 2026 – 31 Oct 2026');
+});
+
+it('shows each tender as a card on phones with the list’s own figures', function () {
+    Tender::factory()->status(TenderStatus::Lost)->create(['wo_number' => 'CARD-1', 'winning_price_sen' => 86617900]);
+
+    Livewire::test(TenderList::class, ['list' => 'lost'])
+        ->assertSeeHtml('data-card="CARD-1"')->assertSee('Win Price')->assertSee('RM 866,179.00');
+});
+
+it('shows document progress as done out of total', function () {
+    $t = Tender::factory()->create();
+    $t->documents()->delete(); // start from a known checklist
+    $t->documents()->createMany([['name' => 'A', 'position' => 1, 'is_done' => true], ['name' => 'B', 'position' => 2, 'is_done' => false]]);
+
+    Livewire::test(TenderList::class, ['list' => 'in-progress'])->assertSee('1/2');
+});
