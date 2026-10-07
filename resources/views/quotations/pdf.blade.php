@@ -26,7 +26,9 @@
     .items td { padding: 6px; vertical-align: top; border-bottom: 1px solid #e5e7eb; }
     .items thead { display: table-header-group; }
     .right { text-align: right; }
-    .signature { font-family: times; font-style: italic; font-size: 20px; color: #1d4ed8; }
+    /* Handwriting font stored with the app (resources/fonts, SIL Open Font License) — never fetched from the internet */
+    @font-face { font-family: 'Allura'; font-style: normal; font-weight: normal; src: url('{{ resource_path('fonts/Allura-Regular.ttf') }}') format('truetype'); }
+    .signature { font-family: 'Allura', times; font-size: 26px; color: #1d4ed8; }
 </style>
 </head>
 <body>

@@ -79,3 +79,10 @@ it('explains when the PDF could not be made', function () {
 it('needs a signed-in user', function () {
     $this->get(route('quotations.pdf', pdfQuotation()))->assertRedirect(route('login'));
 });
+
+it('writes the typed signature in the Allura handwriting font, stored with the app', function () {
+    $pdf = app(QuotationPdf::class)->bytes(pdfQuotation());
+
+    expect(str_contains($pdf, 'Allura'))->toBeTrue('the signature font is not in the PDF')
+        ->and(str_contains(app(QuotationPdf::class)->bytes(pdfQuotation(['number' => 'QTN-2026-0015', 'show_signature' => false])), 'Allura'))->toBeFalse();
+});
