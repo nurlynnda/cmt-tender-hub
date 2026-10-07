@@ -221,3 +221,10 @@ it('shows the cash flow', function () {
     Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
         ->assertSee('Cash flow')->assertSee('Mar 2026');
 });
+
+it('lays the PD out in titled cards', function () {
+    [$pic, $tender] = pdTab();
+
+    Livewire::actingAs($pic)->test(ProjectPd::class, ['project' => $tender->project])
+        ->assertSeeHtml('data-pd-card="pnl"')->assertSeeHtml('data-pd-card="lines"')->assertSeeHtml('data-pd-card="cashflow"');
+});

@@ -1,7 +1,8 @@
 @php
     use App\Support\{Money, Percent};
-    $in = 'rounded border border-line bg-surface px-1.5 py-1 text-sm disabled:border-transparent disabled:bg-transparent';
-    $card = 'rounded-xl border border-line bg-surface p-4';
+    $in = 'rounded-[8px] border border-line-2 bg-surface px-1.5 py-1 text-[13px] disabled:border-transparent disabled:bg-transparent';
+    $card = 'rounded-[20px] border border-line bg-surface p-5';
+    $th = 'text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-muted';
     $b = $summary['pnl']['budget'];
     $a = $summary['pnl']['actual'];
     $collection = $groupEnum->isCollection();
@@ -29,7 +30,7 @@
     @endif
 
     {{-- Header --}}
-    <div class="{{ $card }} flex flex-wrap items-end gap-4 text-sm">
+    <div class="{{ $card }} flex flex-wrap items-end gap-4 text-[13px] font-semibold text-ink-2">
         <label class="flex flex-col gap-1">Project type
             <select wire:model.live="header.project_type_id" @disabled(! $canEdit) class="{{ $in }} w-64">
                 <option value="">Choose…</option>
@@ -57,20 +58,19 @@
         @if ($canManage)
             <span class="ml-auto">
                 @if ($project->isOpen())
-                    <button type="button" wire:click="closeProject" wire:confirm="Close this project? It becomes read-only." class="rounded-lg border border-line px-3 py-1.5 hover:bg-hover">Close project</button>
+                    <button type="button" wire:click="closeProject" wire:confirm="Close this project? It becomes read-only." class="btn btn-outline">Close project</button>
                 @else
-                    <button type="button" wire:click="reopenProject" class="rounded-lg border border-line px-3 py-1.5 hover:bg-hover">Reopen project</button>
+                    <button type="button" wire:click="reopenProject" class="btn btn-outline">Reopen project</button>
                 @endif
             </span>
         @endif
     </div>
 
     {{-- Profit & Loss --}}
-    <div class="{{ $card }}">
-        <h3 class="mb-2 font-medium">Profit &amp; Loss</h3>
+    <x-card title="Profit & Loss" subtitle="Budget against actual for this project" icon="chart" data-pd-card="pnl">
         <div class="relative overflow-x-auto">
-            <table class="w-full min-w-[520px] text-sm">
-                <thead class="text-left text-xs uppercase text-muted">
+            <table class="w-full min-w-[520px] text-[13px]">
+                <thead class="{{ $th }}">
                     <tr><th class="py-1">Line</th><th class="py-1 text-right">Budget</th><th class="py-1 text-right">Actual</th></tr>
                 </thead>
                 <tbody>
@@ -105,31 +105,32 @@
                 <p class="text-xs text-muted">{{ Percent::format($project->approved_margin_bp) }} · {{ $project->projectType?->name ?? 'No project type yet' }}</p>
             </div>
             @if ($summary['below_margin'])
-                <p class="rounded-lg bg-bad-bg px-3 py-2 text-bad-ink">⚠ Actual gross profit ({{ Percent::format($a['gp_bp']) }}) is below the approved margin ({{ Percent::format($project->approved_margin_bp) }}).</p>
+                <p class="rounded-xl bg-bad-bg px-3 py-2 text-bad-ink">⚠ Actual gross profit ({{ Percent::format($a['gp_bp']) }}) is below the approved margin ({{ Percent::format($project->approved_margin_bp) }}).</p>
             @endif
         </div>
-    </div>
+    </x-card>
 
     {{-- Lines --}}
-    <div class="{{ $card }} space-y-3">
-        <div class="flex flex-wrap items-center gap-2">
-            <h3 class="mr-2 font-medium">Cost lines</h3>
+    <x-card title="Cost lines" subtitle="Collections from the customer and costs paid out, with their documents" icon="tenders" data-pd-card="lines">
+        @if ($canEdit)
+            <x-slot:actions>
+                <button type="button" wire:click="addLine" class="btn btn-dark">+ Add line</button>
+            </x-slot:actions>
+        @endif
+        <div class="mb-2 flex flex-wrap items-center gap-2">
             @foreach (App\Enums\PdGroup::cases() as $g)
                 <button type="button" wire:click="selectGroup('{{ $g->value }}')" @class([
-                    'rounded-full border px-3 py-1 text-xs',
+                    'rounded-[10px] border px-3 py-1.5 text-[12.5px] font-semibold',
                     'border-chip bg-chip text-chip-ink' => $group === $g->value,
-                    'border-line hover:bg-hover' => $group !== $g->value,
+                    'border-line-2 text-ink-2 hover:bg-hover' => $group !== $g->value,
                 ])>{{ $g->label() }}@if ($counts[$g->value] ?? 0) <span class="opacity-70">{{ $counts[$g->value] }}</span>@endif</button>
             @endforeach
-            @if ($canEdit)
-                <button type="button" wire:click="addLine" class="ml-auto rounded-lg bg-chip px-3 py-1.5 text-sm font-medium text-chip-ink hover:bg-chip-hover">+ Add line</button>
-            @endif
         </div>
-        <p class="text-xs text-muted">{{ $groupEnum->description() }}</p>
+        <p class="mb-3 text-xs text-muted">{{ $groupEnum->description() }}</p>
 
-        <div class="relative overflow-x-auto">
-            <table class="w-full min-w-[1100px] text-sm">
-                <thead class="bg-subtle text-left text-xs uppercase text-muted">
+        <div class="relative overflow-x-auto rounded-xl border border-line">
+            <table class="w-full min-w-[1100px] text-[13px]">
+                <thead class="bg-subtle {{ $th }}">
                     <tr>
                         <th class="px-2 py-2">Name</th>
                         @if ($collection)
@@ -225,8 +226,8 @@
                                         <input type="date" wire:model="entry.date" class="{{ $in }}" aria-label="Document date">
                                         <input wire:model="entry.amount" placeholder="Amount" class="{{ $in }} w-32 text-right" aria-label="Amount">
                                         <input wire:model="entry.note" placeholder="Note (optional)" class="{{ $in }} w-48" aria-label="Note">
-                                        <button type="button" wire:click="saveEntry" class="rounded-lg bg-chip px-3 py-1 font-medium text-chip-ink hover:bg-chip-hover">{{ $editingEntry ? 'Save' : 'Add' }}</button>
-                                        @if ($editingEntry) <button type="button" wire:click="cancelEntry" class="rounded-lg px-2 py-1 hover:bg-hover">Cancel</button> @endif
+                                        <button type="button" wire:click="saveEntry" class="btn btn-dark !py-1.5">{{ $editingEntry ? 'Save' : 'Add' }}</button>
+                                        @if ($editingEntry) <button type="button" wire:click="cancelEntry" class="btn btn-outline !py-1.5">Cancel</button> @endif
                                     </div>
                                     @foreach (['entry.type', 'entry.number', 'entry.date', 'entry.amount', 'entry.note'] as $f)
                                         @error($f) <p class="text-xs text-bad-ink">{{ $message }}</p> @enderror
@@ -241,17 +242,16 @@
                 </tbody>
             </table>
         </div>
-    </div>
+    </x-card>
 
     {{-- Cash flow --}}
-    <div class="{{ $card }}">
-        <h3 class="mb-2 font-medium">Cash flow</h3>
+    <x-card title="Cash flow" subtitle="Money expected, received and paid out each month" icon="calendar" data-pd-card="cashflow">
         @if ($summary['cash_flow'] === [])
-            <p class="text-sm text-muted">Add a start date, scheduled dates or documents to see the cash flow.</p>
+            <p class="text-[13px] text-muted">Add a start date, scheduled dates or documents to see the cash flow.</p>
         @else
             <div class="relative overflow-x-auto">
-                <table class="w-full min-w-[520px] text-sm">
-                    <thead class="text-left text-xs uppercase text-muted">
+                <table class="w-full min-w-[520px] text-[13px]">
+                    <thead class="{{ $th }}">
                         <tr><th class="py-1">Month</th><th class="py-1 text-right">Expected in</th><th class="py-1 text-right">Received</th>
                             <th class="py-1 text-right">Paid out</th><th class="py-1 text-right">Balance</th></tr>
                     </thead>
@@ -272,8 +272,8 @@
         @if ($summary['duration_pct'] !== null)
             <div class="mt-3 text-xs text-muted">
                 <div class="flex justify-between"><span>Project duration</span><span>{{ $summary['duration_pct'] }}%</span></div>
-                <div class="mt-1 h-2 overflow-hidden rounded-full bg-subtle"><div class="h-full bg-good-ink" style="width: {{ $summary['duration_pct'] }}%"></div></div>
+                <div class="mt-1 h-2 overflow-hidden rounded-full bg-hover"><div class="h-full bg-good-ink" style="width: {{ $summary['duration_pct'] }}%"></div></div>
             </div>
         @endif
-    </div>
+    </x-card>
 </section>
