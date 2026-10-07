@@ -104,6 +104,9 @@ The screens follow the Claude Design prototype (copy in `docs/superpowers/plans/
 - Lists show a **Filters** panel; the number on the button is how many filters are on.
 - Shared pieces live in `resources/views/components/` (`icon`, `page-heading`, `filter-bar`, `data-table`)
   and `resources/js/resizable-columns.js`.
+- Round 2: the tender page, Quotations, every dialog (`x-dialog`), settings and sign-in follow the prototype
+  too (`status-pill`, `fact`, `card`, `tabs`, buttons `btn btn-primary|dark|outline|danger`).
+  **Bulk Add** on a tender's Documents tab adds one document per line.
 
 ## Importing the tender register
 
