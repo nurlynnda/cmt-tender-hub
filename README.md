@@ -72,6 +72,18 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
 - Managers/Admins can adjust a single project's rates and close/reopen it.
 - All maths lives in `app/Pd/PdCalculator.php`.
 
+## Quotations
+
+- Quick quotations outside the tender process: **Quotations** in the sidebar. New Quotation opens a draft;
+  every field saves when you leave it. Items can carry spec lines ("Label: value" prints the label in bold).
+- **Mark as Sent** locks it. Then Accepted / Rejected, or **Revise** (makes `…-R1`). It shows Expired once
+  its valid-until date passes. Managers/Admins can move it back to Draft (not once it has a project).
+- **Download PDF** is made on the server (Dompdf, which needs the PHP `gd` extension in the Docker image);
+  the Preview tab shows the same PDF. **Duplicate** copies any quotation into a new draft.
+- An Accepted quotation can **Create project** — a PD (see above) with the subtotal as contract value.
+- Admins set the letterhead, stamp, default terms and default SST in **Finance Settings**. Each quotation
+  keeps a copy of the letterhead it was created with; stamp files are never deleted.
+
 ## Before going live
 
 - `php artisan serve` is for development; put a proper web server (e.g. Nginx +

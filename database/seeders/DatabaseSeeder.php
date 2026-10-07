@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\{Role, TenderCategory, TenderMode, TenderStatus, TenderType};
 use App\Actions\Pd\CreateProjectFromCosting;
-use App\Models\{ActivityLog, ProjectType, Tender, TenderDocument, User};
+use App\Models\{ActivityLog, CompanyProfile, ProjectType, Quotation, Tender, TenderDocument, User};
 use App\Support\Money;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -100,6 +100,47 @@ class DatabaseSeeder extends Seeder
 
         self::seedJpninCosting(Tender::where('wo_number', '200-10092026-001')->firstOrFail());
         self::seedSamplePd();
+        self::seedSampleQuotations();
+    }
+
+    /** The prototype's three quotations (the letterhead, terms and SST come with the migration). */
+    private static function seedSampleQuotations(): void
+    {
+        $company = CompanyProfile::current();
+        $make = function (string $number, string $date, string $email, string $customer, string $subject, string $status, int $sstBp, array $items, array $extra = []) use ($company) {
+            $u = User::where('email', $email)->firstOrFail();
+            $sent = $status !== 'draft';
+            $q = Quotation::create(array_merge([
+                'number' => $number, 'status' => $status, 'quote_date' => $date, 'validity_days' => 30,
+                'customer_name' => $customer, 'subject' => $subject, 'prepared_by' => $u->id,
+                'preparer_position' => 'Sales Executive', 'preparer_email' => $email, 'sst_bp' => $sstBp,
+                'terms' => $company->default_terms, 'letterhead' => $company->letterhead(), 'updated_by' => $u->id, 'version' => 1,
+                'sent_at' => $sent ? $date.' 10:00:00' : null, 'sent_by' => $sent ? $u->id : null,
+            ], $extra));
+            foreach ($items as $i => [$title, $details, $qty, $unit, $priceSen]) {
+                $q->items()->create(['position' => $i + 1, 'title' => $title, 'details' => $details, 'quantity' => $qty, 'unit' => $unit, 'unit_price_sen' => $priceSen]);
+            }
+            ActivityLog::record($q, $u, 'quotation_created', "Quotation {$number} created");
+        };
+
+        $make('QTN-2026-0010', '2026-08-04', 'ahmad.faizal@cmt.test', 'Pejabat Daerah Kuantan', 'Laptop rental for 18 months', 'sent', 500,
+            [['Laptop rental (18 months)', null, 1, 'Lot', 3000000]]);
+        $make('QTN-2026-0011', '2026-09-10', 'muhammad.hafiz@cmt.test', 'Majlis Perbandaran Klang', 'Annual maintenance for CCTV system (12 months)', 'accepted', 800,
+            [['CCTV preventive maintenance (12 months)', null, 1, 'Lot', 1900000]], ['accepted_at' => '2026-09-20 10:00:00']);
+        $make('QTN-2026-0012', '2026-09-18', 'siti.aisyah@cmt.test', 'Jabatan Perpaduan Negara dan Integrasi Nasional',
+            'Supply of network switches and installation for JPNIN HQ', 'sent', 800, [
+                ['24-port Gigabit PoE+ managed switch', implode("\n", [
+                    'Interface: 24× 10/100/1000 Mbps RJ45 PoE+ Ports; 4× Gigabit SFP Slots; 1× RJ45 Console Port; 1× Micro-USB Console Port',
+                    'Power Supply: 100–240 V AC, 50/60 Hz, Internal Power Supply',
+                    'Dimensions (W x D x H): 17.3 x 13.0 x 1.7 in (440 x 330 x 44 mm)',
+                    'Mounting: 19-inch Rack Mountable (1U)',
+                    'Switching Capacity: 56 Gbps',
+                ]), 6, 'Unit', 485000],
+                ['Installation, configuration & testing', null, 1, 'Lot', 650000],
+            ], ['attention' => 'Puan Rozita binti Hassan, Ketua Unit ICT', 'customer_address' => "Aras 5, Blok F8, Kompleks F,\nPresint 1, 62000 Putrajaya"]);
+
+        // New quotations continue after the prototype's numbers.
+        DB::table('quotation_sequences')->updateOrInsert(['year' => 2026], ['last_seq' => 12]);
     }
 
     /** Every awarded sample tender gets a project; 200-15122025-006 gets the prototype's PD. */
