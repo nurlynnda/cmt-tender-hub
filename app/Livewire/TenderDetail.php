@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Actions\Tenders\{AddDocument, CancelTender, DropTender, MarkTenderAwarded, MarkTenderDone, MarkTenderLost, RemoveDocument, ReopenTender, ToggleDocument, UpdateTender};
+use App\Actions\Tenders\{AddDocument, AddDocuments, CancelTender, DropTender, MarkTenderAwarded, MarkTenderDone, MarkTenderLost, RemoveDocument, ReopenTender, ToggleDocument, UpdateTender};
 use App\Enums\{TenderCategory, TenderMode, TenderStatus, TenderType};
 use App\Exceptions\{CostingRequired, DocumentsIncomplete, InvalidTenderTransition, StaleTenderException};
 use App\Livewire\Forms\TenderForm;
@@ -33,6 +33,9 @@ class TenderDetail extends Component
     public string $lostReason = '';
     public string $dropReason = '';
     public string $newDocument = '';
+    public string $bulkDocuments = '';
+    /** A short confirmation shown on the Documents tab, e.g. "Added 3 documents". */
+    public ?string $notice = null;
 
     /** Set by the Costing tab while it holds unsaved edits. */
     public bool $costingDirty = false;
@@ -156,6 +159,21 @@ class TenderDetail extends Component
         $this->validate(['newDocument' => ['required', 'string', 'max:255']]);
         if ($this->apply(fn () => app(AddDocument::class)->handle(auth()->user(), $this->tender, $this->version, $this->newDocument))) {
             $this->newDocument = '';
+        }
+    }
+
+    public function bulkAddDocuments(): void
+    {
+        $this->validate(['bulkDocuments' => ['required', 'string', 'max:20000']]);
+        $added = 0;
+        $ok = $this->apply(function () use (&$added) {
+            [$fresh, $added] = app(AddDocuments::class)->handle(auth()->user(), $this->tender, $this->version, $this->bulkDocuments);
+
+            return $fresh;
+        });
+        if ($ok) {
+            $this->bulkDocuments = '';
+            $this->notice = $added ? "Added {$added} documents" : 'Nothing new to add';
         }
     }
 

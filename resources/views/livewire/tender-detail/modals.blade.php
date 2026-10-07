@@ -32,6 +32,13 @@
                         <textarea wire:model="lostReason" rows="2" class="{{ $input }}"></textarea></label>
                     @php $confirm = ['markLost', 'Mark Lost']; @endphp
                     @break
+                @case('bulk-docs')
+                    <h2 class="text-lg font-semibold">Bulk Add Documents</h2>
+                    <p class="text-sm text-muted">Type one document name per line. Names already on the checklist are skipped.</p>
+                    <textarea wire:model="bulkDocuments" rows="7" placeholder="Site Visit Report&#10;Insurance Certificate&#10;Warranty Letter" class="{{ $input }}"></textarea>
+                    @error('bulkDocuments') <p class="text-xs text-bad-ink">{{ $message }}</p> @enderror
+                    @php $confirm = ['bulkAddDocuments', 'Add documents']; @endphp
+                    @break
                 @case('drop')
                     <h2 class="text-lg font-semibold">Drop tender</h2>
                     <p class="text-sm text-muted">Use this when the company decides not to bid. The tender moves to the Dropped list and is left out of the win rate. A manager can reopen it.</p>

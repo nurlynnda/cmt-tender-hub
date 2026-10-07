@@ -73,3 +73,40 @@ it('refuses checklist changes from an out-of-date page', function () {
 
     app(ToggleDocument::class)->handle($pic, $tender, 5, $doc->id);
 })->throws(StaleTenderException::class);
+
+it('adds several documents at once, skipping blanks and names already there', function () {
+    $pic = \App\Models\User::factory()->create();
+    $t = \App\Models\Tender::factory()->create(['pic_id' => $pic->id]);
+    $t->documents()->create(['name' => 'Company Profile', 'position' => 1]);
+
+    [$fresh, $added] = app(\App\Actions\Tenders\AddDocuments::class)->handle($pic, $t, $t->version,
+        "Site Visit Report\n\n  company profile \nInsurance Certificate\nSite visit report\n".str_repeat('x', 300));
+
+    expect($added)->toBe(3)
+        ->and($fresh->documents()->pluck('name')->all())->toBe(['Company Profile', 'Site Visit Report', 'Insurance Certificate', str_repeat('x', 255)])
+        ->and($fresh->version)->toBe($t->version + 1)
+        ->and($fresh->activity()->first()->description)->toStartWith('Added 3 documents: Site Visit Report, Insurance Certificate');
+});
+
+it('changes nothing when there is nothing new to add', function () {
+    $pic = \App\Models\User::factory()->create();
+    $t = \App\Models\Tender::factory()->create(['pic_id' => $pic->id]);
+
+    [$fresh, $added] = app(\App\Actions\Tenders\AddDocuments::class)->handle($pic, $t, $t->version, "\n  \n");
+
+    expect($added)->toBe(0)->and($fresh->version)->toBe($t->version)->and($fresh->activity()->count())->toBe(0);
+});
+
+it('refuses bulk add on a locked tender, for strangers, and on an old version', function () {
+    $pic = \App\Models\User::factory()->create();
+    $done = \App\Models\Tender::factory()->status(\App\Enums\TenderStatus::Done)->create(['pic_id' => $pic->id]);
+    expect(fn () => app(\App\Actions\Tenders\AddDocuments::class)->handle($pic, $done, $done->version, 'A'))
+        ->toThrow(\App\Exceptions\InvalidTenderTransition::class);
+
+    $t = \App\Models\Tender::factory()->create(['pic_id' => $pic->id]);
+    expect(fn () => app(\App\Actions\Tenders\AddDocuments::class)->handle(\App\Models\User::factory()->create(), $t, $t->version, 'A'))
+        ->toThrow(\Illuminate\Auth\Access\AuthorizationException::class)
+        ->and(fn () => app(\App\Actions\Tenders\AddDocuments::class)->handle($pic, $t, $t->version + 3, 'A'))
+        ->toThrow(\App\Exceptions\StaleTenderException::class);
+    expect($t->fresh()->documents()->count())->toBe(0);
+});

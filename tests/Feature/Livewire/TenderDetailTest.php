@@ -222,3 +222,12 @@ it('edits the ministry from the tender page and shows it', function () {
 
     expect($tender->fresh()->ministry)->toBe('KEMENTERIAN KESIHATAN');
 });
+
+it('bulk-adds documents from the Documents tab and says how many', function () {
+    [$pic, $tender] = detailFixture();
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])->set('tab', 'documents')
+        ->assertSee('Bulk Add')
+        ->call('openModal', 'bulk-docs')->set('bulkDocuments', "Warranty Letter\nInsurance Certificate")->call('bulkAddDocuments')
+        ->assertSee('Added 2 documents')->assertSee('Warranty Letter');
+});
