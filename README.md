@@ -80,6 +80,8 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
   its valid-until date passes. Managers/Admins can move it back to Draft (not once it has a project).
 - **Download PDF** is made on the server (Dompdf, which needs the PHP `gd` extension in the Docker image);
   the Preview tab shows the same PDF. **Duplicate** copies any quotation into a new draft.
+- The typed signature uses the **Allura** handwriting font, stored in `resources/fonts` (free SIL Open Font
+  License, see `OFL.txt` there). Dompdf keeps its processed copy in `storage/fonts`, which must stay writable.
 - An Accepted quotation can **Create project** — a PD (see above) with the subtotal as contract value.
 - Admins set the letterhead, stamp, default terms and default SST in **Finance Settings**. Each quotation
   keeps a copy of the letterhead it was created with; stamp files are never deleted.
