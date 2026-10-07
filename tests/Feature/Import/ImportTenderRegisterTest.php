@@ -139,7 +139,12 @@ it('replaces a sample tender that shares a WO number with the register, instead 
     $sample->documents()->create(['name' => 'Sample doc', 'position' => 1, 'is_done' => true]);
     $sample->costingLines()->create(['position' => 1, 'description' => 'Sample costing', 'unit_cost_sen' => 5]);
     \App\Models\ActivityLog::record($sample, $sampleStaff, 'registered', 'Sample history');
+    $sample->forceFill(['status' => TenderStatus::Done])->save();
+    \App\Models\ActivityLog::record($sample, $sampleStaff, 'marked_done', 'Sample status change');
 
+    // the samples go before anything is imported, so the preview must not claim their status will be kept
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--replace-samples' => true])
+        ->doesntExpectOutputToContain('status kept')->assertSuccessful();
     $this->artisan('tenders:import-register', ['file' => registerFixture(), '--commit' => true, '--replace-samples' => true])->assertSuccessful();
 
     $real = Tender::where('wo_number', '200-01012026-001')->sole();

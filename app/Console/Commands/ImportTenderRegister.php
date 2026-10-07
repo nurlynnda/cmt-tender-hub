@@ -42,7 +42,8 @@ class ImportTenderRegister extends Command
         }
         $accounts = $importer->accountsNeeded($read['rows']);
         $this->line('New switched-off accounts: '.($accounts ? implode(', ', $accounts) : 'none'));
-        $kept = $importer->keptInApp($read['rows']);
+        // With --replace-samples every existing tender is removed first, so nothing keeps an app status.
+        $kept = $this->option('replace-samples') ? [] : $importer->keptInApp($read['rows']);
         if ($kept !== []) {
             $this->line('Changed in the app since the last import — status kept: '.implode(', ', $kept));
         }
