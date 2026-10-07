@@ -40,6 +40,12 @@ class FindTenders extends Component
         $this->resetPage();
     }
 
+    /** Filters changed from their starting values (status starts as "open"). */
+    public function filterCount(): int
+    {
+        return count(array_filter([$this->status !== 'open', $this->source, $this->type, $this->ministry, $this->codes, $this->from, $this->to]));
+    }
+
     public function collectNow(): void
     {
         $this->authorize('collect-now');

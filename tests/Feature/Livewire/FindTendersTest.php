@@ -80,3 +80,14 @@ it('tells the user when a collection is already running', function () {
 it('appears in the sidebar for everyone', function () {
     $this->get('/tenders/in-progress')->assertSee('Find Tenders');
 });
+
+it('counts only the filters changed from their defaults, and shows phone cards', function () {
+    $this->actingAs(\App\Models\User::factory()->create());
+    $c = \Livewire\Livewire::test(\App\Livewire\FindTenders::class);
+    expect($c->instance()->filterCount())->toBe(0);
+    $c->assertSeeHtml('x-data="{ open: false }"');
+
+    $c->set('status', 'all')->set('source', 'span')->set('codes', '210103');
+    expect($c->instance()->filterCount())->toBe(3);
+    $c->assertSeeHtml('data-filter-count="3"')->assertSeeHtml('data-resizable="find-tenders"');
+});

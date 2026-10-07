@@ -2,20 +2,20 @@
     use App\Collector\SourceName;
     use App\Support\Money;
     $types = ['quotation' => 'Quotation', 'tender' => 'Tender', 'requisition' => 'Requisition'];
-    $field = 'rounded-lg border border-line bg-surface px-2 py-1.5';
+    $field = 'w-full rounded-[9px] border border-line-2 bg-surface px-2.5 py-1.5 text-[13px]';
+    $th = 'px-3.5 py-3 text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-muted';
+    $td = 'px-3.5 py-3 align-top';
 @endphp
 <div class="space-y-4" @if ($running) wire:poll.15s @endif>
-    <header class="flex flex-wrap items-end justify-between gap-3">
-        <div>
-            <h1 class="text-2xl font-semibold">Find Tenders</h1>
-            <p class="text-sm text-muted">Government tenders collected from MyProcurement, SPAN and LLM</p>
-        </div>
+    <x-page-heading title="Find Tenders" subtitle="Government tenders collected from MyProcurement, SPAN and LLM">
         @can('collect-now')
-            <button type="button" wire:click="collectNow" class="rounded-lg bg-chip px-4 py-2 text-sm font-medium text-chip-ink hover:bg-chip-hover">Collect now</button>
+            <x-slot:actions>
+                <button type="button" wire:click="collectNow" class="rounded-[11px] bg-chip px-4 py-2.5 text-[12.5px] font-bold text-chip-ink hover:bg-chip-hover">Collect now</button>
+            </x-slot:actions>
         @endcan
-    </header>
+    </x-page-heading>
 
-    <section class="rounded-xl border border-line bg-surface px-4 py-2 text-sm" aria-label="Collection status">
+    <section class="rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px]" aria-label="Collection status">
         @if ($running)
             <span class="font-medium">Collecting now…</span> started {{ $running->started_at->setTimezone('Asia/Kuala_Lumpur')->format('g:i a') }}
         @elseif ($lastRun)
@@ -38,70 +38,87 @@
         @if ($notice) <p class="mt-1 text-info-ink">{{ $notice }}</p> @endif
     </section>
 
-    <section class="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface p-3 text-sm">
-        <input type="search" wire:model.live.debounce.400ms="search" placeholder="Search title, reference, agency" class="{{ $field }} min-w-48 flex-1">
-        <select wire:model.live="status" class="{{ $field }}" aria-label="Status">
-            <option value="open">Open</option><option value="closed">Closed</option><option value="all">All</option>
-        </select>
-        <select wire:model.live="source" class="{{ $field }}" aria-label="Source">
-            <option value="">All sources</option>
-            @foreach ($sources as $key => $label) <option value="{{ $key }}">{{ $label }}</option> @endforeach
-        </select>
-        <select wire:model.live="type" class="{{ $field }}" aria-label="Type">
-            <option value="">All types</option>
-            @foreach ($types as $key => $label) <option value="{{ $key }}">{{ $label }}</option> @endforeach
-        </select>
-        <input wire:model.live.debounce.400ms="ministry" list="ministry-options" placeholder="Ministry" class="{{ $field }} w-56">
-        <datalist id="ministry-options">@foreach ($ministries as $m) <option value="{{ $m }}"></option> @endforeach</datalist>
-        <input wire:model.live.debounce.400ms="codes" placeholder="Field codes, e.g. 210103, E05" class="{{ $field }} w-52">
-        <label class="flex items-center gap-1">Closing <input type="date" wire:model.live="from" class="{{ $field }}"></label>
-        <label class="flex items-center gap-1">to <input type="date" wire:model.live="to" class="{{ $field }}"></label>
-        <button type="button" wire:click="clearFilters" class="text-muted hover:text-ink">Clear</button>
-    </section>
+    <x-filter-bar :count="$this->filterCount()" placeholder="Search title, reference, agency" debounce="400">
+        <x-filter-field label="Status">
+            <select wire:model.live="status" class="{{ $field }}"><option value="open">Open</option><option value="closed">Closed</option><option value="all">All</option></select>
+        </x-filter-field>
+        <x-filter-field label="Source">
+            <select wire:model.live="source" class="{{ $field }}"><option value="">All sources</option>
+                @foreach ($sources as $key => $label) <option value="{{ $key }}">{{ $label }}</option> @endforeach</select>
+        </x-filter-field>
+        <x-filter-field label="Type">
+            <select wire:model.live="type" class="{{ $field }}"><option value="">All types</option>
+                @foreach ($types as $key => $label) <option value="{{ $key }}">{{ $label }}</option> @endforeach</select>
+        </x-filter-field>
+        <x-filter-field label="Ministry">
+            <input wire:model.live.debounce.400ms="ministry" list="ministry-options" placeholder="Any ministry" class="{{ $field }}">
+            <datalist id="ministry-options">@foreach ($ministries as $m) <option value="{{ $m }}"></option> @endforeach</datalist>
+        </x-filter-field>
+        <x-filter-field label="Field codes"><input wire:model.live.debounce.400ms="codes" placeholder="e.g. 210103, E05" class="{{ $field }}"></x-filter-field>
+        <x-filter-field label="Closing from"><input type="date" wire:model.live="from" class="{{ $field }}"></x-filter-field>
+        <x-filter-field label="Closing to"><input type="date" wire:model.live="to" class="{{ $field }}"></x-filter-field>
+    </x-filter-bar>
 
-    <div class="overflow-x-auto rounded-xl border border-line bg-surface">
-        <table class="w-full min-w-[960px] text-sm">
-            <thead class="bg-subtle text-left text-xs uppercase tracking-wide text-muted">
-                <tr>
-                    <th class="px-3 py-2">Reference</th><th class="px-3 py-2">Title</th><th class="px-3 py-2">Ministry / Agency</th>
-                    <th class="px-3 py-2">Type</th><th class="px-3 py-2">Advertised</th><th class="px-3 py-2">Closing</th>
-                    <th class="px-3 py-2 text-right">Indicative price</th>
-                </tr>
-            </thead>
-            <tbody>
-            @forelse ($tenders as $t)
-                @php $days = $t->status === 'open' ? $t->daysLeft() : null; $wo = $t->pipelineTenders->first(); @endphp
-                <tr wire:key="ct-{{ $t->id }}" class="cursor-pointer border-t border-line align-top hover:bg-hover"
-                    onclick="window.location='{{ route('find-tenders.show', $t) }}'">
-                    <td class="px-3 py-2">
-                        <a href="{{ route('find-tenders.show', $t) }}" class="font-medium hover:underline">{{ $t->reference_no ?: '—' }}</a>
-                        <div class="mt-1 flex flex-wrap gap-1">
-                            @foreach ($t->sources as $s) <span class="rounded bg-subtle px-1.5 text-xs text-muted">{{ SourceName::label($s->source) }}</span> @endforeach
+    {{-- Desktop / tablet table --}}
+    <x-data-table resizable="find-tenders" min-width="960px" class="hidden md:block">
+        <thead class="bg-subtle">
+            <tr>
+                <th class="{{ $th }}">Reference</th><th class="{{ $th }}">Title</th><th class="{{ $th }}">Ministry / Agency</th>
+                <th class="{{ $th }}">Type</th><th class="{{ $th }}">Advertised</th><th class="{{ $th }}">Closing</th>
+                <th class="{{ $th }} text-right">Indicative price</th>
+            </tr>
+        </thead>
+        <tbody>
+        @forelse ($tenders as $t)
+            @php $days = $t->status === 'open' ? $t->daysLeft() : null; $wo = $t->pipelineTenders->first(); @endphp
+            <tr wire:key="ct-{{ $t->id }}" class="cursor-pointer border-t border-line hover:bg-subtle"
+                onclick="window.location='{{ route('find-tenders.show', $t) }}'">
+                <td class="{{ $td }}">
+                    <a href="{{ route('find-tenders.show', $t) }}" class="font-bold hover:underline">{{ $t->reference_no ?: '—' }}</a>
+                    <div class="mt-1 flex flex-wrap gap-1">
+                        @foreach ($t->sources as $s) <span class="rounded bg-subtle px-1.5 text-xs text-muted">{{ SourceName::label($s->source) }}</span> @endforeach
+                    </div>
+                    @if ($wo) <span class="mt-1 inline-block rounded bg-good-bg px-1.5 text-xs text-good-ink">Registered as WO {{ $wo->wo_number }}</span> @endif
+                </td>
+                <td class="{{ $td }} max-w-md"><div class="line-clamp-3">{{ $t->title }}</div></td>
+                <td class="{{ $td }}">{{ $t->ministry ?? '—' }}<div class="text-xs text-muted">{{ $t->agency }}</div></td>
+                <td class="{{ $td }}">{{ $types[$t->procurement_type] ?? '—' }}</td>
+                <td class="{{ $td }} whitespace-nowrap">{{ $t->advertised_date?->format('d M Y') ?? '—' }}</td>
+                <td class="{{ $td }} whitespace-nowrap">
+                    {{ $t->closing_date?->format('d M Y') ?? '—' }}
+                    @if ($days !== null)
+                        <div @class(['text-xs', 'text-bad-ink' => $days <= 3, 'text-muted' => $days > 3])>
+                            {{ $days === 0 ? 'Closes today' : ($days === 1 ? '1 day left' : "{$days} days left") }}
                         </div>
-                        @if ($wo) <span class="mt-1 inline-block rounded bg-good-bg px-1.5 text-xs text-good-ink">Registered as WO {{ $wo->wo_number }}</span> @endif
-                    </td>
-                    <td class="max-w-md px-3 py-2"><div class="line-clamp-3">{{ $t->title }}</div></td>
-                    <td class="px-3 py-2">{{ $t->ministry ?? '—' }}<div class="text-xs text-muted">{{ $t->agency }}</div></td>
-                    <td class="px-3 py-2">{{ $types[$t->procurement_type] ?? '—' }}</td>
-                    <td class="px-3 py-2 whitespace-nowrap">{{ $t->advertised_date?->format('d M Y') ?? '—' }}</td>
-                    <td class="px-3 py-2 whitespace-nowrap">
-                        {{ $t->closing_date?->format('d M Y') ?? '—' }}
-                        @if ($days !== null)
-                            <div @class(['text-xs', 'text-bad-ink' => $days <= 3, 'text-muted' => $days > 3])>
-                                {{ $days === 0 ? 'Closes today' : ($days === 1 ? '1 day left' : "{$days} days left") }}
-                            </div>
-                        @endif
-                    </td>
-                    <td class="px-3 py-2 text-right whitespace-nowrap">{{ Money::format($t->indicative_price_sen) }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="7" class="px-3 py-10 text-center text-muted">No tenders match.</td></tr>
-            @endforelse
-            </tbody>
-        </table>
+                    @endif
+                </td>
+                <td class="{{ $td }} whitespace-nowrap text-right">{{ Money::format($t->indicative_price_sen) }}</td>
+            </tr>
+        @empty
+            <tr><td colspan="7" class="px-3 py-10 text-center text-muted">No tenders match.</td></tr>
+        @endforelse
+        </tbody>
+    </x-data-table>
+
+    {{-- Phone cards --}}
+    <div class="space-y-2.5 md:hidden">
+        @forelse ($tenders as $t)
+            @php $days = $t->status === 'open' ? $t->daysLeft() : null; @endphp
+            <a href="{{ route('find-tenders.show', $t) }}" wire:key="ct-card-{{ $t->id }}" class="block min-w-0 rounded-2xl border border-line bg-surface p-4">
+                <div class="flex items-center justify-between gap-2 text-[12px]">
+                    <span class="truncate font-bold">{{ $t->reference_no ?: '—' }}</span>
+                    <span @class(['whitespace-nowrap', 'text-bad-ink' => $days !== null && $days <= 3, 'text-muted' => $days === null || $days > 3])>{{ $t->closing_date?->format('d M Y') ?? '—' }}</span>
+                </div>
+                <p class="mt-1.5 line-clamp-3 text-[13.5px] font-semibold">{{ $t->title }}</p>
+                <p class="mt-0.5 truncate text-[11.5px] text-muted">{{ $t->ministry ?? '—' }} · {{ $types[$t->procurement_type] ?? '—' }}</p>
+                <p class="mt-2 text-right text-[12.5px] font-semibold">{{ Money::format($t->indicative_price_sen) }}</p>
+            </a>
+        @empty
+            <p class="rounded-2xl border border-line bg-surface p-8 text-center text-muted">No tenders match.</p>
+        @endforelse
     </div>
 
-    <footer class="flex items-center justify-between text-sm text-muted">
+    <footer class="flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-muted">
         <span>@if ($tenders->total()) Showing {{ number_format($tenders->firstItem()) }}–{{ number_format($tenders->lastItem()) }} of {{ number_format($tenders->total()) }} @endif</span>
         {{ $tenders->links('pagination.pager') }}
     </footer>
