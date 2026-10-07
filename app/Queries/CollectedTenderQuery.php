@@ -2,6 +2,8 @@
 
 namespace App\Queries;
 
+use App\Collector\ContractorName;
+use App\Market\OwnCompany;
 use App\Models\CollectedTender;
 use App\Support\MalaysiaTime;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,11 +16,14 @@ final class CollectedTenderQuery
 
     public static function build(array $f): Builder
     {
-        $q = CollectedTender::query()->with(['sources', 'pipelineTenders:id,wo_number,collected_tender_id']);
-        $status = in_array($f['status'] ?? 'open', ['open', 'closed', 'all'], true) ? ($f['status'] ?? 'open') : 'open';
-        if ($status !== 'all') {
-            $q->where('status', $status);
-        }
+        $q = CollectedTender::query()->with(['sources', 'pipelineTenders:id,wo_number,collected_tender_id', 'winnerRows']);
+        $status = in_array($f['status'] ?? 'open', ['open', 'closed', 'awarded', 'all'], true) ? ($f['status'] ?? 'open') : 'open';
+        match ($status) {
+            'all' => null,
+            // Awarded: closed with at least one published winner.
+            'awarded' => $q->where('status', 'closed')->whereExists(self::winner()),
+            default => $q->where('status', $status),
+        };
         if ($status === 'open') {
             // Never show a tender as open once its closing time (12:01pm MYT on the closing day) has
             // passed — even mid-run, before StaleOpenCloser has corrected its status.
@@ -64,6 +69,16 @@ final class CollectedTenderQuery
         if ($codes !== []) {
             $q->whereIn('id', DB::table('collected_tender_field_codes')->select('collected_tender_id')->whereIn('code', $codes));
         }
+        // Contractor: matched on the name key, so capitals, dots and spacing don't matter; % and _ are plain characters.
+        $key = ContractorName::key((string) ($f['contractor'] ?? ''));
+        if (mb_strlen($key) >= 2) {
+            $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $key).'%';
+            $q->whereExists(self::winner()->where('w.name_key', 'like', $like));
+        }
+        if (! empty($f['ours'])) {
+            $own = OwnCompany::keys();
+            $own === [] ? $q->whereRaw('1 = 0') : $q->whereExists(self::winner()->whereIn('w.name_key', $own));
+        }
         foreach (['from' => '>=', 'to' => '<='] as $key => $op) {
             if (preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($f[$key] ?? ''))) {
                 $q->where('closing_date', $op, $f[$key]);
@@ -79,7 +94,13 @@ final class CollectedTenderQuery
         };
     }
 
-    /** Open: closing soonest first. Closed / all: latest first. */
+    /** A winner row of the tender being filtered (for whereExists). */
+    private static function winner(): \Illuminate\Database\Query\Builder
+    {
+        return DB::table('collected_tender_winners as w')->whereColumn('w.collected_tender_id', 'collected_tenders.id');
+    }
+
+    /** Open: closing soonest first. Closed / awarded / all: latest first. */
     private static function usualOrder(Builder $q, string $status): Builder
     {
         return $status === 'open'

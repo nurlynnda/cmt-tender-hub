@@ -64,8 +64,13 @@
     @if ($t->winners)
         <x-card title="Winners" icon="award">
             <table class="w-full text-[13px]"><tbody>
+                @php $ownKeys = \App\Market\OwnCompany::keys(); @endphp
                 @foreach ($t->winners as $w)
-                    <tr class="border-t border-line first:border-t-0"><td class="py-2">{{ $w['name'] }}</td><td class="py-2 text-right font-semibold">{{ Money::format($w['price_sen']) }}</td></tr>
+                    <tr class="border-t border-line first:border-t-0"><td class="py-2">{{ $w['name'] }}
+                        @if (in_array(\App\Collector\ContractorName::key((string) ($w['name'] ?? '')), $ownKeys, true))
+                            <span data-ours class="ml-1 rounded-full bg-good-bg px-1.5 text-[10.5px] font-bold text-good-ink">Ours</span>
+                        @endif
+                    </td><td class="py-2 text-right font-semibold">{{ Money::format($w['price_sen']) }}</td></tr>
                 @endforeach
             </tbody></table>
         </x-card>

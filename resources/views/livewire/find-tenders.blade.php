@@ -5,6 +5,8 @@
     $field = 'w-full rounded-[9px] border border-line-2 bg-surface px-2.5 py-1.5 text-[13px]';
     $th = 'px-3.5 py-3 text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-muted';
     $td = 'px-3.5 py-3 align-top';
+    $awarded = $status === 'awarded';
+    $oursPill = '<span data-ours class="ml-1 rounded-full bg-good-bg px-1.5 text-[10.5px] font-bold text-good-ink">Ours</span>';
 @endphp
 <div class="space-y-4" @if ($running) wire:poll.15s @endif>
     <x-page-heading title="Find Tenders" subtitle="Government tenders collected from MyProcurement, SPAN and LLM">
@@ -38,10 +40,12 @@
         @if ($notice) <p class="mt-1 text-info-ink">{{ $notice }}</p> @endif
     </section>
 
-    <x-filter-bar :count="$this->filterCount()" placeholder="Search title, reference, agency" debounce="400">
+    <x-filter-bar :count="$this->filterCount()" placeholder="Search title, reference, agency" debounce="400"
+                  :mine="$awarded ? $ours : null" mine-label="Our wins" mine-model="ours">
         <x-filter-field label="Status">
-            <select wire:model.live="status" class="{{ $field }}"><option value="open">Open</option><option value="closed">Closed</option><option value="all">All</option></select>
+            <select wire:model.live="status" class="{{ $field }}"><option value="open">Open</option><option value="closed">Closed</option><option value="awarded">Awarded</option><option value="all">All</option></select>
         </x-filter-field>
+        <x-filter-field label="Contractor"><input wire:model.live.debounce.400ms="contractor" placeholder="Any contractor" class="{{ $field }}"></x-filter-field>
         <x-filter-field label="Source">
             <select wire:model.live="source" class="{{ $field }}"><option value="">All sources</option>
                 @foreach ($sources as $key => $label) <option value="{{ $key }}">{{ $label }}</option> @endforeach</select>
@@ -64,11 +68,12 @@
         <thead class="bg-subtle">
             <tr>
                 <th class="{{ $th }}">Reference</th><th class="{{ $th }}">Title</th><th class="{{ $th }}">Ministry / Agency</th>
-                <th class="{{ $th }}">Type</th><th class="{{ $th }}">Advertised</th>
+                @unless ($awarded) <th class="{{ $th }}">Type</th><th class="{{ $th }}">Advertised</th> @endunless
                 <th class="{{ $th }}" aria-sort="{{ ['closing_asc' => 'ascending', 'closing_desc' => 'descending'][$sort] ?? 'none' }}">
                     <button type="button" wire:click="toggleClosingSort" title="Sort by closing date" class="uppercase hover:text-ink">Closing
                         <span class="text-ink">{{ ['closing_asc' => '↑', 'closing_desc' => '↓'][$sort] ?? '' }}</span></button>
                 </th>
+                @if ($awarded) <th class="{{ $th }}">Winner(s)</th><th class="{{ $th }} text-right">Price won</th> @endif
                 <th class="{{ $th }} text-right">Indicative price</th>
             </tr>
         </thead>
@@ -86,8 +91,10 @@
                 </td>
                 <td class="{{ $td }} max-w-md"><div class="line-clamp-3">{{ $t->title }}</div></td>
                 <td class="{{ $td }}">{{ $t->ministry ?? '—' }}<div class="text-xs text-muted">{{ $t->agency }}</div></td>
-                <td class="{{ $td }}">{{ $types[$t->procurement_type] ?? '—' }}</td>
-                <td class="{{ $td }} whitespace-nowrap">{{ $t->advertised_date?->format('d M Y') ?? '—' }}</td>
+                @unless ($awarded)
+                    <td class="{{ $td }}">{{ $types[$t->procurement_type] ?? '—' }}</td>
+                    <td class="{{ $td }} whitespace-nowrap">{{ $t->advertised_date?->format('d M Y') ?? '—' }}</td>
+                @endunless
                 <td class="{{ $td }} whitespace-nowrap">
                     {{ $t->closing_date?->format('d M Y') ?? '—' }}
                     @if ($days !== null)
@@ -96,6 +103,16 @@
                         </div>
                     @endif
                 </td>
+                @if ($awarded)
+                    <td class="{{ $td }}">
+                        @foreach ($t->winnerRows as $w)
+                            <div @class(['mt-1' => ! $loop->first])>{{ $w->name }}@if (in_array($w->name_key, $ownKeys, true)){!! $oursPill !!}@endif</div>
+                        @endforeach
+                    </td>
+                    <td class="{{ $td }} whitespace-nowrap text-right">
+                        @foreach ($t->winnerRows as $w) <div @class(['mt-1' => ! $loop->first])>{{ Money::format($w->price_sen) }}</div> @endforeach
+                    </td>
+                @endif
                 <td class="{{ $td }} whitespace-nowrap text-right">{{ Money::format($t->indicative_price_sen) }}</td>
             </tr>
         @empty
@@ -115,6 +132,11 @@
                 </div>
                 <p class="mt-1.5 line-clamp-3 text-[13.5px] font-semibold">{{ $t->title }}</p>
                 <p class="mt-0.5 truncate text-[11.5px] text-muted">{{ $t->ministry ?? '—' }} · {{ $types[$t->procurement_type] ?? '—' }}</p>
+                @if ($awarded)
+                    @foreach ($t->winnerRows as $w)
+                        <p class="mt-1.5 text-[12px]"><span class="font-semibold">{{ $w->name }}</span>@if (in_array($w->name_key, $ownKeys, true)){!! $oursPill !!}@endif · {{ Money::format($w->price_sen) }}</p>
+                    @endforeach
+                @endif
                 <p class="mt-2 text-right text-[12.5px] font-semibold">{{ Money::format($t->indicative_price_sen) }}</p>
             </a>
         @empty

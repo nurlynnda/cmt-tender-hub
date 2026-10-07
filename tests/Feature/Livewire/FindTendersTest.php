@@ -113,3 +113,33 @@ it('flips the closing-date sort when the Closing heading is clicked, and keeps i
         ->call('toggleClosingSort')->assertSet('sort', 'closing_asc')->assertSeeInOrder(['EARLY-REF', 'LATE-REF'])->assertSeeHtml('aria-sort="ascending"')
         ->call('toggleClosingSort')->assertSet('sort', 'closing_desc')->assertSeeInOrder(['LATE-REF', 'EARLY-REF'])->assertSeeHtml('aria-sort="descending"');
 });
+
+function awarded(string $ref, array $winners, array $o = []): CollectedTender
+{
+    return CollectedTender::factory()->create(array_merge(['reference_no' => $ref, 'status' => 'closed', 'closing_date' => '2026-03-01', 'winners' => $winners], $o));
+}
+
+it('lists awarded tenders with their winners, and searches by contractor ignoring punctuation and wildcards', function () {
+    awarded('OURS-1', [['name' => '10 CREATIVE SOLUTIONS SDN. BHD.', 'price_sen' => 500000]]);
+    awarded('OURS-2', [['name' => '10 CREATIVE SOLUTIONS SDN BHD', 'price_sen' => 100]]);
+    awarded('LOOKALIKE', [['name' => 'DARKWHITE CREATIVE SOLUTIONS SDN. BHD.', 'price_sen' => 1]]);
+    CollectedTender::factory()->create(['reference_no' => 'NO-WINNER', 'status' => 'closed']);
+
+    expect(refs(['status' => 'awarded']))->toEqualCanonicalizing(['OURS-1', 'OURS-2', 'LOOKALIKE'])
+        ->and(refs(['status' => 'awarded', 'contractor' => '10 creative solutions sdn.bhd']))->toEqualCanonicalizing(['OURS-1', 'OURS-2'])
+        ->and(refs(['status' => 'awarded', 'contractor' => '%']))->toEqualCanonicalizing(['OURS-1', 'OURS-2', 'LOOKALIKE']) // too short → ignored
+        ->and(refs(['status' => 'awarded', 'contractor' => 'X_Y']))->toBe([])
+        ->and(refs(['status' => 'awarded', 'ours' => true]))->toEqualCanonicalizing(['OURS-1', 'OURS-2']);
+
+    Livewire::test(FindTenders::class)->set('status', 'awarded')
+        ->assertSee('Winner(s)')->assertSee('10 CREATIVE SOLUTIONS SDN. BHD.')->assertSee('RM 5,000.00')
+        ->assertSeeHtml('data-ours')->assertSee('Our wins')
+        ->toggle('ours')->assertDontSee('LOOKALIKE')
+        ->set('contractor', 'darkwhite')->assertSet('ours', true)
+        ->call('clearFilters')->assertSet('contractor', '')->assertSet('ours', false);
+});
+
+it('only offers Our wins while Awarded is chosen, and counts a contractor search as a filter', function () {
+    Livewire::test(FindTenders::class)->assertDontSee('Our wins')
+        ->set('contractor', 'acme')->assertSeeHtml('data-filter-count="1"');
+});

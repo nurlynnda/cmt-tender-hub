@@ -108,3 +108,11 @@ it('shows the collected tender\'s key facts in the prototype style', function ()
         ->assertSee('data-facts', false)->assertSee('data-status="closed"', false)
         ->assertSeeInOrder(['Ministry', 'KEMENTERIAN DALAM NEGERI', 'Agency', 'JABATAN PERPADUAN NEGARA', 'Closing', '15 Oct 2026']);
 });
+
+it('marks our company in the winners', function () {
+    $ours = collected(['winners' => [['name' => '10 CREATIVE SOLUTIONS SDN. BHD.', 'price_sen' => 1]]]);
+    $this->get(route('find-tenders.show', $ours))->assertSee('data-ours', false);
+
+    $theirs = collected(['reference_no' => 'OTHER', 'winners' => [['name' => 'ACME', 'price_sen' => 1]]], 'span');
+    $this->get(route('find-tenders.show', $theirs))->assertDontSee('data-ours', false);
+});

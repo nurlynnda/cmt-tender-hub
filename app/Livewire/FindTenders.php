@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Actions\Collector\StartCollection;
 use App\Collector\SourceName;
+use App\Market\OwnCompany;
 use App\Models\CollectionRun;
 use App\Queries\CollectedTenderQuery;
 use Livewire\Attributes\{Layout, Title, Url};
@@ -24,6 +25,9 @@ class FindTenders extends Component
     #[Url] public string $codes = '';
     #[Url] public string $from = '';
     #[Url] public string $to = '';
+    #[Url] public string $contractor = '';
+    /** Awarded only: just our company's wins. */
+    #[Url] public bool $ours = false;
     /** '' = the usual order; closing_asc / closing_desc from the Closing heading. */
     #[Url] public string $sort = '';
 
@@ -38,7 +42,7 @@ class FindTenders extends Component
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'status', 'source', 'type', 'ministry', 'codes', 'from', 'to');
+        $this->reset('search', 'status', 'source', 'type', 'ministry', 'codes', 'from', 'to', 'contractor', 'ours');
         $this->resetPage();
     }
 
@@ -51,7 +55,7 @@ class FindTenders extends Component
     /** Filters changed from their starting values (status starts as "open"). */
     public function filterCount(): int
     {
-        return count(array_filter([$this->status !== 'open', $this->source, $this->type, $this->ministry, $this->codes, $this->from, $this->to]));
+        return count(array_filter([$this->status !== 'open', $this->source, $this->type, $this->ministry, $this->codes, $this->from, $this->to, $this->contractor]));
     }
 
     public function collectNow(): void
@@ -66,11 +70,12 @@ class FindTenders extends Component
         app(StartCollection::class)->failStuckRuns();
 
         return view('livewire.find-tenders', [
-            'tenders' => CollectedTenderQuery::build($this->only(['search', 'status', 'source', 'type', 'ministry', 'codes', 'from', 'to', 'sort']))->paginate(25),
+            'tenders' => CollectedTenderQuery::build($this->only(['search', 'status', 'source', 'type', 'ministry', 'codes', 'from', 'to', 'contractor', 'ours', 'sort']))->paginate(25),
             'running' => CollectionRun::where('status', 'running')->latest('started_at')->first(),
             'lastRun' => CollectionRun::whereNotNull('finished_at')->latest('finished_at')->first(),
             'ministries' => CollectedTenderQuery::ministries(),
             'sources' => SourceName::all(),
+            'ownKeys' => OwnCompany::keys(),
         ]);
     }
 }
