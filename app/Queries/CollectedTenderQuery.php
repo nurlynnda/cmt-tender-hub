@@ -76,7 +76,8 @@ final class CollectedTenderQuery
             // "id IN (matching winners)" lets MySQL scan the winners once (~0.2s) instead of once per tender (~1.4s).
             $q->whereIn('id', DB::table('collected_tender_winners')->select('collected_tender_id')->where('name_key', 'like', $like));
         }
-        if (! empty($f['ours'])) {
+        // Our wins only means something on Awarded (its button only shows there), so it's ignored elsewhere.
+        if ($status === 'awarded' && ! empty($f['ours'])) {
             $own = OwnCompany::keys();
             $own === [] ? $q->whereRaw('1 = 0') : $q->whereExists(self::winner()->whereIn('w.name_key', $own));
         }

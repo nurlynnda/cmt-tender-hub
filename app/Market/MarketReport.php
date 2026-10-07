@@ -40,9 +40,16 @@ final class MarketReport
 
     private function remember(string $name, ?int $year, Closure $compute): mixed
     {
-        // Wrapped, because the cache never stores a bare null (ownRank's "no wins" would be worked out every time).
-        $box = Cache::remember("market:{$this->version()}:{$name}:".($year ?? 'all'), now()->addHours(6), fn () => ['value' => $compute()]);
+        // One fixed key per figure, holding the winners-list version it was worked out for: a newer
+        // version overwrites it, so old copies never pile up. (Also boxed: the cache can't hold a bare null.)
+        $key = "market:{$name}:".($year ?? 'all');
+        $version = $this->version();
         $this->version = null; // check again on the next read, so new awards show straight away
+        $box = Cache::get($key);
+        if (! is_array($box) || ($box['version'] ?? null) !== $version) {
+            $box = ['version' => $version, 'value' => $compute()];
+            Cache::put($key, $box, now()->addHours(6));
+        }
 
         return $box['value'];
     }

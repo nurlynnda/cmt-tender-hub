@@ -143,3 +143,9 @@ it('only offers Our wins while Awarded is chosen, and counts a contractor search
     Livewire::test(FindTenders::class)->assertDontSee('Our wins')
         ->set('contractor', 'acme')->assertSeeHtml('data-filter-count="1"');
 });
+
+it('ignores Our wins outside Awarded, where its button is hidden', function () {
+    CollectedTender::factory()->create(['reference_no' => 'OPEN-1', 'status' => 'open', 'closing_date' => now()->addMonth()->toDateString()]);
+
+    expect(refs(['status' => 'open', 'ours' => true]))->toBe(['OPEN-1']);
+});

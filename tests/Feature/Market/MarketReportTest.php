@@ -80,3 +80,12 @@ it('remembers its figures until the winners list changes', function () {
     award('2026-06-01', 'KEMENTERIAN C', [['name' => 'EPSILON', 'price_sen' => 1]]);
     expect(array_column($r->byMinistry(2026), 'ministry'))->toBe(['RENAMED', 'KEMENTERIAN C', 'Not stated']);
 });
+
+it('keeps one stored copy of each figure, replaced when the winners change (no pile-up of old copies)', function () {
+    $r = app(MarketReport::class);
+    $r->byMinistry(2026);
+    award('2026-06-01', 'KEMENTERIAN C', [['name' => 'EPSILON', 'price_sen' => 1]]);
+    $r->byMinistry(2026);
+
+    expect(\Illuminate\Support\Facades\Cache::get('market:by-ministry:2026')['value'])->toHaveCount(3);
+});
