@@ -1,8 +1,10 @@
 FROM php:8.4-cli
 
+# gd: images in quotation PDFs (Dompdf) and the company stamp upload.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git unzip libzip-dev libicu-dev \
- && docker-php-ext-install pdo_mysql zip intl bcmath pcntl opcache \
+ && apt-get install -y --no-install-recommends git unzip libzip-dev libicu-dev libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+ && docker-php-ext-configure gd --with-jpeg --with-freetype \
+ && docker-php-ext-install pdo_mysql zip intl bcmath pcntl opcache gd \
  && pecl install pcov && docker-php-ext-enable pcov \
  && rm -rf /var/lib/apt/lists/*
 
