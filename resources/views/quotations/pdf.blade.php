@@ -26,7 +26,7 @@
     .items td { padding: 6px; vertical-align: top; border-bottom: 1px solid #e5e7eb; }
     .items thead { display: table-header-group; }
     .right { text-align: right; }
-    .signature { font-family: Times, serif; font-style: italic; font-size: 20px; color: #1d4ed8; }
+    .signature { font-family: times; font-style: italic; font-size: 20px; color: #1d4ed8; }
 </style>
 </head>
 <body>
@@ -107,7 +107,7 @@
 
 <table style="margin-top: 24px">
     <tr>
-        <td style="width: 50%; vertical-align: bottom">
+        <td style="width: 50%; vertical-align: top">
             <div class="muted">Prepared by,</div>
             <div style="height: 46px; position: relative">
                 @if ($q->show_signature) <div class="signature">{{ $q->preparer->name }}</div> @endif
@@ -118,7 +118,7 @@
             <div class="muted">{{ $l['name'] ?? '' }}</div>
             <div class="muted">{{ collect([$q->preparer_phone, $q->preparer_email])->filter()->implode(' · ') }}</div>
         </td>
-        <td style="vertical-align: bottom">
+        <td style="vertical-align: top">
             <div class="muted">Accepted by,</div>
             <div style="height: 46px"></div>
             <div style="border-top: 1px solid #9ca3af; width: 85%; padding-top: 3px" class="muted">Name, signature &amp; company stamp<br>Date:</div>

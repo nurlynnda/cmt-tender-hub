@@ -13,7 +13,7 @@ it('shows the sidebar with live counts and the signed-in user', function () {
         ->assertSeeInOrder(['Lost', '1'])
         ->assertSee('Siti Aisyah')
         ->assertSee('Staff')
-        ->assertDontSee('Quotation')
+        ->assertSee(route('quotations.index'))   // Quotations arrived in Stage 5
         ->assertDontSee('Dashboard');
 });
 

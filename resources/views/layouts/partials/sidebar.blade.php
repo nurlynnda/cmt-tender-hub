@@ -13,6 +13,9 @@
             $item('tenders.index', ['awarded'], 'Awarded', $counts['awarded']),
             $item('tenders.index', ['lost'], 'Lost', $counts['lost']),
         ],
+        'Quotation' => [
+            ['href' => route('quotations.index'), 'label' => 'Quotations', 'count' => null, 'active' => request()->routeIs('quotations.*')],
+        ],
     ];
 @endphp
 <div class="flex h-full flex-col p-4">
