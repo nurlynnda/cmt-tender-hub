@@ -744,12 +744,13 @@ it('sorts by date when the Date heading is clicked', function () {
 - [ ] **Step 1: Write the failing test:**
 ```php
 it('tells the page a field was saved, so it can show Saved', function () {
-    // set up a draft quotation and its preparer as the file does, then:
-    // Livewire::actingAs($preparer)->test(QuotationPage::class, ['quotation' => $q])
-    //     ->set('form.subject', 'New subject')->assertDispatched('saved');
+    [$u, $q] = myQuotation();
+
+    Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])
+        ->set('form.customer_name', 'Jabatan Perpaduan')->assertDispatched('saved')
+        ->set('form.attention_email', 'not-an-email')->assertHasErrors('form.attention_email');
 });
 ```
-Use the file's setup and the real form property name for the subject.
 
 - [ ] **Step 2: Run → FAIL** (no event dispatched).
 
