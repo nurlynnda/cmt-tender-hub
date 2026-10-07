@@ -5,7 +5,7 @@ use App\Import\{RegisterFormatException, TenderRegister};
 
 function sampleRegister(): array
 {
-    return (new TenderRegister)->read(dirname(__DIR__, 2).'/fixtures/register/register-sample.csv');
+    return (new TenderRegister)->read(dirname(__DIR__, 2).'/Fixtures/register/register-sample.csv');
 }
 
 it('reads the rows it can use and explains the ones it skips', function () {
@@ -57,7 +57,7 @@ it('cleans money, dates, names and blanks', function () {
 
 it('warns about amounts it cannot read, but not about the sheet\'s usual blanks', function () {
     $path = tempnam(sys_get_temp_dir(), 'reg');
-    $csv = file_get_contents(dirname(__DIR__, 2).'/fixtures/register/register-sample.csv');
+    $csv = file_get_contents(dirname(__DIR__, 2).'/Fixtures/register/register-sample.csv');
     file_put_contents($path, str_replace('"1,000,000.00"', 'about 1 million', $csv));
 
     expect((new TenderRegister)->read($path)['warnings'])->toBe(["Line 2: Indicative Price 'about 1 million' is not an amount — left empty"]);

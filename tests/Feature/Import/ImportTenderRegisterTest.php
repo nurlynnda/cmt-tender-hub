@@ -8,7 +8,7 @@ beforeEach(fn () => User::factory()->admin()->create(['email' => 'admin@cmt.test
 
 function registerFixture(): string
 {
-    return base_path('tests/fixtures/register/register-sample.csv');
+    return base_path('tests/Fixtures/register/register-sample.csv');
 }
 
 it('previews without saving anything', function () {
