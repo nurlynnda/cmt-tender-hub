@@ -67,16 +67,45 @@ class QuotationPage extends Component
     public function updated(string $property): void
     {
         $parts = explode('.', $property);
-        if ($parts[0] === 'form') {
-            $this->saveForm();
+        if ($parts[0] === 'form' && isset($parts[1])) {
+            $this->saveField($parts[1]);
         } elseif ($parts[0] === 'items' && isset($parts[1])) {
             $this->saveItem((int) substr($parts[1], 1));
         }
     }
 
-    private function saveForm(): void
+    /**
+     * Checks and saves only the field that changed, so a mistake in one field never blocks the others
+     * (and an old, switched-off preparer does not block edits until someone changes "Prepared by").
+     */
+    private function saveField(string $field): void
     {
-        $this->validate([
+        $rules = $this->formRules();
+        if (! isset($rules["form.$field"])) {
+            return;
+        }
+        $this->validateOnly("form.$field", $rules, [], $this->formAttributes());
+
+        $value = $this->form[$field];
+        $blank = fn ($v) => trim((string) $v) === '' ? null : trim((string) $v);
+        $data = match ($field) {
+            'sst' => ['sst_bp' => Percent::parseBp($value)],
+            'validity_days', 'prepared_by' => [$field => (int) $value],
+            'show_signature', 'show_stamp' => [$field => (bool) $value],
+            'quote_date', 'terms' => [$field => $value],
+            default => [$field => $blank($value)],
+        };
+        $this->run(function () use ($data, $field) {
+            $this->version = app(UpdateQuotation::class)->handle(auth()->user(), $this->quotation, $this->version, $data)->version;
+            if ($field === 'prepared_by') {
+                $this->load(); // the new preparer's contact details replace the old ones
+            }
+        });
+    }
+
+    private function formRules(): array
+    {
+        return [
             'form.quote_date' => ['required', 'date_format:Y-m-d'],
             'form.validity_days' => ['required', 'integer', 'between:1,365'],
             'form.customer_name' => ['nullable', 'string', 'max:255'],
@@ -93,30 +122,15 @@ class QuotationPage extends Component
             'form.show_stamp' => ['boolean'],
             'form.sst' => ['required', new Percentage],
             'form.terms' => ['nullable', 'string', 'max:5000'],
-        ], [], [
+        ];
+    }
+
+    private function formAttributes(): array
+    {
+        return [
             'form.quote_date' => 'date', 'form.validity_days' => 'validity', 'form.attention_email' => 'attention email',
             'form.prepared_by' => 'prepared by', 'form.preparer_email' => 'email', 'form.sst' => 'SST',
-        ]);
-        $f = $this->form;
-        $blank = fn ($v) => trim((string) $v) === '' ? null : trim((string) $v);
-        $this->run(fn () => $this->version = app(UpdateQuotation::class)->handle(auth()->user(), $this->quotation, $this->version, [
-            'quote_date' => $f['quote_date'],
-            'validity_days' => (int) $f['validity_days'],
-            'customer_name' => $blank($f['customer_name']),
-            'attention' => $blank($f['attention']),
-            'attention_phone' => $blank($f['attention_phone']),
-            'attention_email' => $blank($f['attention_email']),
-            'customer_address' => $blank($f['customer_address']),
-            'subject' => $blank($f['subject']),
-            'prepared_by' => (int) $f['prepared_by'],
-            'preparer_position' => $blank($f['preparer_position']),
-            'preparer_phone' => $blank($f['preparer_phone']),
-            'preparer_email' => $blank($f['preparer_email']),
-            'show_signature' => (bool) $f['show_signature'],
-            'show_stamp' => (bool) $f['show_stamp'],
-            'sst_bp' => Percent::parseBp($f['sst']),
-            'terms' => $f['terms'],
-        ])->version);
+        ];
     }
 
     private function saveItem(int $id): void
@@ -154,7 +168,7 @@ class QuotationPage extends Component
     public function resetTerms(): void
     {
         $this->form['terms'] = (string) CompanyProfile::current()->default_terms;
-        $this->saveForm();
+        $this->saveField('terms');
     }
 
     public function markSent(): void

@@ -29,6 +29,14 @@ final class UpdateQuotation
         return DB::transaction(function () use ($actor, $quotation, $expectedVersion, $values) {
             $q = $this->lockQuotation($actor, $quotation, $expectedVersion);
             $this->requireDraft($q);
+            if (array_key_exists('prepared_by', $values) && (int) $values['prepared_by'] !== $q->prepared_by) {
+                // Handed over: the old preparer's contact details must not stay on the PDF.
+                $values += [
+                    'preparer_email' => User::find($values['prepared_by'])->email,
+                    'preparer_position' => null,
+                    'preparer_phone' => null,
+                ];
+            }
             $q->fill($values);
             $this->bump($q, $actor);
 

@@ -48,6 +48,38 @@ it('saves details when a field is left and shows live totals', function () {
     expect($q->fresh()->customer_name)->toBe('Jabatan Perpaduan')->and($q->fresh()->sst_bp)->toBe(600);
 });
 
+it('keeps saving other fields while one field has an error', function () {
+    [$u, $q] = myQuotation();
+
+    Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])
+        ->set('form.attention_email', 'ali@')->assertHasErrors('form.attention_email')
+        ->set('tab', 'terms')->set('form.terms', 'New terms')
+        ->set('form.subject', 'New subject');
+
+    expect($q->fresh()->terms)->toBe('New terms')->and($q->fresh()->subject)->toBe('New subject');
+});
+
+it('still saves a draft whose preparer has been switched off', function () {
+    [$u, $q] = myQuotation();
+    $u->update(['is_active' => false]);
+
+    Livewire::actingAs(User::factory()->manager()->create())->test(QuotationPage::class, ['quotation' => $q])
+        ->set('form.subject', 'Manager fix')->assertHasNoErrors();
+
+    expect($q->fresh()->subject)->toBe('Manager fix');
+});
+
+it('swaps in the new preparer\'s contact details when the quotation is handed over', function () {
+    [$u, $q] = myQuotation(['preparer_position' => 'Sales Executive', 'preparer_phone' => '012-345', 'preparer_email' => 'siti@cmt.test']);
+    $faizal = User::factory()->create(['email' => 'faizal@cmt.test']);
+
+    Livewire::actingAs(User::factory()->manager()->create())->test(QuotationPage::class, ['quotation' => $q])
+        ->set('form.prepared_by', (string) $faizal->id)
+        ->assertSet('form.preparer_email', 'faizal@cmt.test')->assertSet('form.preparer_position', '');
+
+    expect($q->fresh())->preparer_email->toBe('faizal@cmt.test')->preparer_position->toBeNull()->preparer_phone->toBeNull();
+});
+
 it('adds, edits, moves and removes items', function () {
     [$u, $q] = myQuotation();
 
