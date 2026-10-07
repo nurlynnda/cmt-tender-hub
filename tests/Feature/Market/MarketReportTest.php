@@ -33,10 +33,10 @@ it('ranks ministries and contractors, merging spellings and counting a tender on
     expect($r->byMinistry(2026))->toBe([
         ['ministry' => 'KEMENTERIAN A', 'tenders' => 2, 'value_sen' => 1350], ['ministry' => 'Not stated', 'tenders' => 1, 'value_sen' => 0],
     ])->and($r->byMinistry(2026, 1))->toHaveCount(1);
-    $top = $r->contractors(2026)->get()->map(fn ($c) => [$c->name_key, (int) $c->wins, (int) $c->value_sen])->all();
+    $top = array_map(fn ($c) => [$c['name_key'], $c['wins'], $c['value_sen']], $r->contractors(2026));
     expect($top)->toBe([['ACME SDN BHD', 1, 1050], ['10 CREATIVE SOLUTIONS SDN BHD', 1, 300], ['BETA', 1, 0]])
-        ->and($r->contractors(2026, 'acme')->get())->toHaveCount(1)
-        ->and($r->contractors(2026, '', 2)->get())->toHaveCount(2);
+        ->and($r->contractors(2026, 'acme'))->toHaveCount(1)->and($r->contractors(2026, 'a'))->toHaveCount(3)
+        ->and($r->topContractors(2026, 2))->toHaveCount(2);
 });
 
 it('finds our rank, or none when we won nothing that year', function () {
@@ -57,4 +57,26 @@ it('counts open tenders, those closing today and those closing this week, in Mal
     }
 
     expect(app(MarketReport::class)->now())->toBe(['open' => 4, 'closing_today' => 1, 'closing_week' => 2]);
+});
+
+it('treats a blank ministry like a missing one', function () {
+    award('2026-05-01', '', [['name' => 'DELTA', 'price_sen' => 5]]);
+
+    expect(app(MarketReport::class)->byMinistry(2026))->toBe([
+        ['ministry' => 'KEMENTERIAN A', 'tenders' => 2, 'value_sen' => 1350], ['ministry' => 'Not stated', 'tenders' => 2, 'value_sen' => 5],
+    ]);
+});
+
+it('remembers its figures until the winners list changes', function () {
+    $r = app(MarketReport::class);
+    $before = $r->byMinistry(2026);
+    $top = $r->topContractors(2026, 2);
+
+    \Illuminate\Support\Facades\DB::table('collected_tenders')->where('ministry', 'KEMENTERIAN A')->update(['ministry' => 'RENAMED']);
+    expect($r->byMinistry(2026))->toBe($before)                       // served from memory: no award changed
+        ->and($top)->toBe([['name_key' => 'ACME SDN BHD', 'name' => 'Acme Sdn. Bhd.', 'wins' => 1, 'value_sen' => 1050],
+            ['name_key' => '10 CREATIVE SOLUTIONS SDN BHD', 'name' => '10 CREATIVE SOLUTIONS SDN. BHD.', 'wins' => 1, 'value_sen' => 300]]);
+
+    award('2026-06-01', 'KEMENTERIAN C', [['name' => 'EPSILON', 'price_sen' => 1]]);
+    expect(array_column($r->byMinistry(2026), 'ministry'))->toBe(['RENAMED', 'KEMENTERIAN C', 'Not stated']);
 });

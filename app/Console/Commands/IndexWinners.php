@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Collector\WinnerIndex;
+use App\Market\MarketReport;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -33,6 +34,8 @@ class IndexWinners extends Command
                 $winners += count($rows);
             });
         $this->info("Indexed {$winners} winners from {$tenders} tenders.");
+        app(MarketReport::class)->warm();
+        $this->info('Market Insights figures prepared.');
 
         return self::SUCCESS;
     }

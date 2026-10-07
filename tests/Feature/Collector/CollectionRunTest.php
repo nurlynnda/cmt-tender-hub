@@ -150,3 +150,19 @@ it('is scheduled every five minutes', function () {
 it('binds the three real sources by default', function () {
     expect(collect(app('collector.sources'))->map->name()->all())->toBe(['myprocurement', 'span', 'llm']);
 });
+
+it('prepares the Market Insights figures when a collection finishes, so the first visitor does not wait', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-07 04:00:00', 'UTC'));
+    CollectedTender::factory()->create(['status' => 'closed', 'closing_date' => '2026-02-01', 'winners' => [['name' => 'ACME', 'price_sen' => 5]]]);
+    useSources([fakeSource('span', 1)]);
+
+    app(CollectionRunner::class)->run(runRow());
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    $r = app(\App\Market\MarketReport::class);
+    foreach ([2026, null] as $y) {
+        $r->summary($y); $r->byMinistry($y, 10); $r->topContractors($y, 10); $r->ownRank($y);
+    }
+    $r->byYear();
+    expect(collect(\Illuminate\Support\Facades\DB::getQueryLog())->pluck('query')->filter(fn ($q) => str_contains($q, 'join `collected_tenders`'))->all())->toBe([]);
+});

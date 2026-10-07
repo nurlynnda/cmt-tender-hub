@@ -15,3 +15,13 @@ it('rebuilds the winners list from every tender, safely re-runnable', function (
 
     expect(CollectedTenderWinner::where('collected_tender_id', $a->id)->count())->toBe(2)->and(CollectedTenderWinner::count())->toBe(2);
 });
+
+it('prepares the Market Insights figures after rebuilding', function () {
+    CollectedTender::factory()->create(['status' => 'closed', 'closing_date' => now()->format('Y').'-02-01', 'winners' => [['name' => 'ACME', 'price_sen' => 5]]]);
+
+    $this->artisan('collector:index-winners')->expectsOutputToContain('Market Insights figures prepared')->assertSuccessful();
+
+    DB::enableQueryLog();
+    app(\App\Market\MarketReport::class)->summary((int) \App\Support\MalaysiaTime::today()->format('Y'));
+    expect(collect(DB::getQueryLog())->pluck('query')->filter(fn ($q) => str_contains($q, 'join `collected_tenders`'))->all())->toBe([]);
+});

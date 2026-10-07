@@ -32,7 +32,7 @@ class MarketInsights extends Component
             'summary' => $r->summary($y),
             'byYear' => $byYear,
             'ministries' => $r->byMinistry($y, 10),
-            'top' => $r->contractors($y, '', 10)->get(),
+            'top' => $r->topContractors($y, 10),
             'own' => $r->ownRank($y),
             'ownKeys' => OwnCompany::keys(),
             'ownLabel' => OwnCompany::label(),

@@ -2,6 +2,7 @@
 
 namespace App\Collector;
 
+use App\Market\MarketReport;
 use App\Models\CollectionRun;
 use Illuminate\Support\Facades\Cache;
 use Throwable;
@@ -39,6 +40,11 @@ final class CollectionRunner
             'finished_at' => now(),
         ]);
         Cache::forget('collector.ministries');
+        try {
+            app(MarketReport::class)->warm(); // so the first Market Insights visitor after a collection doesn't wait
+        } catch (Throwable $e) {
+            report($e);
+        }
 
         return $run;
     }

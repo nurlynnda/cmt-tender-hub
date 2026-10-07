@@ -6,7 +6,7 @@
     $maxValue = max(1, ...array_column($byYear, 'value_sen'), ...[0]);
     $maxCount = max(1, ...array_column($byYear, 'tenders'), ...[0]);
     $maxMinistry = max(1, $ministries[0]['value_sen'] ?? 0);
-    $maxTop = max(1, (int) ($top->first()->value_sen ?? 0));
+    $maxTop = max(1, $top[0]['value_sen'] ?? 0);
     $oursPill = '<span data-ours class="ml-1 rounded-full bg-good-bg px-1.5 text-[10.5px] font-bold text-good-ink">Ours</span>';
     $awardedLink = fn (array $extra = []) => route('find-tenders.index', ['status' => 'awarded', ...$extra, ...$range]);
 @endphp
@@ -111,7 +111,7 @@
             <x-slot:actions><a href="{{ route('market.contractors', ['year' => $year]) }}" class="btn btn-outline">See all</a></x-slot:actions>
             <ul class="space-y-1 text-[13px]">
                 @forelse ($top as $c)
-                    @php $isOurs = in_array($c->name_key, $ownKeys, true); @endphp
+                    @php $c = (object) $c; $isOurs = in_array($c->name_key, $ownKeys, true); @endphp
                     <li @class(['rounded-lg px-2 py-1.5', 'bg-accent-tint' => $isOurs])>
                         <div class="flex justify-between gap-3">
                             <a href="{{ $awardedLink(['contractor' => $c->name]) }}" class="min-w-0 truncate font-semibold hover:underline" title="{{ $c->name }}">{{ $loop->iteration }}. {{ $c->name }}</a>
