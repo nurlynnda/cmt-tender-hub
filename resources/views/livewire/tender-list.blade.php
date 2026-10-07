@@ -108,7 +108,7 @@
                     <div class="line-clamp-2" title="{{ $t->title }}">{{ $t->title }}</div>
                     @if ($t->was_cancelled) <span class="mt-1 inline-block rounded bg-bad-bg px-1.5 text-xs text-bad-ink">Cancelled</span> @endif
                 </td>
-                <td class="{{ $td }}">{{ $t->client }}</td>
+                <td class="{{ $td }}">{{ $t->client }}@if ($t->ministry && $t->ministry !== $t->client) <div class="text-[11.5px] text-muted-2">{{ $t->ministry }}</div> @endif</td>
                 <td class="{{ $td }}"><div class="flex items-center gap-2"><x-avatar :user="$t->pic" /> <span>{{ $t->pic->name }}</span></div></td>
                 {{-- Rows stay plain like the other lists; only the date shows closing soon (amber) or overdue (red) --}}
                 <td @if ($closing) data-deadline="{{ $closing }}" @endif class="{{ $td }} whitespace-nowrap {{ $deadlineClass($closing) }}">{{ $t->closing_date->format('d M Y') }}</td>
@@ -144,7 +144,7 @@
                     <span class="{{ $deadlineClass($closing) ?: 'text-muted' }}">Due {{ $t->closing_date->format('d M Y') }}</span>
                 </div>
                 <p class="mt-1.5 line-clamp-2 text-[13.5px] font-semibold">{{ $t->title }}</p>
-                <p class="mt-0.5 truncate text-[11.5px] text-muted">{{ $t->client }} · {{ $t->tender_code }}</p>
+                <p class="mt-0.5 truncate text-[11.5px] text-muted">{{ $t->client }}{{ $t->ministry && $t->ministry !== $t->client ? ' · '.$t->ministry : '' }} · {{ $t->tender_code }}</p>
                 <div class="mt-2.5 flex items-center justify-between gap-2 text-[12.5px]">
                     <span class="flex min-w-0 items-center gap-2"><x-avatar :user="$t->pic" /> <span class="truncate">{{ $t->pic->name }}</span></span>
                     <span class="whitespace-nowrap font-semibold">{{ Money::format($t->estimated_value_sen) }}</span>

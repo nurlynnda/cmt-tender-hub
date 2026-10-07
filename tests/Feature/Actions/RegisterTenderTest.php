@@ -30,3 +30,10 @@ it('ignores keys that are not tender fields', function () {
         ->and($tender->version)->toBe(1)
         ->and($tender->wo_number)->not->toBe('hack');
 });
+
+it('saves the ministry with the agency', function () {
+    $tender = app(RegisterTender::class)->handle(User::factory()->create(),
+        tenderData(['ministry' => 'KEMENTERIAN KESIHATAN', 'client' => 'PUSAT DARAH NEGARA']));
+
+    expect($tender->ministry)->toBe('KEMENTERIAN KESIHATAN')->and($tender->client)->toBe('PUSAT DARAH NEGARA');
+});

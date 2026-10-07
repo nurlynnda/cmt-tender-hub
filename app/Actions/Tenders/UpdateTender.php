@@ -15,7 +15,7 @@ final class UpdateTender
 
     private const LABELS = [
         'mode' => 'mode', 'type' => 'type', 'category' => 'category',
-        'tender_code' => 'tender code', 'title' => 'title', 'client' => 'client', 'scope' => 'scope',
+        'tender_code' => 'tender code', 'title' => 'title', 'client' => 'client', 'ministry' => 'ministry', 'scope' => 'scope',
         'publish_date' => 'publish date', 'closing_date' => 'closing date',
         'has_briefing' => 'briefing', 'briefing_date' => 'briefing date',
         'estimated_value_sen' => 'estimated value',

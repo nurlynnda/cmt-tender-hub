@@ -17,6 +17,7 @@ class TenderForm extends Form
     public string $tenderCode = '';
     public string $title = '';
     public string $client = '';
+    public string $ministry = '';
     public string $scope = '';
     public string $picId = '';
     public string $ownerId = '';
@@ -47,6 +48,7 @@ class TenderForm extends Form
             'tenderCode' => ['required', 'string', 'max:100'],
             'title' => ['required', 'string', 'max:2000'],
             'client' => ['required', 'string', 'max:255'],
+            'ministry' => ['nullable', 'string', 'max:255'],
             'scope' => ['nullable', 'string', 'max:5000'],
             'picId' => ['required', $activeUser],
             'ownerId' => ['nullable', $activeUser],
@@ -83,6 +85,7 @@ class TenderForm extends Form
         $this->tenderCode = $t->tender_code;
         $this->title = $t->title;
         $this->client = $t->client;
+        $this->ministry = (string) $t->ministry;
         $this->scope = (string) $t->scope;
         $this->picId = (string) $t->pic_id;
         $this->ownerId = (string) ($t->owner_id ?? '');
@@ -100,6 +103,7 @@ class TenderForm extends Form
         $this->tenderCode = $c->reference_no;
         $this->title = $c->title;
         $this->client = (string) ($c->agency ?? $c->ministry ?? '');
+        $this->ministry = (string) ($c->ministry ?? '');
         $this->publishDate = (string) $c->advertised_date?->toDateString();
         $this->closingDate = (string) $c->closing_date?->toDateString();
         $this->estimatedValue = Money::toInput($c->indicative_price_sen);
@@ -120,6 +124,7 @@ class TenderForm extends Form
             'tender_code' => trim($this->tenderCode),
             'title' => trim($this->title),
             'client' => trim($this->client),
+            'ministry' => trim($this->ministry) === '' ? null : trim($this->ministry),
             'scope' => $scope === '' ? null : $scope,
             'pic_id' => (int) $this->picId,
             'owner_id' => $this->ownerId === '' ? null : (int) $this->ownerId,

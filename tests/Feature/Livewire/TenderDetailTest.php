@@ -212,3 +212,13 @@ it('drops a tender from its page with an optional reason', function () {
 
     expect($tender->fresh()->status)->toBe(TenderStatus::Dropped)->and($tender->fresh()->drop_reason)->toBe('No capacity');
 });
+
+it('edits the ministry from the tender page and shows it', function () {
+    [$pic, $tender] = detailFixture(['client' => 'PUSAT DARAH NEGARA']);
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
+        ->call('startEdit')->set('form.ministry', 'KEMENTERIAN KESIHATAN')->call('save')->assertHasNoErrors()
+        ->assertSee('KEMENTERIAN KESIHATAN');
+
+    expect($tender->fresh()->ministry)->toBe('KEMENTERIAN KESIHATAN');
+});

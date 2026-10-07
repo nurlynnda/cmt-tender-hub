@@ -145,3 +145,9 @@ it('lists dropped tenders with their reason', function () {
 
     $this->get('/tenders/dropped')->assertOk()->assertSee('Dropped Tenders')->assertSee('DROPPED ONE')->assertSee('Outside our scope');
 });
+
+it('shows the ministry under the agency', function () {
+    Tender::factory()->create(['client' => 'PUSAT DARAH NEGARA', 'ministry' => 'KEMENTERIAN KESIHATAN']);
+
+    Livewire::test(TenderList::class, ['list' => 'in-progress'])->assertSeeInOrder(['PUSAT DARAH NEGARA', 'KEMENTERIAN KESIHATAN']);
+});

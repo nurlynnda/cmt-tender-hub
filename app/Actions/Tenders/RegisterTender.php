@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\{DB, Gate};
 final class RegisterTender
 {
     public const FIELDS = [
-        'mode', 'type', 'category', 'tender_code', 'title', 'client', 'scope',
+        'mode', 'type', 'category', 'tender_code', 'title', 'client', 'ministry', 'scope',
         'pic_id', 'owner_id', 'publish_date', 'closing_date',
         'has_briefing', 'briefing_date', 'estimated_value_sen',
         'collected_tender_id',

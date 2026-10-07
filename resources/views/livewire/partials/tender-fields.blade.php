@@ -27,7 +27,11 @@
         <textarea wire:model="form.title" rows="2" class="{{ $input }}"></textarea>
         @if ($e = $err('title')) <span class="text-xs text-bad-ink">{{ $e }}</span> @endif
     </label>
-    <label class="text-sm sm:col-span-2"><span class="text-muted">Client / agency * (pick a ministry or type any name)</span>
+    <label class="text-sm sm:col-span-2"><span class="text-muted">Ministry</span>
+        <input wire:model="form.ministry" list="ministry-list" class="{{ $input }}">
+        @if ($e = $err('ministry')) <span class="text-xs text-bad-ink">{{ $e }}</span> @endif
+    </label>
+    <label class="text-sm sm:col-span-2"><span class="text-muted">Agency (PTJ) * (pick from the list or type any name)</span>
         <input wire:model="form.client" list="ministry-list" class="{{ $input }}">
         <datalist id="ministry-list">
             @foreach ($ministries as $m) <option value="{{ $m }}"></option> @endforeach
