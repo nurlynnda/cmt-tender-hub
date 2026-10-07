@@ -100,6 +100,17 @@ class TenderCosting extends Component
         $this->markDirty();
     }
 
+    public function openImport(): void
+    {
+        $this->showImport = true;
+    }
+
+    public function closeImport(): void
+    {
+        $this->showImport = false;
+        $this->importErrors = [];
+    }
+
     public function import(): void
     {
         $parsed = CostingImport::parse($this->importText);

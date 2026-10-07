@@ -160,3 +160,24 @@ it('shows the Costing tab on the tender page and tracks unsaved edits', function
         ->dispatch('costing-dirty', dirty: true)->assertSet('costingDirty', true)
         ->dispatch('costing-saved', version: 5)->assertSet('version', 5)->assertSet('costingDirty', false);
 });
+
+it('summarises the costing in four boxes and turns the margin red below target', function () {
+    [$pic, $tender] = costingFixture();
+
+    $html = costingComponent($pic, $tender)
+        ->call('addLine')->set('lines.0.description', 'Server')->set('lines.0.unit_cost', '100,000')->set('lines.0.margin', '10')
+        ->html();   // 10% is below the 18% company target
+
+    foreach (['cost', 'sell', 'margin', 'margin-pct'] as $box) {
+        expect($html)->toContain('data-costing-box="'.$box.'"');
+    }
+    expect($html)->toMatch('/data-costing-box="margin-pct"[^>]*text-bad-ink/');
+});
+
+it('opens Bulk Import as a dialog and closes it again', function () {
+    [$pic, $tender] = costingFixture();
+
+    costingComponent($pic, $tender)
+        ->call('openImport')->assertSeeHtml('role="dialog"')->assertSee('Bulk Import Items')
+        ->call('closeImport')->assertDontSeeHtml('role="dialog"');
+});

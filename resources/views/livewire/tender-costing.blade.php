@@ -1,10 +1,13 @@
 @php
     use App\Support\{Money, Percent};
-    $in = 'rounded border border-line bg-surface px-1.5 py-1 text-sm disabled:border-transparent disabled:bg-transparent';
+    $in = 'rounded-[8px] border border-line-2 bg-surface px-1.5 py-1 text-[13px] disabled:border-transparent disabled:bg-transparent';
     $cost = $summary['total_cost_sen'];
     $bid = $summary['bid_price_sen'];
     $costPct = $bid > 0 ? (int) min(100, max(0, round($cost * 100 / $bid))) : 0;
-    $card = 'rounded-xl border border-line bg-surface p-3';
+    $card = 'rounded-[14px] border border-line bg-surface px-4 py-3';
+    $boxLabel = 'text-[10.5px] font-bold uppercase tracking-[0.5px] text-muted';
+    $boxValue = 'text-xl font-extrabold tracking-tight';
+    $low = $summary['below_target'];
 @endphp
 {{-- "typed" covers edits still in the box that have not reached the server yet; the page is told
      on the first keystroke so Mark Done is blocked straight away. The import box is not an edit. --}}
@@ -19,34 +22,42 @@
         </div>
     @endif
 
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <div class="{{ $card }}">
-            <p class="text-xs uppercase text-muted">Total cost</p>
-            <p class="text-lg font-semibold">{{ Money::format($cost) }}</p>
+    @if ($editable && $unsaved)
+        <div class="flex flex-wrap items-center gap-3 rounded-xl border border-warn-ink/30 bg-warn-bg px-4 py-2.5 text-[13px] text-warn-ink" role="status">
+            <span class="font-semibold">Unsaved changes — save your costing before you leave this tab.</span>
+            <button type="button" wire:click="save" class="btn btn-dark ml-auto">Save changes</button>
         </div>
-        <div class="{{ $card }}">
-            <p class="text-xs uppercase text-muted">Bid price · {{ $summary['is_override'] ? 'Your price' : 'Suggested' }}</p>
-            <p class="text-lg font-semibold">{{ Money::format($bid) }}</p>
+    @endif
+
+    {{-- Summary boxes (prototype: Total Cost · Total Sell · Margin · Margin %), plus Under budget --}}
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+        <div data-costing-box="cost" class="{{ $card }}">
+            <p class="{{ $boxLabel }}">Total cost</p>
+            <p class="{{ $boxValue }}">{{ Money::format($cost) }}</p>
+        </div>
+        <div data-costing-box="sell" class="{{ $card }}">
+            <p class="{{ $boxLabel }}">Total sell · {{ $summary['is_override'] ? 'Your price' : 'Suggested' }}</p>
+            <p class="{{ $boxValue }}">{{ Money::format($bid) }}</p>
             @if ($summary['is_override'])
                 <p class="text-xs text-muted">Suggested {{ Money::format($summary['suggested_bid_sen']) }}
-                    @if ($editable) · <button type="button" wire:click="resetOverride" class="underline">Reset to suggested</button>@endif
+                    @if ($editable) · <button type="button" wire:click="resetOverride" class="font-semibold underline">Reset to suggested</button>@endif
                 </p>
             @endif
         </div>
-        <div class="{{ $card }}">
-            <p class="text-xs uppercase text-muted">Margin</p>
-            <p class="text-lg font-semibold">{{ Money::format($summary['margin_sen']) }}</p>
+        <div data-costing-box="margin" @class([$card, 'text-bad-ink' => $low])>
+            <p class="{{ $boxLabel }}">Margin</p>
+            <p class="{{ $boxValue }}">{{ Money::format($summary['margin_sen']) }}</p>
         </div>
-        <div @class(['rounded-xl border p-3', 'border-line bg-surface' => ! $summary['below_target'], 'border-bad-ink bg-bad-bg text-bad-ink' => $summary['below_target']])>
-            <p class="text-xs uppercase">Margin %</p>
-            <p class="text-lg font-semibold">{{ Percent::format($summary['margin_bp']) }}</p>
-            @if ($summary['below_target'])
-                <p class="text-xs">⚠ Below the {{ $target }} target</p>
+        <div data-costing-box="margin-pct" @class(['rounded-[14px] border px-4 py-3', 'border-line bg-surface' => ! $low, 'border-bad-ink/40 bg-bad-bg text-bad-ink' => $low])>
+            <p class="{{ $boxLabel }} {{ $low ? '!text-bad-ink' : '' }}">Margin %</p>
+            <p class="{{ $boxValue }}">{{ Percent::format($summary['margin_bp']) }}</p>
+            @if ($low)
+                <p class="text-xs font-semibold">⚠ Below the {{ $target }} target</p>
             @endif
         </div>
         <div class="{{ $card }}">
-            <p class="text-xs uppercase text-muted">Under budget</p>
-            <p class="text-lg font-semibold">{{ $summary['under_budget_bp'] === null ? '—' : Percent::format($summary['under_budget_bp']) }}</p>
+            <p class="{{ $boxLabel }}">Under budget</p>
+            <p class="{{ $boxValue }}">{{ $summary['under_budget_bp'] === null ? '—' : Percent::format($summary['under_budget_bp']) }}</p>
             @if ($tender->estimated_value_sen)
                 <p class="text-xs text-muted">Estimated {{ Money::format($tender->estimated_value_sen) }}</p>
             @endif
@@ -56,21 +67,21 @@
         <div class="h-full bg-chip" style="width: {{ $costPct }}%"></div>
     </div>
 
-    <div class="flex flex-wrap items-end gap-3 text-sm">
-        <label class="flex items-center gap-1">Default margin %
-            <input wire:model.live.blur="defaultMargin" @disabled(! $editable) class="w-20 rounded border border-line bg-surface px-2 py-1"></label>
+    <div class="flex flex-wrap items-end gap-3 text-[13px]">
+        <label class="flex items-center gap-2 font-semibold text-ink-2">Default margin %
+            <input wire:model.live.blur="defaultMargin" @disabled(! $editable) class="w-20 rounded-[9px] border border-line-2 bg-surface px-2.5 py-1.5 font-normal"></label>
         @if ($editable)
-            <button type="button" wire:click="applyDefaultToAll" wire:confirm="Set every line's margin to the default?" class="rounded-lg border border-line px-3 py-1 hover:bg-hover">Apply to all lines</button>
+            <button type="button" wire:click="applyDefaultToAll" wire:confirm="Set every line's margin to the default?" class="btn btn-outline">Apply to all lines</button>
         @endif
-        <label class="flex items-center gap-1 sm:ml-auto">Your bid price (optional)
-            <input wire:model.live.blur="override" @disabled(! $editable) placeholder="{{ Money::toInput($summary['suggested_bid_sen']) }}" class="w-36 rounded border border-line bg-surface px-2 py-1"></label>
+        <label class="flex items-center gap-2 font-semibold text-ink-2 sm:ml-auto">Your bid price (optional)
+            <input wire:model.live.blur="override" @disabled(! $editable) placeholder="{{ Money::toInput($summary['suggested_bid_sen']) }}" class="w-36 rounded-[9px] border border-line-2 bg-surface px-2.5 py-1.5 font-normal"></label>
         @error('defaultMargin') <p class="w-full text-xs text-bad-ink">{{ $message }}</p> @enderror
         @error('override') <p class="w-full text-xs text-bad-ink">{{ $message }}</p> @enderror
     </div>
 
-    <div class="relative overflow-x-auto rounded-xl border border-line bg-surface">
-        <table class="w-full min-w-[1720px] text-sm">
-            <thead class="bg-subtle text-left text-xs uppercase text-muted">
+    <div class="relative overflow-x-auto rounded-2xl border border-line bg-surface">
+        <table class="w-full min-w-[1720px] text-[13px]">
+            <thead class="bg-subtle text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-muted">
                 <tr>
                     <th class="px-2 py-2">Item</th><th class="px-2">Qty</th><th class="px-2">Unit</th><th class="px-2">Frequency</th><th class="px-2">Year</th><th class="px-2">Group</th>
                     <th class="px-2 text-right">Unit cost</th><th class="px-2 text-right">Line cost</th><th class="px-2">Margin %</th>
@@ -193,30 +204,29 @@
     </div>
 
     @if ($editable)
-        <div class="flex flex-wrap items-center gap-2 text-sm">
-            <button type="button" wire:click="addLine" class="rounded-lg border border-line px-3 py-1.5 hover:bg-hover">+ Add line</button>
-            <button type="button" wire:click="$toggle('showImport')" class="rounded-lg border border-line px-3 py-1.5 hover:bg-hover">Bulk import</button>
-            <span class="ml-auto">
-                @if ($unsaved) <span class="text-warn-ink">Unsaved changes</span> @endif
-            </span>
-            <button type="button" wire:click="save" class="rounded-lg bg-chip px-4 py-1.5 font-medium text-chip-ink hover:bg-chip-hover">Save costing</button>
+        <div class="flex flex-wrap items-center gap-2 text-[13px]">
+            <button type="button" wire:click="addLine" class="btn btn-outline">+ Add line item</button>
+            <button type="button" wire:click="openImport" class="btn btn-outline">Bulk Import</button>
+            <button type="button" wire:click="save" class="btn btn-dark ml-auto">Save costing</button>
         </div>
         @if ($errors->any())
-            <p class="text-sm text-bad-ink">Some fields need fixing — see the messages in red above.</p>
+            <p class="text-[13px] text-bad-ink">Some fields need fixing — see the messages in red above.</p>
         @endif
         @if ($showImport || $importErrors)
-            <div class="space-y-2 rounded-xl border border-line bg-surface p-3 text-sm">
-                <p class="text-muted">Copy rows from Excel and paste them here. Columns: description, quantity, unit, unit cost.</p>
-                <textarea wire:model="importText" rows="4" class="w-full rounded border border-line bg-surface p-2 font-mono text-xs" aria-label="Rows to import"></textarea>
-                <button type="button" wire:click="import" class="rounded-lg border border-line px-3 py-1 hover:bg-hover">Add these lines</button>
+            <x-dialog title="Bulk Import Items" subtitle="Paste rows copied from Excel or Sheets, or type one item per line as: Item name, Qty, Unit, Unit cost." close="closeImport">
+                <textarea wire:model="importText" rows="8" placeholder="Desktop PC, 20, unit, 2500&#10;Monitor, 20, unit, 450&#10;Installation, 1, lot, 12000"
+                          class="w-full rounded-[9px] border border-line-2 bg-surface p-2.5 font-mono text-xs" aria-label="Rows to import"></textarea>
                 @foreach ($importErrors as $e) <p class="text-xs text-bad-ink">{{ $e }}</p> @endforeach
-            </div>
+                <x-slot:actions>
+                    <button type="button" wire:click="import" class="btn btn-primary">Import items</button>
+                </x-slot:actions>
+            </x-dialog>
         @endif
     @endif
 
     <div class="grid gap-4 md:grid-cols-2">
         <div class="{{ $card }} text-sm">
-            <h3 class="mb-1 font-medium">Target-cost guide</h3>
+            <h3 class="mb-1 font-bold">Target-cost guide</h3>
             <p class="mb-2 text-xs text-muted">At this bid price, keep the total cost under:</p>
             <table class="w-full"><tbody>
                 @foreach ($summary['guide'] as $g)
@@ -228,7 +238,7 @@
             </tbody></table>
         </div>
         <div class="{{ $card }} text-sm">
-            <h3 class="mb-2 font-medium">Cost by year</h3>
+            <h3 class="mb-2 font-bold">Cost by year</h3>
             <table class="w-full"><tbody>
                 @forelse ($summary['cost_by_year'] as $year => $sen)
                     <tr class="border-t border-line"><td class="py-1">Year {{ $year }}</td><td class="py-1 text-right">{{ Money::format($sen) }}</td></tr>
