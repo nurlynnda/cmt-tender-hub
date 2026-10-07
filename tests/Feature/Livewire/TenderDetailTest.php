@@ -249,3 +249,18 @@ it('shows reason rows only when there is a reason, with the right pill for dropp
         ->assertSeeHtml('data-status="dropped"')->assertSeeHtml('data-reason="drop"')->assertSee('No capacity')
         ->assertDontSeeHtml('data-reason="lost"')->assertDontSee('Mark Done');
 });
+
+it('shows a PIC name with an apostrophe correctly on the Documents tab', function () {
+    [$pic, $tender] = detailFixture();
+    $pic->forceFill(['name' => "Nur'Ain"])->save();
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender->fresh()])->set('tab', 'documents')
+        ->assertSeeHtml('Assigned to Nur&#039;Ain (PIC)')->assertDontSeeHtml('&amp;#039;');
+});
+
+it('labels the closing button Back in the Cancel tender dialog, so it is not confused with cancelling the tender', function () {
+    [$pic, $tender] = detailFixture();
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
+        ->call('openModal', 'cancel')->assertSeeHtml('>Back</button>')->assertSee('Cancel tender');
+});

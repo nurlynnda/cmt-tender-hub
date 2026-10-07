@@ -1,6 +1,6 @@
 <div>
     @if ($open)
-        <x-dialog title="Register Tender" subtitle="Add a tender to In Progress. The WO number is given when you register." close="close" wide>
+        <x-dialog title="Register Tender" subtitle="Add a tender to In Progress. The WO number is given when you register." close="close" wide :dismissible="false">
             <form wire:submit="save" id="register-tender" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3 rounded-xl bg-subtle p-3">
                     <x-fact label="WO Number (auto — final number given on save)">{{ $woPreview }}</x-fact>

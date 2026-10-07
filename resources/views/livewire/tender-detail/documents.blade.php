@@ -3,7 +3,7 @@
     $total = $documents->count();
     $pct = $total ? (int) round($doneCount * 100 / $total) : 0;
 @endphp
-<x-card title="Documents" subtitle="Assigned to {{ $tender->pic->name }} (PIC)" icon="check">
+<x-card title="Documents" :subtitle="'Assigned to '.$tender->pic->name.' (PIC)'" icon="check">
     <x-slot:actions>
         @if ($editable)
             <button type="button" wire:click="openModal('bulk-docs')" class="btn btn-outline">Bulk Add</button>

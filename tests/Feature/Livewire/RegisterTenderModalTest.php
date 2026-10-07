@@ -84,3 +84,8 @@ it('shows the WO number and date that registering will use, labelled as automati
         ->call('close')->assertSet('open', false);
     expect(\Illuminate\Support\Facades\DB::table('wo_sequences')->count())->toBe(0);
 });
+
+it('does not close Register Tender on a stray click or Escape, so typed details are not lost', function () {
+    Livewire::test(RegisterTenderModal::class)->call('show')
+        ->assertDontSeeHtml('keydown.escape')->assertSeeHtml('>Cancel</button>');
+});

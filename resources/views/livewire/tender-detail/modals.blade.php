@@ -13,7 +13,8 @@
             default => ['', null, 'closeModal', 'OK', 'btn-outline'],
         };
     @endphp
-    <x-dialog :title="$title" :subtitle="$subtitle" close="closeModal">
+    {{-- "Back", not "Cancel": the Cancel tender dialog would otherwise show "Cancel" beside "Cancel tender" --}}
+    <x-dialog :title="$title" :subtitle="$subtitle" close="closeModal" cancel-label="Back">
         @switch($modal)
             @case('done')
                 <p class="text-[13.5px]">Submitted price (the costing's bid price):

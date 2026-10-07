@@ -52,3 +52,10 @@ it('frames a dialog with a title, explanation, body and actions', function () {
     expect($html)->toContain('role="dialog"')->toContain('Drop tender')->toContain('Why it matters')->toContain('BODY')
         ->toContain('<button>Go</button>')->toContain('wire:click="closeModal"');
 });
+
+it('can make a dialog that only closes with its own buttons, and rename the closing button', function () {
+    $html = Blade::render('<x-dialog title="Register Tender" close="close" :dismissible="false" cancel-label="Back">B<x-slot:actions><button>Go</button></x-slot:actions></x-dialog>');
+
+    expect($html)->not->toContain('keydown.escape')->and(substr_count($html, 'wire:click="close"'))->toBe(1)   // only the Back button
+        ->and($html)->toContain('>Back</button>');
+});
