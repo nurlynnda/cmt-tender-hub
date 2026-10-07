@@ -7,6 +7,14 @@ use Illuminate\Support\Facades\DB;
 
 final class GenerateWoNumber
 {
+    /** The number "Register" would give right now — read only, never reserves it. */
+    public function peek(CarbonImmutable $malaysiaDay): string
+    {
+        $last = (int) DB::table('wo_sequences')->where('date', $malaysiaDay->toDateString())->value('last_seq');
+
+        return sprintf('200-%s-%03d', $malaysiaDay->format('dmY'), $last + 1);
+    }
+
     /** @param CarbonImmutable $malaysiaDay a Malaysia calendar day (see MalaysiaTime::today()) */
     public function next(CarbonImmutable $malaysiaDay): string
     {

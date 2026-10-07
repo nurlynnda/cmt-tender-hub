@@ -2,7 +2,8 @@
 
 namespace App\Livewire;
 
-use App\Actions\Tenders\RegisterTender;
+use App\Actions\Tenders\{GenerateWoNumber, RegisterTender};
+use App\Support\MalaysiaTime;
 use App\Enums\{TenderCategory, TenderMode, TenderType};
 use App\Livewire\Forms\TenderForm;
 use App\Models\{CollectedTender, Tender, User};
@@ -30,6 +31,11 @@ class RegisterTenderModal extends Component
             $this->collectedTenderId = $c->id;
         }
         $this->open = true;
+    }
+
+    public function close(): void
+    {
+        $this->open = false;
     }
 
     public function updated(string $property): void
@@ -65,7 +71,12 @@ class RegisterTenderModal extends Component
 
     public function render()
     {
+        $today = MalaysiaTime::today();
+
         return view('livewire.register-tender-modal', [
+            // Only a preview: the real number is taken when Register is pressed.
+            'woPreview' => $this->open ? app(GenerateWoNumber::class)->peek($today) : null,
+            'woDate' => $today,
             'people' => User::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'ministries' => config('tenderhub.ministries'),
             'modes' => TenderMode::cases(),

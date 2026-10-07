@@ -20,3 +20,13 @@ it('has a database backstop against duplicate WO numbers', function () {
     Tender::factory()->create(['wo_number' => '200-06102026-001']);
     Tender::factory()->create(['wo_number' => '200-06102026-001']);
 })->throws(QueryException::class);
+
+it('previews the next WO number without using it', function () {
+    $day = \Carbon\CarbonImmutable::parse('2026-10-07');
+    $gen = app(\App\Actions\Tenders\GenerateWoNumber::class);
+
+    expect($gen->peek($day))->toBe('200-07102026-001')->and($gen->peek($day))->toBe('200-07102026-001')
+        ->and(\Illuminate\Support\Facades\DB::table('wo_sequences')->count())->toBe(0)
+        ->and($gen->next($day))->toBe('200-07102026-001')
+        ->and($gen->peek($day))->toBe('200-07102026-002');
+});

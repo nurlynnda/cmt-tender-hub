@@ -75,3 +75,12 @@ it('drops the duplicate confirmation when the code is edited', function () {
         ->set('form.tenderCode', 'QT999')
         ->assertSet('confirmDuplicate', false);
 });
+
+it('shows the WO number and date that registering will use, labelled as automatic', function () {
+    $this->travelTo(\Carbon\CarbonImmutable::parse('2026-10-07 02:00:00', 'UTC'));
+
+    Livewire::test(RegisterTenderModal::class)->call('show')
+        ->assertSee('WO Number (auto')->assertSee('200-07102026-001')->assertSee('07 Oct 2026')
+        ->call('close')->assertSet('open', false);
+    expect(\Illuminate\Support\Facades\DB::table('wo_sequences')->count())->toBe(0);
+});
