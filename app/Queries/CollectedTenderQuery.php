@@ -21,7 +21,7 @@ final class CollectedTenderQuery
         match ($status) {
             'all' => null,
             // Awarded: closed with at least one published winner.
-            'awarded' => $q->where('status', 'closed')->whereExists(self::winner()),
+            'awarded' => $q->where('status', 'closed')->whereIn('id', DB::table('collected_tender_winners')->select('collected_tender_id')),
             default => $q->where('status', $status),
         };
         if ($status === 'open') {
@@ -73,7 +73,8 @@ final class CollectedTenderQuery
         $key = ContractorName::key((string) ($f['contractor'] ?? ''));
         if (mb_strlen($key) >= 2) {
             $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $key).'%';
-            $q->whereExists(self::winner()->where('w.name_key', 'like', $like));
+            // "id IN (matching winners)" lets MySQL scan the winners once (~0.2s) instead of once per tender (~1.4s).
+            $q->whereIn('id', DB::table('collected_tender_winners')->select('collected_tender_id')->where('name_key', 'like', $like));
         }
         if (! empty($f['ours'])) {
             $own = OwnCompany::keys();
