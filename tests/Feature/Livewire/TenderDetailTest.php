@@ -231,3 +231,21 @@ it('bulk-adds documents from the Documents tab and says how many', function () {
         ->call('openModal', 'bulk-docs')->set('bulkDocuments', "Warranty Letter\nInsurance Certificate")->call('bulkAddDocuments')
         ->assertSee('Added 2 documents')->assertSee('Warranty Letter');
 });
+
+it('shows the key facts under the title', function () {
+    [$pic, $tender] = detailFixture(['client' => 'PUSAT DARAH NEGARA', 'ministry' => 'KEMENTERIAN KESIHATAN',
+        'tender_code' => 'QT-77', 'estimated_value_sen' => 31640000]);
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
+        ->assertSeeHtml('data-facts')
+        ->assertSeeInOrder(['Assigned PIC', 'Siti Aisyah', 'Opportunity Owner', 'Category', 'Tender Code', 'QT-77',
+            'Agency', 'PUSAT DARAH NEGARA', 'KEMENTERIAN KESIHATAN', 'Estimated value', 'RM 316,400.00', 'Closing date', 'WO date']);
+});
+
+it('shows reason rows only when there is a reason, with the right pill for dropped tenders', function () {
+    [$pic, $tender] = detailFixture(['status' => TenderStatus::Dropped, 'drop_reason' => 'No capacity', 'dropped_at' => now()]);
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
+        ->assertSeeHtml('data-status="dropped"')->assertSeeHtml('data-reason="drop"')->assertSee('No capacity')
+        ->assertDontSeeHtml('data-reason="lost"')->assertDontSee('Mark Done');
+});

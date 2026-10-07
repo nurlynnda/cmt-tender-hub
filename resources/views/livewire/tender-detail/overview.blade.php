@@ -1,54 +1,54 @@
 @php use App\Support\Money; @endphp
-<section class="rounded-xl border border-line bg-surface p-4">
-    @if ($editing)
+@if ($editing)
+    <x-card title="Edit details" icon="tenders">
         <form wire:submit="save" class="space-y-4">
             @include('livewire.partials.tender-fields')
             <div class="flex justify-end gap-2">
-                <button type="button" wire:click="cancelEdit" class="rounded-lg px-4 py-2 text-sm hover:bg-hover">Cancel</button>
-                <button type="submit" class="rounded-lg bg-chip px-4 py-2 text-sm font-medium text-chip-ink">Save changes</button>
+                <button type="button" wire:click="cancelEdit" class="btn btn-outline">Cancel</button>
+                <button type="submit" class="btn btn-dark">Save changes</button>
             </div>
         </form>
-    @else
-        @if ($canEdit && ! $tender->isLocked())
-            <div class="mb-3 flex justify-end">
-                <button wire:click="startEdit" class="rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-hover">Edit details</button>
+    </x-card>
+@else
+    <div class="grid gap-4 lg:grid-cols-2">
+        <x-card title="Scope of Work" icon="tenders">
+            <x-slot:actions>
+                @if ($canEdit && ! $tender->isLocked())
+                    <button wire:click="startEdit" class="btn btn-outline">Edit details</button>
+                @endif
+            </x-slot:actions>
+            @if ($tender->scope)
+                <p class="whitespace-pre-line text-[13.5px]">{{ $tender->scope }}</p>
+            @else
+                <p class="text-[13.5px] text-muted">No scope written yet.</p>
+            @endif
+            @if ($tender->collectedTender)
+                <p class="mt-4 text-[13px] text-muted">
+                    Collected from {{ implode(', ', $tender->collectedTender->sourceNames()) }} —
+                    <a href="{{ route('find-tenders.show', $tender->collectedTender) }}" class="font-semibold text-info-ink underline">view original</a>
+                </p>
+            @endif
+        </x-card>
+
+        <x-card title="Registration Details" icon="quotation">
+            <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+                <x-fact label="WO Number">{{ $tender->wo_number }}</x-fact>
+                <x-fact label="WO Date">{{ $tender->wo_date->format('d M Y') }}</x-fact>
+                <x-fact label="Mode">{{ $tender->mode->label() }}</x-fact>
+                <x-fact label="Type">{{ $tender->type->label() }}</x-fact>
+                <x-fact label="Publish Date">{{ $tender->publish_date?->format('d M Y') ?? '—' }}</x-fact>
+                <x-fact label="Briefing">{{ $tender->has_briefing ? 'Yes — '.$tender->briefing_date?->format('d M Y') : 'No' }}</x-fact>
+                <x-fact label="Tender Code">{{ $tender->tender_code }}</x-fact>
+                <x-fact label="Ministry">{{ $tender->ministry ?? '—' }}</x-fact>
+                <x-fact label="Submitted price">{{ Money::format($tender->submitted_price_sen) }}</x-fact>
+                <x-fact label="Winning price">{{ Money::format($tender->winning_price_sen) }}</x-fact>
+                @if ($tender->lost_reason)
+                    <x-fact label="Lost / cancel reason" data-reason="lost" class="col-span-2 [&>div:last-child]:whitespace-normal">{{ $tender->lost_reason }}</x-fact>
+                @endif
+                @if ($tender->drop_reason)
+                    <x-fact label="Drop reason" data-reason="drop" class="col-span-2 [&>div:last-child]:whitespace-normal">{{ $tender->drop_reason }}</x-fact>
+                @endif
             </div>
-        @endif
-        <dl class="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-            @foreach ([
-                'Assigned PIC' => $tender->pic->name,
-                'Opportunity owner' => $tender->owner?->name ?? '—',
-                'Category' => $tender->category->value,
-                'Tender code' => $tender->tender_code,
-                'Ministry' => $tender->ministry ?? '—',
-                'Agency' => $tender->client,
-                'Estimated value' => Money::format($tender->estimated_value_sen),
-                'Type' => $tender->type->label(),
-                'Mode' => $tender->mode->label(),
-                'WO date' => $tender->wo_date->format('d M Y'),
-                'Publish date' => $tender->publish_date?->format('d M Y') ?? '—',
-                'Closing date' => $tender->closing_date->format('d M Y'),
-                'Briefing' => $tender->has_briefing ? 'Yes — '.$tender->briefing_date?->format('d M Y') : 'No',
-                'Submitted price' => Money::format($tender->submitted_price_sen),
-                'Winning price' => Money::format($tender->winning_price_sen),
-                'Lost / cancel reason' => $tender->lost_reason ?? '—',
-                'Drop reason' => $tender->drop_reason ?? '—',
-            ] as $label => $value)
-                <div>
-                    <dt class="text-xs uppercase tracking-wide text-muted">{{ $label }}</dt>
-                    <dd>{{ $value }}</dd>
-                </div>
-            @endforeach
-        </dl>
-        <div class="mt-4">
-            <p class="text-xs uppercase tracking-wide text-muted">Scope of work</p>
-            <p class="mt-1 whitespace-pre-line text-sm">{{ $tender->scope ?: '—' }}</p>
-        </div>
-        @if ($tender->collectedTender)
-            <p class="mt-4 text-sm text-muted">
-                Collected from {{ implode(', ', $tender->collectedTender->sourceNames()) }} —
-                <a href="{{ route('find-tenders.show', $tender->collectedTender) }}" class="text-info-ink underline">view original</a>
-            </p>
-        @endif
-    @endif
-</section>
+        </x-card>
+    </div>
+@endif

@@ -1,5 +1,5 @@
 @php
-    $input = 'mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm';
+    $input = 'mt-1 w-full rounded-[9px] border border-line-2 bg-surface px-2.5 py-2 text-[13px]';
     $personLabel = fn ($p) => $p->name.($p->is_active === false ? ' (deactivated)' : '');
     $err = fn ($f) => $errors->first("form.$f");
 @endphp
