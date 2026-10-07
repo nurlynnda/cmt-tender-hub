@@ -24,6 +24,8 @@ class FindTenders extends Component
     #[Url] public string $codes = '';
     #[Url] public string $from = '';
     #[Url] public string $to = '';
+    /** '' = the usual order; closing_asc / closing_desc from the Closing heading. */
+    #[Url] public string $sort = '';
 
     public ?string $notice = null;
 
@@ -37,6 +39,12 @@ class FindTenders extends Component
     public function clearFilters(): void
     {
         $this->reset('search', 'status', 'source', 'type', 'ministry', 'codes', 'from', 'to');
+        $this->resetPage();
+    }
+
+    public function toggleClosingSort(): void
+    {
+        $this->sort = $this->sort === 'closing_asc' ? 'closing_desc' : 'closing_asc';
         $this->resetPage();
     }
 
@@ -58,7 +66,7 @@ class FindTenders extends Component
         app(StartCollection::class)->failStuckRuns();
 
         return view('livewire.find-tenders', [
-            'tenders' => CollectedTenderQuery::build($this->only(['search', 'status', 'source', 'type', 'ministry', 'codes', 'from', 'to']))->paginate(25),
+            'tenders' => CollectedTenderQuery::build($this->only(['search', 'status', 'source', 'type', 'ministry', 'codes', 'from', 'to', 'sort']))->paginate(25),
             'running' => CollectionRun::where('status', 'running')->latest('started_at')->first(),
             'lastRun' => CollectionRun::whereNotNull('finished_at')->latest('finished_at')->first(),
             'ministries' => CollectedTenderQuery::ministries(),

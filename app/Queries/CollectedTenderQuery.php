@@ -70,6 +70,18 @@ final class CollectedTenderQuery
             }
         }
 
+        // Clicked "Closing" heading: soonest or latest first, tenders without a closing date always last.
+        return match ($f['sort'] ?? '') {
+            'closing_asc' => $q->orderByRaw('closing_date IS NULL')->orderBy('closing_date')->orderBy('id'),
+            // Descending already puts undated last (MySQL sorts NULL lowest); no expression, so the index is used.
+            'closing_desc' => $q->orderByDesc('closing_date')->orderByDesc('id'),
+            default => self::usualOrder($q, $status),
+        };
+    }
+
+    /** Open: closing soonest first. Closed / all: latest first. */
+    private static function usualOrder(Builder $q, string $status): Builder
+    {
         return $status === 'open'
             ? $q->orderByRaw('closing_date IS NULL')->orderBy('closing_date')->orderBy('id')
             // Descending order already puts undated last; no expression, so the (status, closing_date, id) index is used.

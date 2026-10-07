@@ -64,7 +64,11 @@
         <thead class="bg-subtle">
             <tr>
                 <th class="{{ $th }}">Reference</th><th class="{{ $th }}">Title</th><th class="{{ $th }}">Ministry / Agency</th>
-                <th class="{{ $th }}">Type</th><th class="{{ $th }}">Advertised</th><th class="{{ $th }}">Closing</th>
+                <th class="{{ $th }}">Type</th><th class="{{ $th }}">Advertised</th>
+                <th class="{{ $th }}" aria-sort="{{ ['closing_asc' => 'ascending', 'closing_desc' => 'descending'][$sort] ?? 'none' }}">
+                    <button type="button" wire:click="toggleClosingSort" title="Sort by closing date" class="uppercase hover:text-ink">Closing
+                        <span class="text-ink">{{ ['closing_asc' => '↑', 'closing_desc' => '↓'][$sort] ?? '' }}</span></button>
+                </th>
                 <th class="{{ $th }} text-right">Indicative price</th>
             </tr>
         </thead>

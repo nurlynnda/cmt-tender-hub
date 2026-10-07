@@ -91,3 +91,25 @@ it('counts only the filters changed from their defaults, and shows phone cards',
     expect($c->instance()->filterCount())->toBe(3);
     $c->assertSeeHtml('data-filter-count="3"')->assertSeeHtml('data-resizable="find-tenders"');
 });
+
+it('sorts by closing date both ways when asked, undated tenders always last', function () {
+    CollectedTender::factory()->create(['reference_no' => 'B', 'closing_date' => '2026-12-01']);
+    CollectedTender::factory()->create(['reference_no' => 'A', 'closing_date' => '2026-11-01']);
+    CollectedTender::factory()->create(['reference_no' => 'N', 'closing_date' => null]);
+    CollectedTender::factory()->create(['reference_no' => 'C', 'closing_date' => '2026-10-01', 'status' => 'closed']);
+
+    expect(refs(['status' => 'all', 'sort' => 'closing_asc']))->toBe(['C', 'A', 'B', 'N'])
+        ->and(refs(['status' => 'all', 'sort' => 'closing_desc']))->toBe(['B', 'A', 'C', 'N'])
+        ->and(refs(['sort' => 'closing_desc']))->toBe(['B', 'A', 'N'])
+        ->and(refs(['sort' => 'nonsense']))->toBe(['A', 'B', 'N']);   // unknown → the usual order
+});
+
+it('flips the closing-date sort when the Closing heading is clicked, and keeps it in the address', function () {
+    CollectedTender::factory()->create(['reference_no' => 'EARLY-REF', 'closing_date' => '2026-11-01']);
+    CollectedTender::factory()->create(['reference_no' => 'LATE-REF', 'closing_date' => '2026-12-01']);
+
+    Livewire::test(FindTenders::class)
+        ->assertSeeHtml('wire:click="toggleClosingSort"')
+        ->call('toggleClosingSort')->assertSet('sort', 'closing_asc')->assertSeeInOrder(['EARLY-REF', 'LATE-REF'])->assertSeeHtml('aria-sort="ascending"')
+        ->call('toggleClosingSort')->assertSet('sort', 'closing_desc')->assertSeeInOrder(['LATE-REF', 'EARLY-REF'])->assertSeeHtml('aria-sort="descending"');
+});
