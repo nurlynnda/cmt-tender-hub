@@ -15,7 +15,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/dashboard', \App\Livewire\Dashboard::class)->name('dashboard');
     Route::get('/status', \App\Livewire\StatusReport::class)->name('status');
     Route::get('/tenders/{list}', \App\Livewire\TenderList::class)
-        ->whereIn('list', ['in-progress', 'done', 'awarded', 'lost'])
+        ->whereIn('list', ['in-progress', 'done', 'awarded', 'lost', 'dropped'])
         ->name('tenders.index');
     Route::get('/tenders/{tender}', \App\Livewire\TenderDetail::class)
         ->whereNumber('tender')->name('tenders.show');

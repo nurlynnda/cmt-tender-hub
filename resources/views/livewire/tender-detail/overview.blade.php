@@ -31,6 +31,7 @@
                 'Submitted price' => Money::format($tender->submitted_price_sen),
                 'Winning price' => Money::format($tender->winning_price_sen),
                 'Lost / cancel reason' => $tender->lost_reason ?? '—',
+                'Drop reason' => $tender->drop_reason ?? '—',
             ] as $label => $value)
                 <div>
                     <dt class="text-xs uppercase tracking-wide text-muted">{{ $label }}</dt>

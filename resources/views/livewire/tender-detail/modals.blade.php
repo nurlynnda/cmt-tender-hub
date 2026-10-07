@@ -32,6 +32,14 @@
                         <textarea wire:model="lostReason" rows="2" class="{{ $input }}"></textarea></label>
                     @php $confirm = ['markLost', 'Mark Lost']; @endphp
                     @break
+                @case('drop')
+                    <h2 class="text-lg font-semibold">Drop tender</h2>
+                    <p class="text-sm text-muted">Use this when the company decides not to bid. The tender moves to the Dropped list and is left out of the win rate. A manager can reopen it.</p>
+                    <label class="block text-sm"><span class="text-muted">Reason, if any</span>
+                        <textarea wire:model="dropReason" rows="2" class="{{ $input }}"></textarea></label>
+                    @error('dropReason') <p class="text-xs text-bad-ink">{{ $message }}</p> @enderror
+                    @php $confirm = ['dropTender', 'Drop tender']; @endphp
+                    @break
                 @case('reopen')
                     <h2 class="text-lg font-semibold">Reopen tender</h2>
                     <p class="text-sm text-muted">Moves it back to In Progress and clears the submitted/winning prices. Use this to correct a mistake.</p>

@@ -13,6 +13,7 @@
             $list('done', 'Done', 'check', $counts['done']),
             $list('awarded', 'Awarded', 'award', $counts['awarded']),
             $list('lost', 'Lost', 'x', $counts['lost']),
+            $list('dropped', 'Dropped', 'minus', $counts['dropped']),
         ],
         'Quotation' => [$item(route('quotations.index'), 'Quotations', 'quotation', request()->routeIs('quotations.*'))],
         'Insights' => [$item(route('status'), 'Status', 'staff', request()->routeIs('status'))],

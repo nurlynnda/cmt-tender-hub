@@ -46,3 +46,10 @@ it('never folds the phone drawer, so its labels always show', function () {
     $drawer = Illuminate\Support\Str::between($html, 'data-drawer', '<main');
     expect($html)->toContain('data-drawer')->and($drawer)->not->toContain('is-folded')->toContain('Find Tenders');
 });
+
+it('shows the Dropped list in the sidebar with its count', function () {
+    Tender::factory()->create(['status' => TenderStatus::Dropped]);
+
+    $html = $this->actingAs(User::factory()->create())->get('/tenders/in-progress')->getContent();
+    expect($html)->toContain('data-nav="Dropped" data-icon="minus"')->toContain(route('tenders.index', 'dropped'));
+});

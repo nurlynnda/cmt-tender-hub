@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Actions\Tenders\{AddDocument, CancelTender, MarkTenderAwarded, MarkTenderDone, MarkTenderLost, RemoveDocument, ReopenTender, ToggleDocument, UpdateTender};
+use App\Actions\Tenders\{AddDocument, CancelTender, DropTender, MarkTenderAwarded, MarkTenderDone, MarkTenderLost, RemoveDocument, ReopenTender, ToggleDocument, UpdateTender};
 use App\Enums\{TenderCategory, TenderMode, TenderStatus, TenderType};
 use App\Exceptions\{CostingRequired, DocumentsIncomplete, InvalidTenderTransition, StaleTenderException};
 use App\Livewire\Forms\TenderForm;
@@ -31,6 +31,7 @@ class TenderDetail extends Component
     public string $cancelReason = '';
     public string $winningPrice = '';
     public string $lostReason = '';
+    public string $dropReason = '';
     public string $newDocument = '';
 
     /** Set by the Costing tab while it holds unsaved edits. */
@@ -132,6 +133,12 @@ class TenderDetail extends Component
         $this->apply(fn () => app(MarkTenderLost::class)->handle(
             auth()->user(), $this->tender, $this->version, Money::parse($this->winningPrice), $this->lostReason,
         ));
+    }
+
+    public function dropTender(): void
+    {
+        $this->validate(['dropReason' => ['nullable', 'string', 'max:1000']]);
+        $this->apply(fn () => app(DropTender::class)->handle(auth()->user(), $this->tender, $this->version, $this->dropReason));
     }
 
     public function reopen(): void

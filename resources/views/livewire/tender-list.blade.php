@@ -15,13 +15,16 @@
         TenderStatus::Lost => [['Submitted Price', Money::format($t->submitted_price_sen)], ['Win Price', Money::format($t->winning_price_sen)],
             ['Win Variant', $t->winVariant() ?? '—']],
         TenderStatus::Awarded => [['Submit Price', Money::format($t->submitted_price_sen)]],
+        TenderStatus::Dropped => [['Reason', $t->drop_reason ?? '—']],
         default => [],
     };
+    $textExtra = $status === TenderStatus::Dropped; // the Dropped reason is text: left-aligned and allowed to wrap
     // Header labels for $extra: must match its pairs, in order (headings need no model calls)
     $extraLabels = match ($status) {
         TenderStatus::Done => ['Submit Price', 'Company Variant', 'Gross'],
         TenderStatus::Lost => ['Submitted Price', 'Win Price', 'Win Variant'],
         TenderStatus::Awarded => ['Submit Price'],
+        TenderStatus::Dropped => ['Reason'],
         default => [],
     };
     // Actual GP from the PD: no percentage until the customer has been invoiced (0% would read as "no profit")
@@ -87,7 +90,7 @@
                 @if ($isOpen) <th class="{{ $th }}">Briefing</th> @endif
                 <th class="{{ $th }} text-right">Est. Value</th>
                 @if ($isOpen) <th class="{{ $th }}">Documents</th> @endif
-                @foreach ($extraLabels as $label) <th class="{{ $th }} text-right">{{ $label }}</th> @endforeach
+                @foreach ($extraLabels as $label) <th class="{{ $th }} {{ $textExtra ? '' : 'text-right' }}">{{ $label }}</th> @endforeach
                 @if ($status === TenderStatus::Awarded) <th class="{{ $th }} text-right" title="Actual gross profit from the PD">Actual GP</th> @endif
             </tr>
         </thead>
@@ -118,7 +121,7 @@
                         <div class="h-1.5 w-16 overflow-hidden rounded-full bg-hover"><div class="h-full bg-good-ink" style="width: {{ $t->documentPercent() }}%"></div></div>
                         <span class="text-[11.5px] text-muted">{{ $done }}/{{ $total }}</span></div></td>
                 @endif
-                @foreach ($extra($t) as [, $value]) <td class="{{ $td }} whitespace-nowrap text-right">{{ $value }}</td> @endforeach
+                @foreach ($extra($t) as [, $value]) <td class="{{ $td }} {{ $textExtra ? '' : 'whitespace-nowrap text-right' }}">{{ $value }}</td> @endforeach
                 @if ($status === TenderStatus::Awarded)
                     @php [$gp, $below, $closed] = $actualGp($t); @endphp
                     <td class="{{ $td }} whitespace-nowrap text-right"><span @class(['text-bad-ink' => $below])>{{ $gp }}</span>

@@ -39,6 +39,7 @@
             <span class="rounded-full bg-subtle px-2 py-0.5 text-xs">Docs {{ $pct }}%</span>
             <div class="ml-auto flex flex-wrap gap-2">
                 @if ($canEdit && $status === TenderStatus::InProgress)
+                    <button wire:click="openModal('drop')" class="{{ $btn }} border border-line hover:bg-hover">Drop tender</button>
                     <button wire:click="openModal('cancel')" class="{{ $btn }} border border-line hover:bg-hover">Cancel Tender</button>
                     <button wire:click="openModal('done')" class="{{ $btn }} bg-chip text-chip-ink hover:bg-chip-hover">Mark Done</button>
                 @endif

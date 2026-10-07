@@ -201,3 +201,14 @@ it('shows the activity log newest first', function () {
         ->assertSee('Ticked: Borang ISI (Tender Form)')
         ->assertSee('Siti Aisyah');
 });
+
+it('drops a tender from its page with an optional reason', function () {
+    [$pic, $tender] = detailFixture();
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
+        ->assertSee('Drop tender')
+        ->call('openModal', 'drop')->set('dropReason', 'No capacity')->call('dropTender')
+        ->assertHasNoErrors();
+
+    expect($tender->fresh()->status)->toBe(TenderStatus::Dropped)->and($tender->fresh()->drop_reason)->toBe('No capacity');
+});

@@ -139,3 +139,9 @@ it('lets keyboard and screen-reader users sort by deadline', function () {
         ->call('toggleDeadlineSort')->assertSeeHtml('aria-sort="ascending"')
         ->call('toggleDeadlineSort')->assertSeeHtml('aria-sort="descending"');
 });
+
+it('lists dropped tenders with their reason', function () {
+    Tender::factory()->create(['status' => TenderStatus::Dropped, 'dropped_at' => now(), 'drop_reason' => 'Outside our scope', 'title' => 'DROPPED ONE']);
+
+    $this->get('/tenders/dropped')->assertOk()->assertSee('Dropped Tenders')->assertSee('DROPPED ONE')->assertSee('Outside our scope');
+});
