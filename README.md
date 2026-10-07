@@ -84,6 +84,15 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
 - Admins set the letterhead, stamp, default terms and default SST in **Finance Settings**. Each quotation
   keeps a copy of the letterhead it was created with; stamp files are never deleted.
 
+## Dashboard and Status
+
+- The **Dashboard** is the home page: overview cards, upcoming deadlines, portfolio mix (by status and
+  EP / Non-EP), PIC summary, and Quotations / Projects cards.
+- **Status** (Insights) shows each PIC's tenders, win rate, bid value and won value; click a column to sort.
+- Both follow a period filter by **WO date** (All time, this/last month, this year, a month, custom).
+- Win rate = Awarded ÷ (Awarded + Lost), cancelled left out. Bid value = submitted price, or the estimated
+  value while a tender is in progress. Figures live in `app/Reports/`.
+
 ## Before going live
 
 - `php artisan serve` is for development; put a proper web server (e.g. Nginx +

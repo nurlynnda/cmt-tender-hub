@@ -1,6 +1,6 @@
 @php
     use App\Support\{Money, Percent};
-    $card = 'rounded-xl border border-line bg-surface p-4';
+    $card = 'min-w-0 rounded-xl border border-line bg-surface p-4'; // min-w-0: long titles must not stretch the grid on phones
     $c = $r['counts'];
     $rate = $r['win_rate_bp'] === null ? '—' : Percent::format($r['win_rate_bp'], 0);
     $segments = [
