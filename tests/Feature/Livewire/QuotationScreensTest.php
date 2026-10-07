@@ -207,3 +207,19 @@ it('sorts quotations by date when the Date heading is clicked', function () {
         ->call('toggleDateSort')->assertSet('sort', 'date_asc')->assertSeeInOrder(['OLDER ONE', 'NEWER ONE'])
         ->set('sort', 'bogus')->assertSeeInOrder(['NEWER ONE', 'OLDER ONE']);
 });
+
+it('tells the page a field was saved, so it can show Saved', function () {
+    [$u, $q] = myQuotation();
+
+    Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])
+        ->set('form.customer_name', 'Jabatan Perpaduan')->assertDispatched('saved')
+        ->set('form.attention_email', 'not-an-email')->assertHasErrors('form.attention_email');
+});
+
+it('shows the quotation page with its pill, tabs and the shared timeline', function () {
+    [$u, $q] = myQuotation();
+
+    Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])
+        ->assertSeeHtml('data-status="draft"')->assertSeeHtml('role="tablist"')
+        ->set('tab', 'history')->assertSeeHtml('border-l-2 border-line');
+});

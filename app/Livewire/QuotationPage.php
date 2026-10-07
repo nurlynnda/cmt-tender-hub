@@ -95,12 +95,15 @@ class QuotationPage extends Component
             'quote_date', 'terms' => [$field => $value],
             default => [$field => $blank($value)],
         };
-        $this->run(function () use ($data, $field) {
+        $saved = $this->run(function () use ($data, $field) {
             $this->version = app(UpdateQuotation::class)->handle(auth()->user(), $this->quotation, $this->version, $data)->version;
             if ($field === 'prepared_by') {
                 $this->load(); // the new preparer's contact details replace the old ones
             }
         });
+        if ($saved) {
+            $this->dispatch('saved'); // the page shows "Saved ✓" briefly
+        }
     }
 
     private function formRules(): array
@@ -144,10 +147,13 @@ class QuotationPage extends Component
             "items.$k.unit_price" => ['required', new MoneyAmount],
         ], [], ["items.$k.title" => 'title', "items.$k.quantity" => 'quantity', "items.$k.unit" => 'unit', "items.$k.unit_price" => 'unit price']);
         $row = $this->items[$k];
-        $this->run(fn () => $this->version = app(UpdateQuotationItem::class)->handle(auth()->user(), $this->item($id), $this->version, [
+        $saved = $this->run(fn () => $this->version = app(UpdateQuotationItem::class)->handle(auth()->user(), $this->item($id), $this->version, [
             'title' => $row['title'], 'details' => $row['details'], 'quantity' => (int) $row['quantity'],
             'unit' => $row['unit'], 'unit_price_sen' => Money::parse($row['unit_price']) ?? 0,
         ])->version);
+        if ($saved) {
+            $this->dispatch('saved');
+        }
     }
 
     public function addItem(): void
@@ -215,7 +221,8 @@ class QuotationPage extends Component
     }
 
     /** Runs an action; refusals become a message and typed values stay on screen. */
-    private function run(callable $action, bool $reload = false): void
+    /** Runs an action; a refusal becomes the page's problem message. Returns whether it succeeded. */
+    private function run(callable $action, bool $reload = false): bool
     {
         $this->problem = null;
         try {
@@ -223,11 +230,15 @@ class QuotationPage extends Component
             if ($reload) {
                 $this->load();
             }
+
+            return true;
         } catch (ModelNotFoundException) {
             $this->problem = 'This item was removed by someone else — reload to see the latest.';
         } catch (StaleQuotation|QuotationLocked|InvalidQuotationTransition|QuotationIncomplete|DomainException|InvalidArgumentException $e) {
             $this->problem = $e->getMessage();
         }
+
+        return false;
     }
 
     public function render()
