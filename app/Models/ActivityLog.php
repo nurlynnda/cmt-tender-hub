@@ -22,10 +22,12 @@ class ActivityLog extends Model
         static::updating(fn () => false);
     }
 
-    public static function record(Tender $tender, ?User $user, string $event, string $description): self
+    /** History belongs to a tender or a quotation. */
+    public static function record(Tender|Quotation $subject, ?User $user, string $event, string $description): self
     {
         return static::create([
-            'tender_id' => $tender->id,
+            'tender_id' => $subject instanceof Tender ? $subject->id : null,
+            'quotation_id' => $subject instanceof Quotation ? $subject->id : null,
             'user_id' => $user?->id,
             'event' => $event,
             'description' => $description,

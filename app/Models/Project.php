@@ -33,6 +33,11 @@ class Project extends Model
         return $this->belongsTo(Tender::class);
     }
 
+    public function quotation(): BelongsTo
+    {
+        return $this->belongsTo(Quotation::class);
+    }
+
     public function projectType(): BelongsTo
     {
         return $this->belongsTo(ProjectType::class);
