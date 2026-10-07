@@ -13,16 +13,19 @@ beforeEach(function () {
     award('2026-03-01', 'KEMENTERIAN A', [['name' => 'ACME SDN BHD', 'price_sen' => 1000], ['name' => 'Acme Sdn. Bhd.', 'price_sen' => 50]]); // same company twice on one tender
     award('2026-04-01', null, [['name' => 'BETA', 'price_sen' => null]]);
     award('2025-05-01', 'KEMENTERIAN B', [['name' => '10 CREATIVE SOLUTIONS SDN BHD', 'price_sen' => 700]]);
-    award(null, 'KEMENTERIAN B', [['name' => 'GAMMA', 'price_sen' => 9]]);
+    award(null, 'KEMENTERIAN B', [['name' => 'GAMMA', 'price_sen' => 9]]);                         // undated → left out of "2023 – now"
+    award('2022-06-01', 'KEMENTERIAN LAMA', [['name' => 'OLDCO', 'price_sen' => 99999]]);          // before 2023 → left out
     CollectedTender::factory()->create(['status' => 'closed', 'closing_date' => '2026-01-01', 'winners' => null]); // closed, no winner
     CollectedTender::factory()->create(['status' => 'open', 'closing_date' => '2026-05-01', 'winners' => [['name' => 'OPEN CO', 'price_sen' => 5]]]); // not closed → not an award
 });
 
-it('summarises a year and all years', function () {
+it('summarises a year and 2023 onwards (older and undated awards left out)', function () {
     $r = app(MarketReport::class);
 
     expect($r->summary(2026))->toBe(['tenders' => 3, 'value_sen' => 1350, 'contractors' => 3, 'unpriced' => 1])
-        ->and($r->summary(null))->toBe(['tenders' => 5, 'value_sen' => 2059, 'contractors' => 4, 'unpriced' => 1])
+        ->and($r->summary(null))->toBe(['tenders' => 4, 'value_sen' => 2050, 'contractors' => 3, 'unpriced' => 1])
+        ->and(array_column($r->byMinistry(null), 'ministry'))->not->toContain('KEMENTERIAN LAMA')
+        ->and(MarketReport::fromYear())->toBe(2023)
         ->and($r->byYear())->toBe([['year' => 2026, 'tenders' => 3, 'value_sen' => 1350], ['year' => 2025, 'tenders' => 1, 'value_sen' => 700]])
         ->and($r->years())->toBe([2026, 2025]);
 });
@@ -43,7 +46,7 @@ it('finds our rank, or none when we won nothing that year', function () {
     $r = app(MarketReport::class);
 
     expect($r->ownRank(2026))->toBe(['rank' => 2, 'of' => 3, 'wins' => 1, 'value_sen' => 300])
-        ->and($r->ownRank(null))->toBe(['rank' => 2, 'of' => 4, 'wins' => 2, 'value_sen' => 1000])   // ACME 1050 first
+        ->and($r->ownRank(null))->toBe(['rank' => 2, 'of' => 3, 'wins' => 2, 'value_sen' => 1000])   // ACME 1050 first; OLDCO and GAMMA left out
         ->and($r->ownRank(2024))->toBeNull();
 
     \App\Models\FinanceSetting::current()->update(['own_company_names' => null]);

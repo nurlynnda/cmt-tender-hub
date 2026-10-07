@@ -18,13 +18,27 @@ final class MarketReport
 {
     private ?string $version = null;
 
-    /** Winner rows of awarded tenders, optionally only those closing in one year. */
+    /** The first year counted; earlier years (and awards with no closing date) are left out. */
+    public static function fromYear(): int
+    {
+        return (int) config('tenderhub.market_from_year', 2023);
+    }
+
+    /** "2023 – now": the label for the no-single-year view. */
+    public static function periodLabel(): string
+    {
+        return self::fromYear().' – now';
+    }
+
+    /** Winner rows of awarded tenders closing in one year, or (null) from fromYear() on. */
     private function wins(?int $year): Builder
     {
         return DB::table('collected_tender_winners as w')
             ->join('collected_tenders as t', 't.id', '=', 'w.collected_tender_id')
             ->where('t.status', 'closed')
-            ->when($year, fn ($q) => $q->whereBetween('t.closing_date', ["{$year}-01-01", "{$year}-12-31"]));
+            ->when($year,
+                fn ($q) => $q->whereBetween('t.closing_date', ["{$year}-01-01", "{$year}-12-31"]),
+                fn ($q) => $q->where('t.closing_date', '>=', self::fromYear().'-01-01')); // undated awards drop out too
     }
 
     /** Changes whenever winner rows are added, replaced or removed. */
@@ -42,7 +56,7 @@ final class MarketReport
     {
         // One fixed key per figure, holding the winners-list version it was worked out for: a newer
         // version overwrites it, so old copies never pile up. (Also boxed: the cache can't hold a bare null.)
-        $key = "market:{$name}:".($year ?? 'all');
+        $key = "market:{$name}:".($year ?? 'from'.self::fromYear());
         $version = $this->version();
         $this->version = null; // check again on the next read, so new awards show straight away
         $box = Cache::get($key);
@@ -84,7 +98,7 @@ final class MarketReport
     /** @return list<array{year:int, tenders:int, value_sen:int}> newest first; undated awards left out */
     public function byYear(): array
     {
-        return $this->remember('by-year', null, fn () => $this->wins(null)->whereNotNull('t.closing_date')
+        return $this->remember('by-year', null, fn () => $this->wins(null)
             ->selectRaw('YEAR(t.closing_date) AS year, COUNT(DISTINCT w.collected_tender_id) AS tenders, COALESCE(SUM(w.price_sen), 0) AS value_sen')
             ->groupByRaw('YEAR(t.closing_date)')->orderByDesc('year')->get()
             ->map(fn ($r) => ['year' => (int) $r->year, 'tenders' => (int) $r->tenders, 'value_sen' => (int) $r->value_sen])->all());

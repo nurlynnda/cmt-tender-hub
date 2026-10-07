@@ -52,8 +52,8 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
 
 - **Find Tenders → Status: Awarded** lists closed tenders with a published winner, the price
   won, a Contractor search box and an **Our wins** button. A green "Ours" tag marks our company.
-- **Market Insights** (sidebar → Insights) shows open tenders right now, then for a chosen year
-  (or all years): awarded tenders, value and contractors, our rank, awards by year, spend by
+- **Market Insights** (sidebar → Insights) shows open tenders right now, then for a chosen year from 2023 on
+  (or "2023 – now"; earlier years have too few awards, set in `config/tenderhub.php`): awarded tenders, value and contractors, our rank, awards by year, spend by
   ministry and top contractors, with "See all" pages for every ministry and contractor.
 - Winners are copied into a searchable table, `collected_tender_winners`. The daily collection
   keeps it current. **After `collector:import-legacy`, run `php artisan collector:index-winners`

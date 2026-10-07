@@ -66,14 +66,14 @@
                 <a href="{{ $awardedLink(['ours' => 1]) }}" class="btn btn-outline">See our wins</a>
             </div>
         @else
-            <p class="text-[13px] text-muted">No awards in {{ $year === 'all' ? 'any year' : $year }}.</p>
+            <p class="text-[13px] text-muted">{{ $emptyNote }}.</p>
         @endif
     </x-card>
 
     {{-- Every year --}}
     <div class="grid gap-5 lg:grid-cols-2">
         @foreach ([['Awarded value by year', 'value_sen', $maxValue], ['Tenders awarded by year', 'tenders', $maxCount]] as [$title, $field, $max])
-            <x-card :title="$title" subtitle="Every year, by closing date" icon="chart">
+            <x-card :title="$title" :subtitle="'Each year since '.\App\Market\MarketReport::fromYear().', by closing date'" icon="chart">
                 <ul class="space-y-2.5 text-[13px]">
                     @forelse ($byYear as $row)
                         <li>
@@ -101,7 +101,7 @@
                         <div class="mt-1 h-2 rounded-full bg-hover"><div class="h-2 rounded-full bg-info-ink" style="width: {{ round($m['value_sen'] * 100 / $maxMinistry, 1) }}%"></div></div>
                     </li>
                 @empty
-                    <li class="text-muted">No awards in {{ $yearLabel === 'All years' ? 'any year' : $yearLabel }}.</li>
+                    <li class="text-muted">{{ $emptyNote }}.</li>
                 @endforelse
             </ul>
         </x-card>
@@ -120,7 +120,7 @@
                         <div class="mt-1 h-2 rounded-full bg-hover"><div class="h-2 rounded-full bg-good-ink" style="width: {{ round($c->value_sen * 100 / $maxTop, 1) }}%"></div></div>
                     </li>
                 @empty
-                    <li class="text-muted">No awards in {{ $yearLabel === 'All years' ? 'any year' : $yearLabel }}.</li>
+                    <li class="text-muted">{{ $emptyNote }}.</li>
                 @endforelse
                 @if ($own && $own['rank'] > 10)
                     <li data-own-extra class="rounded-lg bg-accent-tint px-2 py-1.5">

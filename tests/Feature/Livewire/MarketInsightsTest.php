@@ -41,6 +41,9 @@ it('falls back to the current year for a year with no awards, and says so', func
         ->assertSee('No awards in 2026')->assertDontSeeHtml('data-own-rank');     // our company won nothing
 
     Livewire::withQueryParams(['year' => 'abc'])->test(MarketInsights::class)->assertSet('year', '2026')->assertSee('showing 2026');
+
+    win('2022-02-01', 'OLDCO', 500); // a year before 2023 isn't offered, even with awards
+    Livewire::withQueryParams(['year' => '2022'])->test(MarketInsights::class)->assertSet('year', '2026')->assertSee('showing 2026');
 });
 
 it('shows all years when asked, and links the right-now boxes to Find Tenders', function () {
@@ -48,8 +51,12 @@ it('shows all years when asked, and links the right-now boxes to Find Tenders', 
     win('2025-02-01', 'ACME', 100);
     CollectedTender::factory()->create(['status' => 'open', 'closing_date' => '2026-10-07']);
 
+    win('2022-02-01', 'OLDCO', 500);
+
     Livewire::withQueryParams(['year' => 'all'])->test(MarketInsights::class)
-        ->assertSee('All years')->assertSee('RM 1.00')->assertSee('No awards in any year')
+        ->assertSee('2023 – now')->assertDontSee('All years')->assertSee('RM 1.00')->assertSee('No awards since 2023')
+        ->assertDontSee('OLDCO')->assertDontSeeHtml('<option value="2022">')
+        ->assertSee(route('find-tenders.index', ['status' => 'awarded', 'contractor' => 'ACME', 'from' => '2023-01-01']))
         ->assertSee('Closing today')->assertSee(route('find-tenders.index', ['from' => '2026-10-07', 'to' => '2026-10-07']))
         ->set('year', '2025')->assertSee('ACME');
 });

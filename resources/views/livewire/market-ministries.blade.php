@@ -26,7 +26,7 @@
                 <td class="{{ $td }} whitespace-nowrap text-right">{{ Money::format($m['value_sen']) }}</td>
             </tr>
         @empty
-            <tr><td colspan="3" class="px-3 py-10 text-center text-muted">No awards in {{ $yearLabel === 'All years' ? 'any year' : $yearLabel }}.</td></tr>
+            <tr><td colspan="3" class="px-3 py-10 text-center text-muted">{{ $emptyNote }}.</td></tr>
         @endforelse
         </tbody>
     </x-data-table>

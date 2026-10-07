@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Concerns;
 
+use App\Market\MarketReport;
 use App\Support\MalaysiaTime;
 use Livewire\Attributes\Url;
 
@@ -35,9 +36,9 @@ trait HasMarketYear
         return (int) $this->year;
     }
 
-    /** Find Tenders closing-date filters for the chosen year ([] for all years). */
+    /** Find Tenders closing-date filters matching the figures: the chosen year, or from the first counted year on. */
     protected function yearRange(?int $year): array
     {
-        return $year ? ['from' => "{$year}-01-01", 'to' => "{$year}-12-31"] : [];
+        return $year ? ['from' => "{$year}-01-01", 'to' => "{$year}-12-31"] : ['from' => MarketReport::fromYear().'-01-01'];
     }
 }

@@ -22,7 +22,8 @@ class MarketMinistries extends Component
 
         return view('livewire.market-ministries', [
             'years' => $years,
-            'yearLabel' => $y ? (string) $y : 'All years',
+            'yearLabel' => $y ? (string) $y : MarketReport::periodLabel(),
+            'emptyNote' => $y ? "No awards in {$y}" : 'No awards since '.MarketReport::fromYear(),
             'ministries' => $r->byMinistry($y),
         ]);
     }

@@ -39,7 +39,8 @@ class MarketContractors extends Component
 
         return view('livewire.market-contractors', [
             'years' => $years,
-            'yearLabel' => $y ? (string) $y : 'All years',
+            'yearLabel' => $y ? (string) $y : MarketReport::periodLabel(),
+            'emptyNote' => $y ? "No awards in {$y}" : 'No awards since '.MarketReport::fromYear(),
             'contractors' => $this->pageOf($r->contractors($y, $this->search)),
             'ownKeys' => OwnCompany::keys(),
             'range' => $this->yearRange($y),

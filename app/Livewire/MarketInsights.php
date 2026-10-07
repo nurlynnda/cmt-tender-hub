@@ -25,7 +25,8 @@ class MarketInsights extends Component
 
         return view('livewire.market-insights', [
             'years' => $years,
-            'yearLabel' => $y ? (string) $y : 'All years',
+            'yearLabel' => $y ? (string) $y : MarketReport::periodLabel(),
+            'emptyNote' => $y ? "No awards in {$y}" : 'No awards since '.MarketReport::fromYear(),
             'now' => $r->now(),
             'today' => $today->toDateString(),
             'weekEnd' => $today->addDays(7)->toDateString(),
