@@ -11,11 +11,12 @@
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-body text-ink antialiased flex items-center justify-center p-4">
-    <main class="w-full max-w-sm rounded-2xl bg-surface border border-line p-8 shadow-sm">
-        <div class="mb-6 flex items-center gap-2">
-            <span class="grid h-9 w-9 place-items-center rounded-lg bg-accent font-bold text-accent-ink">T</span>
-            <span class="text-lg font-semibold">CMT Tender Hub</span>
+<body class="grid min-h-screen place-items-center bg-canvas p-4 font-sans text-ink antialiased">
+    <main data-auth-card class="w-full max-w-sm rounded-[20px] border border-line bg-surface p-7 shadow-[0_6px_18px_var(--shadow-soft)]">
+        <div class="mb-6 flex items-center gap-2.5">
+            <span class="grid h-[34px] w-[34px] place-items-center rounded-[10px] bg-chip text-[15px] font-extrabold text-accent">T</span>
+            <span class="text-lg font-extrabold tracking-tight">TenderHub</span>
+            <span class="ml-auto text-[11px] font-semibold text-muted-2">CMT</span>
         </div>
         {{ $slot }}
     </main>

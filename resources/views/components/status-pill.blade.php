@@ -1,10 +1,11 @@
 @props(['status'])
 @php
-    // A tender status (enum) or a quotation status string (draft, sent, expired, accepted, rejected, revised)
+    // A tender status (enum), a quotation status string (draft, sent, expired, accepted, rejected, revised)
+    // or a collected tender's open / closed
     $value = $status instanceof \App\Enums\TenderStatus ? $status->value : (string) $status;
     $label = $status instanceof \App\Enums\TenderStatus ? $status->label() : ucfirst($value);
     [$bg, $ink] = match ($value) {
-        'in_progress', 'sent' => ['bg-info-bg', 'text-info-ink'],
+        'in_progress', 'sent', 'open' => ['bg-info-bg', 'text-info-ink'],
         'awarded', 'accepted' => ['bg-good-bg', 'text-good-ink'],
         'lost', 'rejected', 'expired' => ['bg-bad-bg', 'text-bad-ink'],
         'done', 'draft' => ['bg-hover', 'text-muted'],

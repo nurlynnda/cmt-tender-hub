@@ -102,3 +102,9 @@ it('shows where a pipeline tender was collected from', function () {
 it('404s for an unknown collected tender', function () {
     $this->get('/find-tenders/999999')->assertNotFound();
 });
+
+it('shows the collected tender\'s key facts in the prototype style', function () {
+    $this->get(route('find-tenders.show', collected()))->assertOk()
+        ->assertSee('data-facts', false)->assertSee('data-status="closed"', false)
+        ->assertSeeInOrder(['Ministry', 'KEMENTERIAN DALAM NEGERI', 'Agency', 'JABATAN PERPADUAN NEGARA', 'Closing', '15 Oct 2026']);
+});

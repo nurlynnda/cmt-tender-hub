@@ -1,12 +1,14 @@
+@php $in = 'w-full rounded-[10px] border border-line-2 bg-surface px-3 py-2.5 text-[13.5px]'; @endphp
 <form wire:submit="send" class="space-y-4">
-    <h1 class="text-xl font-semibold">Forgot password</h1>
-    <p class="text-sm text-muted">Enter your work email and we'll send you a link to choose a new password.</p>
+    <div>
+        <h1 class="text-xl font-extrabold tracking-tight">Forgot password</h1>
+        <p class="mt-1 text-[13px] text-muted-2">Enter your work email and we'll send you a link to choose a new password.</p>
+    </div>
     @if ($status)
-        <p class="rounded-lg bg-good-bg px-3 py-2 text-sm text-good-ink">{{ $status }}</p>
+        <p class="rounded-xl bg-good-bg px-3 py-2 text-[13px] text-good-ink">{{ $status }}</p>
     @endif
-    <input type="email" wire:model="email" required placeholder="you@company.com"
-           class="w-full rounded-lg border border-line bg-surface px-3 py-2">
-    @error('email') <p class="text-sm text-bad-ink">{{ $message }}</p> @enderror
-    <button type="submit" class="w-full rounded-lg bg-chip px-4 py-2 font-medium text-chip-ink">Send reset link</button>
-    <a href="{{ route('login') }}" class="block text-center text-sm text-muted hover:text-ink">Back to sign in</a>
+    <input type="email" wire:model="email" required placeholder="you@company.com" aria-label="Email" class="{{ $in }}">
+    @error('email') <p class="text-[13px] text-bad-ink">{{ $message }}</p> @enderror
+    <button type="submit" class="btn btn-dark w-full">Send reset link</button>
+    <a href="{{ route('login') }}" class="block text-center text-[13px] font-semibold text-muted hover:text-ink">Back to sign in</a>
 </form>

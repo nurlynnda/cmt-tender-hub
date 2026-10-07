@@ -69,3 +69,7 @@ it('logs out', function () {
 
     $this->assertGuest();
 });
+
+it('shows the TenderHub sign-in card', function () {
+    $this->get('/login')->assertOk()->assertSee('data-auth-card', false)->assertSee('TenderHub');
+});
