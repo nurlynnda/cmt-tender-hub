@@ -66,3 +66,20 @@ it('links to the page from the sidebar for admins only', function () {
     $this->actingAs(User::factory()->admin()->create())->get(route('settings'))->assertSee(route('finance.settings'));
     $this->actingAs(User::factory()->manager()->create())->get(route('settings'))->assertDontSee(route('finance.settings'));
 });
+
+it('saves the company names used to spot our wins, one per line', function () {
+    Livewire::actingAs(User::factory()->admin()->create())->test(FinanceSettings::class)
+        ->assertSet('ownNames', '10 CREATIVE SOLUTIONS SDN BHD')
+        ->set('ownNames', "10 Creative Solutions Sdn. Bhd.\n\n10 CREATIVE SOLUTIONS SDN BHD\nCMT TECH")->call('saveOwnNames')
+        ->assertSee('Saved. Market Insights and Find Tenders will mark these names as ours.');
+
+    expect(\App\Market\OwnCompany::keys())->toBe(['10 CREATIVE SOLUTIONS SDN BHD', 'CMT TECH'])
+        ->and(\App\Market\OwnCompany::label())->toBe('10 Creative Solutions Sdn. Bhd.');
+});
+
+it('labels an all-capitals company name in title case, and falls back when none is set', function () {
+    expect(\App\Market\OwnCompany::label())->toBe('10 Creative Solutions Sdn Bhd');
+
+    FinanceSetting::current()->update(['own_company_names' => null]);
+    expect(\App\Market\OwnCompany::label())->toBe('Our company')->and(\App\Market\OwnCompany::keys())->toBe([]);
+});

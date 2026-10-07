@@ -16,6 +16,15 @@
         </div>
         @error('charge') <p class="mt-1 text-xs text-bad-ink">{{ $message }}</p> @enderror
         @error('share') <p class="mt-1 text-xs text-bad-ink">{{ $message }}</p> @enderror
+
+        <div class="mt-4 border-t border-line pt-4">
+            <label class="flex flex-col gap-1 {{ $lbl }}">Our company names in tender results (one per line)
+                <textarea wire:model="ownNames" rows="3" class="{{ $input }} max-w-xl" placeholder="10 CREATIVE SOLUTIONS SDN BHD"></textarea>
+            </label>
+            <p class="mt-1 text-xs text-muted">Matched ignoring capitals, dots, commas and spaces. Used to mark our wins in Find Tenders and Market Insights.</p>
+            @error('ownNames') <p class="mt-1 text-xs text-bad-ink">{{ $message }}</p> @enderror
+            <button type="button" wire:click="saveOwnNames" class="btn btn-dark mt-2">Save names</button>
+        </div>
     </x-card>
 
     <x-card title="Company letterhead" subtitle="Printed at the top of every quotation. Each new quotation keeps a copy, so changes here never alter quotations already created." icon="quotation">

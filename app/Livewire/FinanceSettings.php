@@ -27,6 +27,8 @@ class FinanceSettings extends Component
     public string $typeMargin = '';
     public string $charge = '';
     public string $share = '';
+    /** Our company names in tender results, one per line (to spot our wins). */
+    public string $ownNames = '';
     public ?string $notice = null;
     public ?string $problem = null;
 
@@ -36,6 +38,7 @@ class FinanceSettings extends Component
         $s = FinanceSetting::current();
         $this->charge = Percent::toInput($s->project_charge_bp);
         $this->share = Percent::toInput($s->commission_share_bp);
+        $this->ownNames = (string) $s->own_company_names;
         $this->loadCompany();
     }
 
@@ -131,6 +134,14 @@ class FinanceSettings extends Component
             ['charge' => 'project charges', 'share' => 'commission share']);
         app(SaveFinanceDefaults::class)->handle(auth()->user(), Percent::parseBp($this->charge), Percent::parseBp($this->share));
         $this->notice = 'Saved. New projects will use these numbers.';
+    }
+
+    public function saveOwnNames(): void
+    {
+        $this->authorize('manage-finance');
+        $this->validate(['ownNames' => ['nullable', 'string', 'max:2000']], [], ['ownNames' => 'company names']);
+        FinanceSetting::current()->forceFill(['own_company_names' => trim($this->ownNames)])->save();
+        $this->notice = 'Saved. Market Insights and Find Tenders will mark these names as ours.';
     }
 
     public function render()
