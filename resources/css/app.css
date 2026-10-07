@@ -6,6 +6,8 @@
 @source '../../app/Livewire';
 
 @custom-variant dark (&:where(.dark, .dark *));
+/* Folded desktop sidebar: the <aside> carries .is-folded; children use folded:… */
+@custom-variant folded (&:where(.is-folded, .is-folded *));
 
 :root {
     --body: #E7E6E2; --surface: #FFFFFF; --canvas: #F5F4FA; --subtle: #FAFAFB;
@@ -15,6 +17,9 @@
     --accent: #8BE36B; --accent-ink: #16330B; --accent-tint: #EFF9E8;
     --good-bg: #E6F7EA; --good-ink: #18794E; --warn-bg: #FDF0E3; --warn-ink: #A35A12;
     --bad-bg: #FDECEA; --bad-ink: #C0342B; --info-bg: #E8F0FD; --info-ink: #2F6FD0;
+    --ink-2: #374151; --muted-2: #8B87A0; --accent-solid: #6FB85E; --line-2: #E6E2F1;
+    --qo-1: #F4F0FF; --qo-2: #EDF3FF; --qo-3: #E6F5FD; --qo-4: #DCF1FB;
+    --qo-card: rgba(255,255,255,0.72); --qo-card-border: rgba(255,255,255,0.9); --shadow-soft: rgba(87,83,107,0.07);
     color-scheme: light;
 }
 
@@ -26,6 +31,9 @@
     --accent: #8BE36B; --accent-ink: #16330B; --accent-tint: #1E2A18;
     --good-bg: #17301F; --good-ink: #6FD39A; --warn-bg: #33240F; --warn-ink: #EDA75C;
     --bad-bg: #351A17; --bad-ink: #F28C81; --info-bg: #1B2A3F; --info-ink: #7FAAE8;
+    --ink-2: #C7C5BD; --muted-2: #85847C; --accent-solid: #7CC46A; --line-2: #33322E;
+    --qo-1: #1F1C29; --qo-2: #1B2030; --qo-3: #18242B; --qo-4: #172629;
+    --qo-card: rgba(27,26,24,0.72); --qo-card-border: rgba(255,255,255,0.06); --shadow-soft: rgba(0,0,0,0.25);
     color-scheme: dark;
 }
 
@@ -53,6 +61,10 @@
     --color-bad-ink: var(--bad-ink);
     --color-info-bg: var(--info-bg);
     --color-info-ink: var(--info-ink);
+    --color-ink-2: var(--ink-2);
+    --color-muted-2: var(--muted-2);
+    --color-accent-solid: var(--accent-solid);
+    --color-line-2: var(--line-2);
 }
 
 [x-cloak] { display: none !important; }

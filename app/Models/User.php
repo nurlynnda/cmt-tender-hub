@@ -34,11 +34,6 @@ class User extends Authenticatable
 
     public function initials(): string
     {
-        $words = preg_split('/\s+/', trim($this->name));
-
-        return strtoupper(implode('', array_map(
-            fn (string $w) => mb_substr($w, 0, 1),
-            array_slice($words, 0, 2),
-        )));
+        return \App\Support\Initials::of($this->name);
     }
 }
