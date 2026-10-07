@@ -25,6 +25,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->middleware('can:manage-users')->name('users.index');
     Route::get('/settings/finance', \App\Livewire\FinanceSettings::class)
         ->middleware('can:manage-finance')->name('finance.settings');
+    Route::get('/settings/finance/stamp', \App\Http\Controllers\CompanyStampController::class)
+        ->middleware('can:manage-finance')->name('company.stamp');
     Route::get('/quotations/{quotation}', \App\Livewire\QuotationPage::class)->whereNumber('quotation')->name('quotations.show');
     Route::get('/quotations/{quotation}/pdf', \App\Http\Controllers\QuotationPdfController::class)->whereNumber('quotation')->name('quotations.pdf');
     Route::get('/quotations/{quotation}/pd',\App\Livewire\QuotationProjectPage::class)->whereNumber('quotation')->name('quotations.pd');
