@@ -53,3 +53,8 @@ it('shows the Dropped list in the sidebar with its count', function () {
     $html = $this->actingAs(User::factory()->create())->get('/tenders/in-progress')->getContent();
     expect($html)->toContain('data-nav="Dropped" data-icon="minus"')->toContain(route('tenders.index', 'dropped'));
 });
+
+it('lists Market Insights under Insights', function () {
+    expect($this->actingAs(User::factory()->create())->get('/dashboard')->getContent())
+        ->toContain('data-nav="Market Insights" data-icon="chart"')->toContain(route('market.index'));
+});

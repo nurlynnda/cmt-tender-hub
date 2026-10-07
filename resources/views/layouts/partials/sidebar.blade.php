@@ -16,7 +16,10 @@
             $list('dropped', 'Dropped', 'minus', $counts['dropped']),
         ],
         'Quotation' => [$item(route('quotations.index'), 'Quotations', 'quotation', request()->routeIs('quotations.*'))],
-        'Insights' => [$item(route('status'), 'Status', 'staff', request()->routeIs('status'))],
+        'Insights' => [
+            $item(route('status'), 'Status', 'staff', request()->routeIs('status')),
+            $item(route('market.index'), 'Market Insights', 'chart', request()->routeIs('market.*')),
+        ],
         'Account' => array_values(array_filter([
             $item(route('settings'), 'Settings', 'settings', request()->routeIs('settings')),
             auth()->user()->can('manage-users') ? $item(route('users.index'), 'Manage Users', 'user', request()->routeIs('users.*')) : null,
