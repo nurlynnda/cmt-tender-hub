@@ -18,6 +18,12 @@ final class SampleData
 {
     public const KEEP_EMAILS = ['admin@cmt.test', 'manager@cmt.test'];
 
+    /** Once the register has been imported, the pipeline holds real data: replacing "samples" would delete it. */
+    public function alreadyImported(): bool
+    {
+        return DB::table('activity_logs')->whereIn('event', RegisterImporter::IMPORT_EVENTS)->exists();
+    }
+
     public function preview(): array
     {
         return [

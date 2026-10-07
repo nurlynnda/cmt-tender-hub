@@ -42,7 +42,17 @@ class ImportTenderRegister extends Command
         }
         $accounts = $importer->accountsNeeded($read['rows']);
         $this->line('New switched-off accounts: '.($accounts ? implode(', ', $accounts) : 'none'));
+        $kept = $importer->keptInApp($read['rows']);
+        if ($kept !== []) {
+            $this->line('Changed in the app since the last import — status kept: '.implode(', ', $kept));
+        }
         if ($this->option('replace-samples')) {
+            if ($samples->alreadyImported()) {
+                $this->error('The register has already been imported, so the pipeline holds real data. '
+                    .'--replace-samples would delete it — run without it to update. Nothing was changed.');
+
+                return self::FAILURE;
+            }
             foreach ($samples->preview() as $label => $count) {
                 $this->line("Will remove {$label}: {$count}");
             }

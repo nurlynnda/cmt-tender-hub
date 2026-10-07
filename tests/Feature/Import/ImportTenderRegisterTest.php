@@ -150,3 +150,70 @@ it('replaces a sample tender that shares a WO number with the register, instead 
         ->and($real->activity()->pluck('description')->all())->toBe(['Imported from the 2026 register'])
         ->and(User::find($sampleStaff->id))->toBeNull();
 });
+
+function registerVariant(array $replace): string
+{
+    $path = tempnam(sys_get_temp_dir(), 'reg');
+    file_put_contents($path, strtr(file_get_contents(registerFixture()), $replace));
+
+    return $path;
+}
+
+it('moves the WO-number counter past imported numbers, so registering in the app never clashes', function () {
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--commit' => true])->assertSuccessful();
+
+    expect(app(\App\Actions\Tenders\GenerateWoNumber::class)->next(\Carbon\CarbonImmutable::parse('2026-01-01')))->toBe('200-01012026-008');
+});
+
+it('refuses to replace samples once the register has been imported', function () {
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--commit' => true])->assertSuccessful();
+
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--commit' => true, '--replace-samples' => true])
+        ->expectsOutputToContain('already been imported')->assertFailed();
+
+    expect(Tender::count())->toBe(7)->and(User::where('email', 'like', '%@import.invalid')->count())->toBe(3);
+});
+
+it('keeps progress made in the app since the last import, and takes newer sheet statuses otherwise', function () {
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--commit' => true])->assertSuccessful();
+    $manager = User::factory()->manager()->create();
+    $done = Tender::where('wo_number', '200-01012026-003')->first();                     // sheet: Submitted
+    app(\App\Actions\Tenders\MarkTenderAwarded::class)->handle($manager, $done, $done->version);
+    $open = Tender::where('wo_number', '200-01012026-002')->first();                     // sheet: Assigned, untouched in the app
+
+    $path = registerVariant([',Assigned,' => ',Submitted,']);                              // the sheet moved 002 on
+    $this->artisan('tenders:import-register', ['file' => $path])
+        ->expectsOutputToContain('Changed in the app since the last import — status kept: 200-01012026-003')->assertSuccessful();
+    $this->artisan('tenders:import-register', ['file' => $path, '--commit' => true])->assertSuccessful();
+
+    expect($done->fresh()->status)->toBe(TenderStatus::Awarded)
+        ->and($open->fresh()->status)->toBe(TenderStatus::Done);
+});
+
+it('finds a renamed imported account again instead of making a duplicate', function () {
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--commit' => true])->assertSuccessful();
+    $aminah = User::where('name', 'Aminah')->sole();
+    $aminah->forceFill(['name' => 'Aminah binti Ali', 'email' => 'aminah@cmt.my', 'is_active' => true])->save();
+
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--commit' => true])->assertSuccessful();
+
+    expect(User::where('name', 'Aminah')->exists())->toBeFalse()
+        ->and(Tender::where('pic_id', $aminah->id)->count())->toBe(3);
+});
+
+it('gives two people whose names make the same email address separate accounts', function () {
+    $this->artisan('tenders:import-register', ['file' => registerVariant([',Aminah,' => ',Siti A.,', ',Badrul,' => ',Siti A,']), '--commit' => true])
+        ->assertSuccessful();
+
+    expect(User::where('name', 'Siti A.')->sole()->email)->toBe('siti-a@import.invalid')
+        ->and(User::where('name', 'Siti A')->sole()->email)->toBe('siti-a-2@import.invalid');
+});
+
+it('clears the imported bid price when a later sheet no longer has the cost', function () {
+    $this->artisan('tenders:import-register', ['file' => registerFixture(), '--commit' => true])->assertSuccessful();
+
+    $this->artisan('tenders:import-register', ['file' => registerVariant(['"320,000.00"' => '']), '--commit' => true])->assertSuccessful();
+
+    $t = Tender::where('wo_number', '200-01012026-003')->first();
+    expect($t->costingLines)->toHaveCount(0)->and($t->bid_price_override_sen)->toBeNull();
+});
