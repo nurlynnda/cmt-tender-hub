@@ -86,3 +86,17 @@ it('writes the typed signature in the Allura handwriting font, stored with the a
     expect(str_contains($pdf, 'Allura'))->toBeTrue('the signature font is not in the PDF')
         ->and(str_contains(app(QuotationPdf::class)->bytes(pdfQuotation(['number' => 'QTN-2026-0015', 'show_signature' => false])), 'Allura'))->toBeFalse();
 });
+
+it('shows frequency only when needed, marks SST items and never shows costs', function () {
+    $q = pdfQuotation();
+    $q->items[0]->update(['frequency' => 12, 'unit_cost_sen' => 777700, 'vendor' => 'SecretVendor', 'margin_bp' => 1234]);
+    $q->items[1]->update(['has_sst' => false]);
+
+    $html = app(QuotationPdf::class)->html($q->fresh());
+    expect($html)->toContain('Freq.')->toContain('<td class="right">12</td>')->toContain('on items marked *')
+        ->toContain('349,200.00*</td>')->toContain('6,500.00</td>')->not->toContain('6,500.00*')
+        ->not->toContain('SecretVendor')->not->toContain('7,777.00')->not->toContain('12.3%');
+
+    $q->items[0]->update(['frequency' => 1]);
+    expect(app(QuotationPdf::class)->html($q->fresh()))->not->toContain('Freq.');
+});
