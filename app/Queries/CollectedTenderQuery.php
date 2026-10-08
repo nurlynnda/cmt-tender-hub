@@ -65,9 +65,15 @@ final class CollectedTenderQuery
         if (($ministry = (string) ($f['ministry'] ?? '')) !== '') {
             $q->where('ministry', $ministry);
         }
-        $codes = array_filter(array_map('trim', explode(',', (string) ($f['codes'] ?? ''))));
+        // Field code: a higher level includes everything under it (05 → 0502… → 050201…). Older links may hold
+        // several codes separated by commas; any of them matches. Only letters and digits are kept (no wildcards).
+        $codes = array_values(array_filter(array_map(fn ($c) => preg_replace('/[^A-Za-z0-9]/', '', $c), explode(',', (string) ($f['codes'] ?? '')))));
         if ($codes !== []) {
-            $q->whereIn('id', DB::table('collected_tender_field_codes')->select('collected_tender_id')->whereIn('code', $codes));
+            $q->whereIn('id', DB::table('collected_tender_field_codes')->select('collected_tender_id')
+                ->where(fn ($w) => array_map(fn ($c) => $w->orWhere('code', 'like', "{$c}%"), $codes)));
+        }
+        if (($f['codes'] ?? '') !== '' && $codes === []) {
+            $q->whereRaw('1 = 0'); // only symbols were typed: nothing matches
         }
         // Contractor: matched on the name key, so capitals, dots and spacing don't matter; % and _ are plain characters.
         $key = ContractorName::key((string) ($f['contractor'] ?? ''));
