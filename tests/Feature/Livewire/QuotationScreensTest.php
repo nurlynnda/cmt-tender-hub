@@ -289,3 +289,15 @@ it('lets other fields save while a newly added sub-item is still blank', functio
         ->call('addSubItem', $item->id)->set("items.$k.frequency", '12')->assertHasNoErrors();
     expect($item->fresh()->frequency)->toBe(12)->and($item->fresh()->sub_items)->toBeNull();
 });
+
+it('lays out items like the tender costing table: one row per item, sub-items as indented rows', function () {
+    [$u, $q] = myQuotation();
+    QuotationItem::factory()->for($q)->create(['title' => 'Switch', 'sub_items' => [
+        ['description' => 'Rack', 'unit' => 'unit', 'quantity' => 1, 'unit_cost_sen' => 60000, 'vendor' => null, 'quote_url' => null]]]);
+
+    Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])->set('tab', 'items')
+        ->assertSeeInOrder(['Item', 'Qty', 'Unit', 'Frequency', 'Unit cost', 'Line cost', 'Margin %', 'Price', 'Selling price', 'Vendor', 'Quotation link', 'SST'])
+        ->assertDontSee('Costing (not shown to the customer)')
+        ->assertSeeHtml('data-sub-row')->assertSeeHtml('aria-label="Sub-item unit cost"')
+        ->assertSeeHtml('aria-label="Details"');
+});
