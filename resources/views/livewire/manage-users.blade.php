@@ -37,7 +37,8 @@
                         <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $u->is_active ? 'Active' : 'Deactivated' }}
                     </span>
                 </td>
-                <td class="px-3.5 py-3 text-right">
+                <td class="whitespace-nowrap px-3.5 py-3 text-right">
+                    <button wire:click="edit({{ $u->id }})" class="btn btn-outline !px-3 !py-1.5" aria-label="Edit {{ $u->name }}">Edit</button>
                     <button wire:click="toggleActive({{ $u->id }})" class="btn btn-outline !px-3 !py-1.5">
                         {{ $u->is_active ? 'Deactivate' : 'Reactivate' }}
                     </button>
@@ -46,4 +47,32 @@
         @endforeach
         </tbody>
     </x-data-table>
+
+    @if ($editingId)
+        @php $self = $editingId === auth()->id(); @endphp
+        <x-dialog title="Edit account" subtitle="Tenders, quotations and history stay with this account." close="cancelEdit">
+            <form wire:submit="saveEdit" id="edit-user" class="space-y-3 text-[13px]">
+                <label class="flex flex-col gap-1 font-semibold text-muted">Full name
+                    <input wire:model="editName" class="{{ $input }} font-normal text-ink" aria-label="Full name (edit)">
+                    @error('editName') <span class="text-xs font-normal text-bad-ink">{{ $message }}</span> @enderror
+                </label>
+                <label class="flex flex-col gap-1 font-semibold text-muted">Work email (used to sign in)
+                    <input wire:model="editEmail" type="email" class="{{ $input }} font-normal text-ink" aria-label="Work email (edit)">
+                    @error('editEmail') <span class="text-xs font-normal text-bad-ink">{{ $message }}</span> @enderror
+                </label>
+                @if ($self)
+                    <p class="text-xs text-muted">To change your own password, use <a href="{{ route('settings') }}" class="underline">Settings</a>.</p>
+                @else
+                    <label class="flex flex-col gap-1 font-semibold text-muted">New temporary password (optional)
+                        <input wire:model="editPassword" type="text" placeholder="Leave empty to keep the current password" autocomplete="off"
+                               class="{{ $input }} font-normal text-ink" aria-label="New temporary password">
+                        @error('editPassword') <span class="text-xs font-normal text-bad-ink">{{ $message }}</span> @enderror
+                    </label>
+                @endif
+            </form>
+            <x-slot:actions>
+                <button type="submit" form="edit-user" class="btn btn-primary">Save</button>
+            </x-slot:actions>
+        </x-dialog>
+    @endif
 </div>

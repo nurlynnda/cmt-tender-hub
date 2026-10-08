@@ -2,7 +2,7 @@
 
 namespace App\Livewire;
 
-use App\Actions\Users\{ChangeUserRole, CreateUser, SetUserActive};
+use App\Actions\Users\{ChangeUserRole, CreateUser, SetUserActive, UpdateUserProfile};
 use App\Enums\Role;
 use App\Models\User;
 use DomainException;
@@ -19,6 +19,13 @@ class ManageUsers extends Component
     public string $role = 'staff';
     public string $password = '';
     public ?string $notice = null;
+
+    /** The account open in the Edit pop-up (null = closed). */
+    public ?int $editingId = null;
+    public string $editName = '';
+    public string $editEmail = '';
+    /** Empty = keep the current password. */
+    public string $editPassword = '';
 
     public function mount(): void
     {
@@ -48,6 +55,39 @@ class ManageUsers extends Component
     {
         $target = User::findOrFail($userId);
         $this->attempt(fn () => app(SetUserActive::class)->handle(auth()->user(), $target, ! $target->is_active));
+    }
+
+    public function edit(int $userId): void
+    {
+        $u = User::findOrFail($userId);
+        $this->editingId = $u->id;
+        $this->editName = $u->name;
+        $this->editEmail = $u->email;
+        $this->editPassword = '';
+        $this->resetValidation();
+    }
+
+    public function cancelEdit(): void
+    {
+        $this->reset('editingId', 'editName', 'editEmail', 'editPassword');
+        $this->resetValidation();
+    }
+
+    public function saveEdit(): void
+    {
+        $target = User::findOrFail($this->editingId);
+        $self = $target->is(auth()->user());
+        $this->editEmail = strtolower(trim($this->editEmail));
+        $this->validate([
+            'editName' => ['required', 'string', 'max:255'],
+            'editEmail' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($target->id)],
+            'editPassword' => $self ? ['nullable'] : ['nullable', 'string', 'min:8'],
+        ], [], ['editName' => 'name', 'editEmail' => 'email', 'editPassword' => 'temporary password']);
+
+        $password = $self || $this->editPassword === '' ? null : $this->editPassword; // your own password: Settings
+        app(UpdateUserProfile::class)->handle(auth()->user(), $target, $this->editName, $this->editEmail, $password);
+        $this->notice = "Saved — {$target->name}.".($password ? ' Share the temporary password with them privately.' : '');
+        $this->cancelEdit();
     }
 
     private function attempt(callable $action): void
