@@ -235,7 +235,7 @@ it('prices an item from cost and margin, or from a typed price, and shows the pr
 
     expect($item->fresh()->unit_price_sen)->toBe(125000);
     $c->assertSee('Total cost')->assertSee('RM 2,000.00')->assertSee('RM 2,500.00')
-        ->set("items.$k.unit_price", '1,100')->assertSet("items.$k.margin", '9.09')->assertSee('Below the 18% company target')
+        ->set("items.$k.unit_price", '1,100')->assertSet("items.$k.margin", '20')->assertSee('9.1% from price')->assertSee('Below the 18% company target')
         ->set("items.$k.margin", '20')->assertSet("items.$k.unit_price", '');
     expect($item->fresh()->unit_price_sen)->toBe(125000);
 });
@@ -267,4 +267,25 @@ it('saves the default margin used for new items', function () {
     Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])->set('tab', 'items')->set('form.default_margin', '15')->call('addItem');
 
     expect($q->fresh()->items->last()->margin_bp)->toBe(1500);
+});
+
+it('keeps the margin when a price is typed, so clearing the price goes back to the worked-out price', function () {
+    [$u, $q] = myQuotation();
+    $item = QuotationItem::factory()->for($q)->create(['unit_cost_sen' => 0, 'unit_price_sen' => 650000]);   // like an item saved before costing
+    $k = "i{$item->id}";
+
+    Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])->set('tab', 'items')
+        ->assertSet("items.$k.margin", '20')
+        ->set("items.$k.unit_price", '')->set("items.$k.unit_cost", '4,000');
+    expect($item->fresh()->unit_price_sen)->toBe(500000);                                                    // 4,000 ÷ 0.8, not 40,000,000
+});
+
+it('lets other fields save while a newly added sub-item is still blank', function () {
+    [$u, $q] = myQuotation();
+    $item = QuotationItem::factory()->for($q)->create();
+    $k = "i{$item->id}";
+
+    Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])->set('tab', 'items')
+        ->call('addSubItem', $item->id)->set("items.$k.frequency", '12')->assertHasNoErrors();
+    expect($item->fresh()->frequency)->toBe(12)->and($item->fresh()->sub_items)->toBeNull();
 });

@@ -200,9 +200,18 @@ it('works the margin out backwards from a typed selling price, and back again fr
         ->assertSet('lines.0.margin', '20')->assertSee('from price');
 
     $c->set('lines.0.unit_price', '900')                                  // below cost
-        ->assertSet('lines.0.margin', '0')->assertSee('-11.1%')->assertSee('below cost');
+        ->assertSet('lines.0.margin', '20')->assertSee('-11.1%')->assertSee('below cost');   // the margin box keeps the margin
 
     $c->set('lines.0.margin', '25')->assertSet('lines.0.unit_price', '')  // editing the margin goes back to the worked-out price
         ->assertSee('RM 1,334.00')                                         // 1,000 ÷ 0.75 = 1,333.33 → 1,334
         ->set('lines.0.unit_price', '1,500')->call('applyDefaultToAll')->assertSet('lines.0.unit_price', '');
+});
+
+it('keeps the margin when a price is typed, so clearing the price goes back to the worked-out price', function () {
+    [$pic, $tender] = costingFixture();
+
+    costingComponent($pic, $tender)
+        ->call('addLine')->set('lines.0.description', 'Server')->set('lines.0.unit_cost', '1,000')   // 20% → RM 1,250
+        ->set('lines.0.unit_price', '900')->assertSet('lines.0.margin', '20')->assertSee('-11.1% from price')
+        ->set('lines.0.unit_price', '')->assertSee('RM 1,250.00');
 });

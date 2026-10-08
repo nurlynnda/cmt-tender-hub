@@ -61,7 +61,6 @@ class QuotationPage extends Component
         foreach ($q->items as $i) {
             $this->items["i{$i->id}"] = ['title' => $i->title, 'details' => (string) $i->details, 'sst' => $i->has_sst]
                 + CostingForm::lineFromModel($i);
-            $this->syncMarginFromPrice("i{$i->id}");
         }
     }
 
@@ -72,23 +71,20 @@ class QuotationPage extends Component
             $this->saveField($parts[1]);
         } elseif ($parts[0] === 'items' && isset($parts[1], $this->items[$parts[1]])) {
             $k = $parts[1];
+            // A new margin means "work the price out again". A typed price leaves the margin alone (its own margin
+            // shows as the "from price" note), so clearing the price returns to the price from the margin.
             if (($parts[2] ?? '') === 'margin') {
-                $this->items[$k]['unit_price'] = ''; // a new margin means "work the price out again"
+                $this->items[$k]['unit_price'] = '';
             }
             $this->saveItem((int) substr($k, 1));
-            if (in_array($parts[2] ?? '', ['unit_price', 'unit_cost', 'sub_items'], true)) {
-                $this->syncMarginFromPrice($k);
-            }
         }
     }
 
-    /** With a typed price, the margin box shows the margin that price gives (kept within 0–99.99 so the item still saves). */
-    private function syncMarginFromPrice(string $k): void
+    /** A sub-item row just added and not filled in yet: not checked and not saved, so it never blocks the item. */
+    private static function isBlankSubItem(array $s): bool
     {
-        $line = CostingForm::lineToData($this->items[$k], $this->quotation->default_margin_bp, lenient: true);
-        if ($line['unit_price_override_sen'] !== null) {
-            $this->items[$k]['margin'] = Percent::toInput(max(0, min(9999, CostingCalculator::line($line)['effective_margin_bp'])));
-        }
+        return trim((string) ($s['description'] ?? '')) === '' && in_array(trim((string) ($s['unit_cost'] ?? '')), ['', '0', '0.00'], true)
+            && trim((string) ($s['vendor'] ?? '')) === '' && trim((string) ($s['quote_url'] ?? '')) === '';
     }
 
     public function addSubItem(int $id): void
@@ -100,6 +96,9 @@ class QuotationPage extends Component
 
     public function removeSubItem(int $id, int $j): void
     {
+        if (! isset($this->items["i{$id}"])) {
+            return;
+        }
         unset($this->items["i{$id}"]['sub_items'][$j]);
         $this->items["i{$id}"]['sub_items'] = array_values($this->items["i{$id}"]['sub_items'] ?? []);
         $this->saveItem($id);
@@ -176,6 +175,20 @@ class QuotationPage extends Component
         $k = "i{$id}";
         $rules = CostingForm::lineRules("items.$k");
         unset($rules["items.$k.description"]); // an item's name is its title
+        // Sub-item rules only for rows that have been filled in (a blank new row must not block the item).
+        $subRules = array_filter($rules, fn ($key) => str_contains($key, '.sub_items.*.'), ARRAY_FILTER_USE_KEY);
+        $rules = array_diff_key($rules, $subRules);
+        $blank = [];
+        foreach ($this->items[$k]['sub_items'] ?? [] as $j => $sub) {
+            if (self::isBlankSubItem($sub)) {
+                $blank[] = $j;
+
+                continue;
+            }
+            foreach ($subRules as $key => $rule) {
+                $rules[str_replace('.sub_items.*.', ".sub_items.$j.", $key)] = $rule;
+            }
+        }
         $this->validate($rules + [
             "items.$k.title" => ['required', 'string', 'max:255'],
             "items.$k.details" => ['nullable', 'string', 'max:2000'],
@@ -189,6 +202,7 @@ class QuotationPage extends Component
             "items.$k.sub_items.*.quote_url" => 'quotation link',
         ]);
         $row = $this->items[$k];
+        $row['sub_items'] = array_diff_key($row['sub_items'] ?? [], array_flip($blank));
         $data = ['title' => $row['title'], 'details' => $row['details'], 'has_sst' => (bool) ($row['sst'] ?? true)]
             + CostingForm::lineToData($row, $this->quotation->default_margin_bp, lenient: false);
         $saved = $this->run(fn () => $this->version = app(UpdateQuotationItem::class)->handle(auth()->user(), $this->item($id), $this->version, $data)->version);
