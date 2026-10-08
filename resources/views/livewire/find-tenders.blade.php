@@ -58,7 +58,38 @@
             <input wire:model.live.debounce.400ms="ministry" list="ministry-options" placeholder="Any ministry" class="{{ $field }}">
             <datalist id="ministry-options">@foreach ($ministries as $m) <option value="{{ $m }}"></option> @endforeach</datalist>
         </x-filter-field>
-        <x-filter-field label="Field codes"><input wire:model.live.debounce.400ms="codes" placeholder="e.g. 210103, E05" class="{{ $field }}"></x-filter-field>
+        <x-filter-field label="Field code">
+            {{-- Searchable list like the old system: type a code or part of a name, pick one. A higher level includes everything under it. --}}
+            <div data-field-code-filter wire:ignore class="relative"
+                 x-data="{ value: $wire.entangle('codes').live, label: @js($codeLabel), query: '', open: false,
+                           all: @js(collect($mofCodes)->map(fn ($c) => mb_strtolower("{$c['code']} — {$c['name']}"))->merge(array_map('mb_strtolower', $cidbCodes))->values()),
+                           shows(search) { const q = this.query.trim().toLowerCase(); return q === '' || search.includes(q); },
+                           get none() { const q = this.query.trim().toLowerCase(); return q !== '' && ! this.all.some(s => s.includes(q)); },
+                           pick(code, label) { this.value = code; this.label = label; this.open = false; this.query = ''; } }"
+                 x-effect="if (! value) label = ''" @click.outside="open = false; query = ''" @keydown.escape="open = false; query = ''">
+                <input type="text" value="{{ $codeLabel }}" :value="open ? query : label" @focus="open = true; query = ''" @input="query = $event.target.value"
+                       placeholder="All" class="{{ $field }}" aria-label="Field code" autocomplete="off">
+                <button type="button" x-show="value" x-cloak @click="pick('', '')" class="mt-1 text-xs font-semibold text-muted hover:text-ink">Clear</button>
+                <ul x-show="open" x-cloak class="absolute right-0 top-full z-30 mt-1 max-h-72 w-[26rem] max-w-[85vw] overflow-y-auto rounded-xl border border-line bg-surface py-1 text-[12.5px] shadow-lg" role="listbox">
+                    @foreach ($mofCodes as $c)
+                        @php $text = "{$c['code']} — {$c['name']}"; @endphp
+                        <li x-show="shows(@js(mb_strtolower($text)))" role="option">
+                            <button type="button" @click="pick(@js($c['code']), @js($text))" style="padding-left: {{ 8 + ($c['level'] - 1) * 16 }}px"
+                                    @class(['w-full py-1 pr-2 text-left hover:bg-hover', 'font-semibold' => $c['level'] === 1])>{{ $text }}</button>
+                        </li>
+                    @endforeach
+                    @if ($cidbCodes)
+                        <li x-show="query === ''" class="mt-1 border-t border-line px-2 pb-1 pt-2 text-[10.5px] font-bold uppercase tracking-[0.5px] text-muted">CIDB (construction)</li>
+                        @foreach ($cidbCodes as $c)
+                            <li x-show="shows(@js(mb_strtolower($c)))" role="option">
+                                <button type="button" @click="pick(@js($c), @js($c))" class="w-full py-1 pl-2 pr-2 text-left hover:bg-hover">{{ $c }}</button>
+                            </li>
+                        @endforeach
+                    @endif
+                    <li x-show="none" x-cloak class="px-2 py-1.5 text-muted">No matching codes. Try a code (e.g. 2101) or another word.</li>
+                </ul>
+            </div>
+        </x-filter-field>
         <x-filter-field label="Closing from"><input type="date" wire:model.live="from" class="{{ $field }}"></x-filter-field>
         <x-filter-field label="Closing to"><input type="date" wire:model.live="to" class="{{ $field }}"></x-filter-field>
     </x-filter-bar>

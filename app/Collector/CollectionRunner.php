@@ -40,6 +40,7 @@ final class CollectionRunner
             'finished_at' => now(),
         ]);
         Cache::forget('collector.ministries');
+        Cache::forget('collector.cidb-codes');
         try {
             app(MarketReport::class)->warm(); // so the first Market Insights visitor after a collection doesn't wait
         } catch (Throwable $e) {

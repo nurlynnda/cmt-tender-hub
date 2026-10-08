@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Actions\Collector\StartCollection;
-use App\Collector\SourceName;
+use App\Collector\{FieldCodes, SourceName};
 use App\Market\OwnCompany;
 use App\Models\CollectionRun;
 use App\Queries\CollectedTenderQuery;
@@ -74,6 +74,9 @@ class FindTenders extends Component
             'running' => CollectionRun::where('status', 'running')->latest('started_at')->first(),
             'lastRun' => CollectionRun::whereNotNull('finished_at')->latest('finished_at')->first(),
             'ministries' => CollectedTenderQuery::ministries(),
+            'mofCodes' => FieldCodes::mof(),
+            'cidbCodes' => FieldCodes::cidb(),
+            'codeLabel' => FieldCodes::label(trim($this->codes)),
             'sources' => SourceName::all(),
             'ownKeys' => OwnCompany::keys(),
         ]);

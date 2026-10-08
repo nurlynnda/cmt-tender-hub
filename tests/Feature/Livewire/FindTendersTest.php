@@ -149,3 +149,26 @@ it('ignores Our wins outside Awarded, where its button is hidden', function () {
 
     expect(refs(['status' => 'open', 'ours' => true]))->toBe(['OPEN-1']);
 });
+
+it('filters by one field code, including every code under a higher level', function () {
+    foreach (['A' => '050201', 'B' => '050102', 'C' => '221001', 'D' => 'B04'] as $ref => $code) {
+        $t = CollectedTender::factory()->create(['reference_no' => $ref, 'status' => 'open', 'closing_date' => now()->addMonth()->toDateString()]);
+        \Illuminate\Support\Facades\DB::table('collected_tender_field_codes')->insert(['collected_tender_id' => $t->id, 'code' => $code]);
+    }
+
+    expect(refs(['codes' => '05']))->toEqualCanonicalizing(['A', 'B'])
+        ->and(refs(['codes' => '0502']))->toBe(['A'])
+        ->and(refs(['codes' => 'B04']))->toBe(['D'])
+        ->and(refs(['codes' => 'B04, 221001']))->toEqualCanonicalizing(['C', 'D'])       // older links with several codes still work
+        ->and(refs(['codes' => '%']))->toBe([]);                                          // no wildcards
+});
+
+it('offers the field codes as a searchable list with names and a CIDB heading', function () {
+    $t = CollectedTender::factory()->create();
+    \Illuminate\Support\Facades\DB::table('collected_tender_field_codes')->insert(['collected_tender_id' => $t->id, 'code' => 'CE21']);
+
+    Livewire::withQueryParams(['codes' => '010101'])->test(FindTenders::class)
+        ->assertSeeHtml('data-field-code-filter')->assertSee('Penerbitan Dan Penyiaran')
+        ->assertSee('CIDB (construction)')->assertSee('CE21')
+        ->assertSee('010101 — Bahan Bacaan Terbitan Luar Negara');
+});
