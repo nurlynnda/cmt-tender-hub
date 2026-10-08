@@ -188,8 +188,7 @@ class DatabaseSeeder extends Seeder
         foreach ($lines as $i => $line) {
             $tender->costingLines()->create([
                 'position' => $i + 1, 'description' => $line['description'], 'unit' => 'Unit', 'quantity' => 1,
-                'frequency' => 'one_off', 'months' => 1, 'project_year' => 1,
-                'unit_cost_sen' => $line['unit_cost_sen'], 'margin_bp' => 2000,
+                'frequency' => 1, 'unit_cost_sen' => $line['unit_cost_sen'], 'margin_bp' => 2000,
             ]);
         }
     }

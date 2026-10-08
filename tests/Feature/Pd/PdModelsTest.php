@@ -43,11 +43,6 @@ it('describes every group', function () {
     }
 });
 
-it('gives costing lines a group, Principal by default', function () {
-    $line = CostingLine::factory()->create();
-    expect($line->fresh()->pd_group)->toBe(PdGroup::Principal);
-});
-
 it('summarises a saved project', function () {
     $project = Project::factory()->create(['start_date' => '2026-01-01', 'end_date' => '2026-12-31']);
     $line = PdLine::factory()->for($project)->create(['pd_group' => PdGroup::Collection, 'budget_sen' => 100000, 'scheduled_date' => '2026-02-01']);

@@ -15,19 +15,29 @@ final class CostingCalculator
         return intdiv($unitCostSen * 10000 + $den - 1, $den) * 100;
     }
 
+    /** The margin a selling price gives over a cost: (price − cost) ÷ price, in bp; negative below cost; 0 when the price is 0. */
+    public static function marginFromPriceBp(int $costSen, int $priceSen): int
+    {
+        return $priceSen > 0 ? (int) round(($priceSen - $costSen) * 10000 / $priceSen) : 0;
+    }
+
+    /** One line (or quotation item): a typed selling price wins over cost + margin; frequency repeats the whole line. */
     public static function line(array $l): array
     {
         $unitCost = ($l['sub_items'] ?? []) !== []
             ? array_sum(array_map(fn ($s) => $s['quantity'] * $s['unit_cost_sen'], $l['sub_items']))
             : $l['unit_cost_sen'];
-        $months = $l['frequency'] === 'monthly' ? max(1, $l['months']) : 1;
-        $price = self::pricePerUnitSen($unitCost, $l['margin_bp']);
+        $frequency = max(1, (int) ($l['frequency'] ?? 1));
+        $override = $l['unit_price_override_sen'] ?? null;
+        $price = $override ?? self::pricePerUnitSen($unitCost, $l['margin_bp']);
 
         return [
             'unit_cost_sen' => $unitCost,
-            'line_cost_sen' => $l['quantity'] * $unitCost * $months,
+            'line_cost_sen' => $l['quantity'] * $unitCost * $frequency,
             'price_per_unit_sen' => $price,
-            'selling_sen' => $price * $l['quantity'] * $months,
+            'selling_sen' => $price * $l['quantity'] * $frequency,
+            'effective_margin_bp' => self::marginFromPriceBp($unitCost, $price),
+            'is_price_override' => $override !== null,
         ];
     }
 
@@ -39,12 +49,6 @@ final class CostingCalculator
         $bid = $overrideSen ?? $suggested;
         $margin = $bid - $totalCost;
         $marginBp = $bid > 0 ? (int) round($margin * 10000 / $bid) : 0;
-
-        $byYear = [];
-        foreach ($computed as $l) {
-            $byYear[$l['project_year']] = ($byYear[$l['project_year']] ?? 0) + $l['line_cost_sen'];
-        }
-        ksort($byYear);
 
         return [
             'lines' => $computed,
@@ -60,7 +64,6 @@ final class CostingCalculator
                 fn ($m) => ['margin_bp' => $m, 'max_cost_sen' => intdiv($bid * (10000 - $m), 10000)],
                 range(1200, 2100, 100),
             ),
-            'cost_by_year' => $byYear,
         ];
     }
 }

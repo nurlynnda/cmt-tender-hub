@@ -14,9 +14,8 @@ function doneTender(array $attrs = []): array
 it('creates the project from the costing when a tender is awarded', function () {
     [$pic, $tender] = doneTender();
     CostingLine::factory()->for($tender)->create(['position' => 1, 'description' => 'Laptops', 'vendor' => 'Dell',
-        'unit_cost_sen' => 100000, 'quantity' => 2, 'pd_group' => PdGroup::Distributor]);
-    CostingLine::factory()->for($tender)->create(['position' => 2, 'description' => 'Support', 'frequency' => 'monthly',
-        'months' => 12, 'unit_cost_sen' => 50000, 'pd_group' => PdGroup::Internal]);
+        'unit_cost_sen' => 100000, 'quantity' => 2]);
+    CostingLine::factory()->for($tender)->create(['position' => 2, 'description' => 'Support', 'frequency' => 12, 'unit_cost_sen' => 50000]);
 
     $awarded = app(MarkTenderAwarded::class)->handle($pic, $tender, 1);
     $project = $awarded->project;
@@ -28,8 +27,8 @@ it('creates the project from the costing when a tender is awarded', function () 
         ->and($project->approved_margin_bp)->toBe(0)
         ->and($project->lines->map(fn ($l) => [$l->pd_group, $l->name, $l->reference, $l->budget_sen])->all())->toBe([
             [PdGroup::Collection, 'Contract value', null, $bid],
-            [PdGroup::Distributor, 'Laptops', 'Dell', 200000],
-            [PdGroup::Internal, 'Support', null, 600000],   // monthly: whole 12-month cost
+            [PdGroup::Principal, 'Laptops', 'Dell', 200000],
+            [PdGroup::Principal, 'Support', null, 600000],   // frequency 12: the whole cost
         ])
         ->and($awarded->activity->first()->description)->toBe('Project created from the costing');
 });

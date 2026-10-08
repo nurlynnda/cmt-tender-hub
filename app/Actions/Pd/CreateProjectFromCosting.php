@@ -35,10 +35,10 @@ final class CreateProjectFromCosting
         foreach ($tender->costingLines as $i => $line) {
             $project->lines()->create([
                 'position' => $position++,
-                'pd_group' => $line->pd_group,
+                'pd_group' => PdGroup::Principal, // can be moved to another group on the PD page
                 'name' => mb_substr($line->description, 0, 255),
                 'reference' => $line->vendor ? mb_substr($line->vendor, 0, 100) : null,
-                'budget_sen' => $summary['lines'][$i]['line_cost_sen'], // monthly lines carry their whole cost
+                'budget_sen' => $summary['lines'][$i]['line_cost_sen'], // the whole cost over every repeat
                 'updated_by' => $actor->id,
             ]);
         }

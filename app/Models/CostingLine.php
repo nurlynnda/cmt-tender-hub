@@ -17,11 +17,10 @@ class CostingLine extends Model
         return [
             'position' => 'integer',
             'quantity' => 'integer',
-            'months' => 'integer',
-            'project_year' => 'integer',
+            'frequency' => 'integer',
             'unit_cost_sen' => 'integer',
             'margin_bp' => 'integer',
-            'pd_group' => \App\Enums\PdGroup::class,
+            'unit_price_override_sen' => 'integer',
         ];
     }
 

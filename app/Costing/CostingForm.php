@@ -2,22 +2,22 @@
 
 namespace App\Costing;
 
-use App\Enums\PdGroup;
 use App\Models\Tender;
 use App\Rules\{MoneyAmount, Percentage};
 use App\Support\{Money, Percent};
-use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 
-/** Converts between saved costing rows, on-screen text inputs and calculator/saver data; owns the validation rules. */
+/**
+ * Converts between saved costing rows, on-screen text inputs and calculator/saver data; owns the validation rules.
+ * Quotation items reuse the per-line parts (lineRules, lineToData, lineFromModel).
+ */
 final class CostingForm
 {
     public static function blankLine(int $defaultBp): array
     {
         return [
-            'description' => '', 'unit' => 'unit', 'quantity' => '1', 'frequency' => 'one_off', 'months' => '1',
-            'project_year' => '1', 'unit_cost' => '0', 'margin' => Percent::toInput($defaultBp),
-            'vendor' => '', 'quote_url' => '', 'sub_items' => [], 'pd_group' => PdGroup::Principal->value,
+            'description' => '', 'unit' => 'unit', 'quantity' => '1', 'frequency' => '1', 'unit_cost' => '0',
+            'margin' => Percent::toInput($defaultBp), 'unit_price' => '', 'vendor' => '', 'quote_url' => '', 'sub_items' => [],
         ];
     }
 
@@ -31,37 +31,48 @@ final class CostingForm
         return [
             'defaultMargin' => Percent::toInput($t->default_margin_bp ?? 2000),
             'override' => Money::toInput($t->bid_price_override_sen),
-            'lines' => $t->costingLines->map(fn ($l) => [
-                'description' => $l->description,
-                'unit' => $l->unit,
-                'quantity' => (string) $l->quantity,
-                'frequency' => $l->frequency,
-                'months' => (string) $l->months,
-                'project_year' => (string) $l->project_year,
-                'unit_cost' => Money::toInput($l->unit_cost_sen),
-                'margin' => Percent::toInput($l->margin_bp),
-                'vendor' => (string) $l->vendor,
-                'quote_url' => (string) $l->quote_url,
-                'pd_group' => $l->pd_group->value,
-                'sub_items' => $l->subItems->map(fn ($s) => [
-                    'description' => $s->description,
-                    'unit' => $s->unit,
-                    'quantity' => (string) $s->quantity,
-                    'unit_cost' => Money::toInput($s->unit_cost_sen),
-                    'vendor' => (string) $s->vendor,
-                    'quote_url' => (string) $s->quote_url,
-                ])->all(),
-            ])->all(),
+            'lines' => $t->costingLines->map(fn ($l) => self::lineFromModel($l))->all(),
         ];
     }
 
-    /** The PD groups a costing line can go to (all but Collection). */
-    private static function costGroupValues(): array
+    /** Screen strings for a saved costing line or quotation item (same column names; sub-items as rows or JSON). */
+    public static function lineFromModel(object $l): array
     {
-        return array_map(fn (PdGroup $g) => $g->value, PdGroup::costGroups());
+        $subs = $l instanceof \App\Models\CostingLine ? $l->subItems : ($l->sub_items ?? []);
+
+        return [
+            'description' => (string) ($l->description ?? ''),
+            'unit' => (string) $l->unit,
+            'quantity' => (string) $l->quantity,
+            'frequency' => (string) $l->frequency,
+            'unit_cost' => Money::toInput($l->unit_cost_sen),
+            'margin' => Percent::toInput($l->margin_bp),
+            'unit_price' => Money::toInput($l->unit_price_override_sen),
+            'vendor' => (string) $l->vendor,
+            'quote_url' => (string) $l->quote_url,
+            'sub_items' => collect($subs)->map(fn ($s) => [
+                'description' => (string) data_get($s, 'description'),
+                'unit' => (string) data_get($s, 'unit', 'unit'),
+                'quantity' => (string) data_get($s, 'quantity', 1),
+                'unit_cost' => Money::toInput((int) data_get($s, 'unit_cost_sen', 0)),
+                'vendor' => (string) data_get($s, 'vendor'),
+                'quote_url' => (string) data_get($s, 'quote_url'),
+            ])->values()->all(),
+        ];
     }
 
     public static function rules(): array
+    {
+        return [
+            'defaultMargin' => ['required', new Percentage],
+            'override' => ['nullable', new MoneyAmount],
+            'lines' => ['array'],
+            ...self::lineRules('lines.*'),
+        ];
+    }
+
+    /** Rules for costing lines (or quotation items) under $prefix, e.g. "lines.*" or "items.i12". */
+    public static function lineRules(string $prefix): array
     {
         $common = fn (string $p) => [
             "{$p}.description" => ['required', 'string', 'max:500'],
@@ -73,17 +84,12 @@ final class CostingForm
         ];
 
         return [
-            'defaultMargin' => ['required', new Percentage],
-            'override' => ['nullable', new MoneyAmount],
-            'lines' => ['array'],
-            ...$common('lines.*'),
-            'lines.*.frequency' => ['required', 'in:one_off,monthly'],
-            'lines.*.months' => ['required', 'integer', 'min:1', 'max:600'],
-            'lines.*.project_year' => ['required', 'integer', 'between:1,7'],
-            'lines.*.margin' => ['required', new Percentage],
-            'lines.*.pd_group' => ['required', Rule::in(self::costGroupValues())],
-            'lines.*.sub_items' => ['array'],
-            ...$common('lines.*.sub_items.*'),
+            ...$common($prefix),
+            "{$prefix}.frequency" => ['required', 'integer', 'min:1', 'max:1000'],
+            "{$prefix}.margin" => ['required', new Percentage],
+            "{$prefix}.unit_price" => ['nullable', new MoneyAmount],
+            "{$prefix}.sub_items" => ['array'],
+            ...$common("{$prefix}.sub_items.*"),
         ];
     }
 
@@ -93,9 +99,8 @@ final class CostingForm
         return [
             'defaultMargin' => 'default margin', 'override' => 'bid price',
             'lines.*.description' => 'description', 'lines.*.unit' => 'unit', 'lines.*.quantity' => 'quantity',
-            'lines.*.months' => 'months', 'lines.*.project_year' => 'year', 'lines.*.unit_cost' => 'unit cost',
-            'lines.*.margin' => 'margin', 'lines.*.vendor' => 'vendor', 'lines.*.quote_url' => 'quotation link',
-            'lines.*.frequency' => 'frequency', 'lines.*.pd_group' => 'group',
+            'lines.*.frequency' => 'frequency', 'lines.*.unit_cost' => 'unit cost', 'lines.*.margin' => 'margin',
+            'lines.*.unit_price' => 'selling price', 'lines.*.vendor' => 'vendor', 'lines.*.quote_url' => 'quotation link',
             'lines.*.sub_items.*.description' => 'description', 'lines.*.sub_items.*.unit' => 'unit',
             'lines.*.sub_items.*.quantity' => 'quantity', 'lines.*.sub_items.*.unit_cost' => 'unit cost',
             'lines.*.sub_items.*.vendor' => 'vendor', 'lines.*.sub_items.*.quote_url' => 'quotation link',
@@ -110,31 +115,33 @@ final class CostingForm
         return [
             'default_margin_bp' => $default,
             'bid_price_override_sen' => self::sen($state['override'] ?? '', null, $lenient),
-            'lines' => array_map(function (array $l) use ($default, $lenient) {
-                $frequency = ($l['frequency'] ?? 'one_off') === 'monthly' ? 'monthly' : 'one_off';
+            'lines' => array_map(fn (array $l) => self::lineToData($l, $default, $lenient), array_values($state['lines'] ?? [])),
+        ];
+    }
 
-                return [
-                    'description' => trim((string) ($l['description'] ?? '')),
-                    'unit' => trim((string) ($l['unit'] ?? '')) ?: 'unit',
-                    'quantity' => self::int($l['quantity'] ?? '1'),
-                    'frequency' => $frequency,
-                    'months' => $frequency === 'monthly' ? self::int($l['months'] ?? '1') : 1,
-                    'project_year' => min(7, self::int($l['project_year'] ?? '1')),
-                    'unit_cost_sen' => self::sen($l['unit_cost'] ?? '0', 0, $lenient) ?? 0,
-                    'margin_bp' => self::bp($l['margin'] ?? '', $default, $lenient),
-                    'vendor' => trim((string) ($l['vendor'] ?? '')) ?: null,
-                    'quote_url' => trim((string) ($l['quote_url'] ?? '')) ?: null,
-                    'pd_group' => in_array($l['pd_group'] ?? '', self::costGroupValues(), true) ? $l['pd_group'] : PdGroup::Principal->value,
-                    'sub_items' => array_map(fn (array $s) => [
-                        'description' => trim((string) ($s['description'] ?? '')),
-                        'unit' => trim((string) ($s['unit'] ?? '')) ?: 'unit',
-                        'quantity' => self::int($s['quantity'] ?? '1'),
-                        'unit_cost_sen' => self::sen($s['unit_cost'] ?? '0', 0, $lenient) ?? 0,
-                        'vendor' => trim((string) ($s['vendor'] ?? '')) ?: null,
-                        'quote_url' => trim((string) ($s['quote_url'] ?? '')) ?: null,
-                    ], array_values($l['sub_items'] ?? [])),
-                ];
-            }, array_values($state['lines'] ?? [])),
+    /** One line's screen strings → saved/calculator values. An empty selling price means "work it out from the margin". */
+    public static function lineToData(array $l, int $defaultBp, bool $lenient): array
+    {
+        $price = trim((string) ($l['unit_price'] ?? ''));
+
+        return [
+            'description' => trim((string) ($l['description'] ?? '')),
+            'unit' => trim((string) ($l['unit'] ?? '')) ?: 'unit',
+            'quantity' => self::int($l['quantity'] ?? '1'),
+            'frequency' => min(1000, self::int($l['frequency'] ?? '1')),
+            'unit_cost_sen' => self::sen($l['unit_cost'] ?? '0', 0, $lenient) ?? 0,
+            'margin_bp' => self::bp($l['margin'] ?? '', $defaultBp, $lenient),
+            'unit_price_override_sen' => $price === '' ? null : self::sen($price, null, $lenient),
+            'vendor' => trim((string) ($l['vendor'] ?? '')) ?: null,
+            'quote_url' => trim((string) ($l['quote_url'] ?? '')) ?: null,
+            'sub_items' => array_map(fn (array $s) => [
+                'description' => trim((string) ($s['description'] ?? '')),
+                'unit' => trim((string) ($s['unit'] ?? '')) ?: 'unit',
+                'quantity' => self::int($s['quantity'] ?? '1'),
+                'unit_cost_sen' => self::sen($s['unit_cost'] ?? '0', 0, $lenient) ?? 0,
+                'vendor' => trim((string) ($s['vendor'] ?? '')) ?: null,
+                'quote_url' => trim((string) ($s['quote_url'] ?? '')) ?: null,
+            ], array_values($l['sub_items'] ?? [])),
         ];
     }
 

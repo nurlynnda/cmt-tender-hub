@@ -172,7 +172,7 @@ final class RegisterImporter
         $tender->costingLines()->create([
             'position' => (int) $tender->costingLines()->max('position') + 1,
             'description' => self::IMPORTED_COST, 'unit' => 'lot', 'quantity' => 1,
-            'frequency' => 'one_off', 'months' => 1, 'project_year' => 1,
+            'frequency' => 1,
             'unit_cost_sen' => $cost, 'margin_bp' => 0,
         ]);
         $tender->forceFill(['bid_price_override_sen' => $price])->save();

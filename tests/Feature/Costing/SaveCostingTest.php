@@ -23,7 +23,7 @@ function picTender(array $attrs = []): array
 }
 
 it('converts screen input to saved data', function () {
-    $state = costingState(['quantity' => '2', 'frequency' => 'monthly', 'months' => '6', 'project_year' => '3', 'margin' => '18.5',
+    $state = costingState(['quantity' => '2', 'frequency' => '6', 'margin' => '18.5', 'unit_price' => '',
         'sub_items' => [array_merge(CostingForm::blankSubItem(), ['description' => 'PC', 'quantity' => '1', 'unit_cost' => '3,000'])]]);
     $state['override'] = 'RM 130,000';
 
@@ -31,16 +31,17 @@ it('converts screen input to saved data', function () {
 
     expect($data['default_margin_bp'])->toBe(2000)
         ->and($data['bid_price_override_sen'])->toBe(13000000)
-        ->and($data['lines'][0])->toMatchArray(['quantity' => 2, 'frequency' => 'monthly', 'months' => 6, 'project_year' => 3,
-            'unit_cost_sen' => 10000000, 'margin_bp' => 1850, 'description' => 'Server'])
+        ->and($data['lines'][0])->toMatchArray(['quantity' => 2, 'frequency' => 6, 'unit_cost_sen' => 10000000, 'margin_bp' => 1850,
+            'unit_price_override_sen' => null, 'description' => 'Server'])
+        ->and($data['lines'][0])->not->toHaveKeys(['months', 'project_year', 'pd_group'])
         ->and($data['lines'][0]['sub_items'][0])->toMatchArray(['description' => 'PC', 'quantity' => 1, 'unit_cost_sen' => 300000]);
 });
 
-it('forces months to 1 for one-off lines, and tolerates junk in lenient mode', function () {
-    expect(CostingForm::toData(costingState(['months' => '9']))['lines'][0]['months'])->toBe(1);
+it('keeps a typed selling price, and tolerates junk in lenient mode', function () {
+    expect(CostingForm::toData(costingState(['unit_price' => '1,250']))['lines'][0]['unit_price_override_sen'])->toBe(125000);
 
-    $lenient = CostingForm::toData(costingState(['unit_cost' => 'abc', 'quantity' => 'x', 'margin' => '??']), lenient: true)['lines'][0];
-    expect($lenient)->toMatchArray(['unit_cost_sen' => 0, 'quantity' => 1, 'margin_bp' => 2000]);
+    $lenient = CostingForm::toData(costingState(['unit_cost' => 'abc', 'quantity' => 'x', 'margin' => '??', 'frequency' => 'monthly', 'unit_price' => 'zz']), lenient: true)['lines'][0];
+    expect($lenient)->toMatchArray(['unit_cost_sen' => 0, 'quantity' => 1, 'margin_bp' => 2000, 'frequency' => 1, 'unit_price_override_sen' => null]);
 });
 
 it('throws on junk outside lenient mode', function () {
@@ -54,12 +55,13 @@ it('validates every field', function (array $bad, string $key) {
 })->with([
     [['description' => ''], 'lines.0.description'],
     [['quantity' => '0'], 'lines.0.quantity'],
-    [['months' => '0', 'frequency' => 'monthly'], 'lines.0.months'],
-    [['project_year' => '8'], 'lines.0.project_year'],
     [['unit_cost' => '-5'], 'lines.0.unit_cost'],
     [['margin' => '100'], 'lines.0.margin'],
     [['quote_url' => 'javascript:alert(1)'], 'lines.0.quote_url'],
-    [['frequency' => 'weekly'], 'lines.0.frequency'],
+    [['frequency' => '0'], 'lines.0.frequency'],
+    [['frequency' => '1.5'], 'lines.0.frequency'],
+    [['frequency' => 'monthly'], 'lines.0.frequency'],
+    [['unit_price' => '-5'], 'lines.0.unit_price'],
 ]);
 
 it('accepts a valid costing', function () {
@@ -126,14 +128,14 @@ it('refuses staff who are not the PIC, closed tenders, and out-of-date pages', f
     expect($tender->fresh()->costingLines)->toHaveCount(0);
 });
 
-it('saves each costing line\'s PD group and rejects unknown groups', function () {
+it('saves the frequency and typed price and reads them back', function () {
     [$pic, $tender] = picTender();
-    $t = app(SaveCosting::class)->handle($pic, $tender, 1, CostingForm::toData(costingState(['pd_group' => 'partner'])));
 
-    expect($t->costingLines->first()->pd_group)->toBe(\App\Enums\PdGroup::Partner)
-        ->and(CostingForm::fromTender($t)['lines'][0]['pd_group'])->toBe('partner')
-        ->and(Validator::make(costingState(['pd_group' => 'collection']), CostingForm::rules())->errors()->has('lines.0.pd_group'))->toBeTrue()
-        ->and(CostingForm::toData(costingState(['pd_group' => 'bogus']), lenient: true)['lines'][0]['pd_group'])->toBe('principal');
+    $t = app(SaveCosting::class)->handle($pic, $tender, 1, CostingForm::toData(costingState(['frequency' => '12', 'unit_price' => '150,000'])));
+
+    expect($t->costingLines->first()->only(['frequency', 'unit_price_override_sen']))->toBe(['frequency' => 12, 'unit_price_override_sen' => 15000000])
+        ->and(CostingForm::fromTender($t)['lines'][0])->toMatchArray(['frequency' => '12', 'unit_price' => '150000.00'])
+        ->and($t->costingSummary()['bid_price_sen'])->toBe(15000000 * 12);
 });
 
 it('has no costing until there is a line and a bid price above zero', function () {
