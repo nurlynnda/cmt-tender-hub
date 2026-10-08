@@ -122,11 +122,7 @@
             <div class="muted">{{ $l['name'] ?? '' }}</div>
             <div class="muted">{{ collect([$q->preparer_phone, $q->preparer_email])->filter()->implode(' · ') }}</div>
         </td>
-        <td style="vertical-align: top">
-            <div class="muted">Accepted by,</div>
-            <div style="height: 46px"></div>
-            <div style="border-top: 1px solid #9ca3af; width: 85%; padding-top: 3px" class="muted">Name, signature &amp; company stamp<br>Date:</div>
-        </td>
+        <td></td>{{-- keeps the Prepared by block at half width, on the left --}}
     </tr>
 </table>
 <div class="muted" style="text-align: center; border-top: 1px solid #e5e7eb; margin-top: 18px; padding-top: 6px">This is a computer-generated quotation.</div>
