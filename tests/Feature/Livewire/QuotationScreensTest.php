@@ -223,3 +223,48 @@ it('shows the quotation page with its pill, tabs and the shared timeline', funct
         ->assertSeeHtml('data-status="draft"')->assertSeeHtml('role="tablist"')
         ->set('tab', 'history')->assertSeeHtml('border-l-2 border-line');
 });
+
+it('prices an item from cost and margin, or from a typed price, and shows the profit summary', function () {
+    [$u, $q] = myQuotation();
+    $item = QuotationItem::factory()->for($q)->create();
+    $k = "i{$item->id}";
+
+    $c = Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])->set('tab', 'items')
+        ->set("items.$k.title", 'Switch')->set("items.$k.quantity", '2')->set("items.$k.unit_price", '')
+        ->set("items.$k.unit_cost", '1,000')->set("items.$k.margin", '20');
+
+    expect($item->fresh()->unit_price_sen)->toBe(125000);
+    $c->assertSee('Total cost')->assertSee('RM 2,000.00')->assertSee('RM 2,500.00')
+        ->set("items.$k.unit_price", '1,100')->assertSet("items.$k.margin", '9.09')->assertSee('Below the 18% company target')
+        ->set("items.$k.margin", '20')->assertSet("items.$k.unit_price", '');
+    expect($item->fresh()->unit_price_sen)->toBe(125000);
+});
+
+it('adds sub-items, ticks SST off and sets the frequency on an item', function () {
+    [$u, $q] = myQuotation();
+    $item = QuotationItem::factory()->for($q)->create();
+    $k = "i{$item->id}";
+
+    Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])->set('tab', 'items')
+        ->call('addSubItem', $item->id)
+        ->set("items.$k.sub_items.0.description", 'Rack')->set("items.$k.sub_items.0.unit_cost", '600')
+        ->set("items.$k.frequency", '12')->set("items.$k.sst", false)
+        ->assertSee('on items marked *')->assertSeeHtml('aria-label="SST on this item"');
+
+    $fresh = $item->fresh();
+    expect($fresh->only(['frequency', 'has_sst']))->toBe(['frequency' => 12, 'has_sst' => false])
+        ->and($fresh->sub_items[0])->toMatchArray(['description' => 'Rack', 'unit_cost_sen' => 60000])
+        ->and($q->fresh()->totals()['sst_sen'])->toBe(0);
+
+    Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q->fresh()])->set('tab', 'items')
+        ->call('removeSubItem', $item->id, 0);
+    expect($item->fresh()->sub_items)->toBeNull();
+});
+
+it('saves the default margin used for new items', function () {
+    [$u, $q] = myQuotation();
+
+    Livewire::actingAs($u)->test(QuotationPage::class, ['quotation' => $q])->set('tab', 'items')->set('form.default_margin', '15')->call('addItem');
+
+    expect($q->fresh()->items->last()->margin_bp)->toBe(1500);
+});

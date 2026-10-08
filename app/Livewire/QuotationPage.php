@@ -5,8 +5,9 @@ namespace App\Livewire;
 use App\Actions\Quotations\{AddQuotationItem, CreateProjectFromQuotation, DuplicateQuotation, MarkQuotationAccepted, MarkQuotationRejected, MarkQuotationSent, MoveQuotationBackToDraft, MoveQuotationItem, RemoveQuotationItem, ReviseQuotation, UpdateQuotation, UpdateQuotationItem};
 use App\Exceptions\{InvalidQuotationTransition, QuotationIncomplete, QuotationLocked, StaleQuotation};
 use App\Models\{CompanyProfile, Quotation, QuotationItem, User};
-use App\Rules\{MoneyAmount, Percentage};
-use App\Support\{Money, Percent};
+use App\Costing\{CostingCalculator, CostingForm};
+use App\Rules\Percentage;
+use App\Support\Percent;
 use DomainException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Gate;
@@ -53,14 +54,14 @@ class QuotationPage extends Component
             'show_signature' => $q->show_signature,
             'show_stamp' => $q->show_stamp,
             'sst' => Percent::toInput($q->sst_bp),
+            'default_margin' => Percent::toInput($q->default_margin_bp),
             'terms' => (string) $q->terms,
         ];
         $this->items = [];
         foreach ($q->items as $i) {
-            $this->items["i{$i->id}"] = [
-                'title' => $i->title, 'details' => (string) $i->details, 'quantity' => (string) $i->quantity,
-                'unit' => $i->unit, 'unit_price' => Money::toInput($i->unit_price_sen),
-            ];
+            $this->items["i{$i->id}"] = ['title' => $i->title, 'details' => (string) $i->details, 'sst' => $i->has_sst]
+                + CostingForm::lineFromModel($i);
+            $this->syncMarginFromPrice("i{$i->id}");
         }
     }
 
@@ -69,9 +70,39 @@ class QuotationPage extends Component
         $parts = explode('.', $property);
         if ($parts[0] === 'form' && isset($parts[1])) {
             $this->saveField($parts[1]);
-        } elseif ($parts[0] === 'items' && isset($parts[1])) {
-            $this->saveItem((int) substr($parts[1], 1));
+        } elseif ($parts[0] === 'items' && isset($parts[1], $this->items[$parts[1]])) {
+            $k = $parts[1];
+            if (($parts[2] ?? '') === 'margin') {
+                $this->items[$k]['unit_price'] = ''; // a new margin means "work the price out again"
+            }
+            $this->saveItem((int) substr($k, 1));
+            if (in_array($parts[2] ?? '', ['unit_price', 'unit_cost', 'sub_items'], true)) {
+                $this->syncMarginFromPrice($k);
+            }
         }
+    }
+
+    /** With a typed price, the margin box shows the margin that price gives (kept within 0–99.99 so the item still saves). */
+    private function syncMarginFromPrice(string $k): void
+    {
+        $line = CostingForm::lineToData($this->items[$k], $this->quotation->default_margin_bp, lenient: true);
+        if ($line['unit_price_override_sen'] !== null) {
+            $this->items[$k]['margin'] = Percent::toInput(max(0, min(9999, CostingCalculator::line($line)['effective_margin_bp'])));
+        }
+    }
+
+    public function addSubItem(int $id): void
+    {
+        if (isset($this->items["i{$id}"])) {
+            $this->items["i{$id}"]['sub_items'][] = CostingForm::blankSubItem(); // saved once it has a description
+        }
+    }
+
+    public function removeSubItem(int $id, int $j): void
+    {
+        unset($this->items["i{$id}"]['sub_items'][$j]);
+        $this->items["i{$id}"]['sub_items'] = array_values($this->items["i{$id}"]['sub_items'] ?? []);
+        $this->saveItem($id);
     }
 
     /**
@@ -90,6 +121,7 @@ class QuotationPage extends Component
         $blank = fn ($v) => trim((string) $v) === '' ? null : trim((string) $v);
         $data = match ($field) {
             'sst' => ['sst_bp' => Percent::parseBp($value)],
+            'default_margin' => ['default_margin_bp' => Percent::parseBp($value)],
             'validity_days', 'prepared_by' => [$field => (int) $value],
             'show_signature', 'show_stamp' => [$field => (bool) $value],
             'quote_date', 'terms' => [$field => $value],
@@ -124,6 +156,7 @@ class QuotationPage extends Component
             'form.show_signature' => ['boolean'],
             'form.show_stamp' => ['boolean'],
             'form.sst' => ['required', new Percentage],
+            'form.default_margin' => ['required', new Percentage],
             'form.terms' => ['nullable', 'string', 'max:5000'],
         ];
     }
@@ -133,24 +166,32 @@ class QuotationPage extends Component
         return [
             'form.quote_date' => 'date', 'form.validity_days' => 'validity', 'form.attention_email' => 'attention email',
             'form.prepared_by' => 'prepared by', 'form.preparer_email' => 'email', 'form.sst' => 'SST',
+            'form.default_margin' => 'default margin',
         ];
     }
 
+    /** Checks and saves one item: customer fields, costing (cost, margin or typed price, sub-items) and the SST tick. */
     private function saveItem(int $id): void
     {
         $k = "i{$id}";
-        $this->validate([
+        $rules = CostingForm::lineRules("items.$k");
+        unset($rules["items.$k.description"]); // an item's name is its title
+        $this->validate($rules + [
             "items.$k.title" => ['required', 'string', 'max:255'],
             "items.$k.details" => ['nullable', 'string', 'max:2000'],
-            "items.$k.quantity" => ['required', 'integer', 'between:1,1000000'],
-            "items.$k.unit" => ['required', 'string', 'max:50'],
-            "items.$k.unit_price" => ['required', new MoneyAmount],
-        ], [], ["items.$k.title" => 'title', "items.$k.quantity" => 'quantity', "items.$k.unit" => 'unit', "items.$k.unit_price" => 'unit price']);
+            "items.$k.sst" => ['boolean'],
+        ], [], [
+            "items.$k.title" => 'title', "items.$k.quantity" => 'quantity', "items.$k.unit" => 'unit', "items.$k.frequency" => 'frequency',
+            "items.$k.unit_cost" => 'unit cost', "items.$k.margin" => 'margin', "items.$k.unit_price" => 'unit price',
+            "items.$k.vendor" => 'vendor', "items.$k.quote_url" => 'quotation link',
+            "items.$k.sub_items.*.description" => 'description', "items.$k.sub_items.*.unit" => 'unit',
+            "items.$k.sub_items.*.quantity" => 'quantity', "items.$k.sub_items.*.unit_cost" => 'unit cost',
+            "items.$k.sub_items.*.quote_url" => 'quotation link',
+        ]);
         $row = $this->items[$k];
-        $saved = $this->run(fn () => $this->version = app(UpdateQuotationItem::class)->handle(auth()->user(), $this->item($id), $this->version, [
-            'title' => $row['title'], 'details' => $row['details'], 'quantity' => (int) $row['quantity'],
-            'unit' => $row['unit'], 'unit_price_sen' => Money::parse($row['unit_price']) ?? 0,
-        ])->version);
+        $data = ['title' => $row['title'], 'details' => $row['details'], 'has_sst' => (bool) ($row['sst'] ?? true)]
+            + CostingForm::lineToData($row, $this->quotation->default_margin_bp, lenient: false);
+        $saved = $this->run(fn () => $this->version = app(UpdateQuotationItem::class)->handle(auth()->user(), $this->item($id), $this->version, $data)->version);
         if ($saved) {
             $this->dispatch('saved');
         }
@@ -249,6 +290,8 @@ class QuotationPage extends Component
         return view('livewire.quotation-page', [
             'q' => $q,
             'totals' => $q->totals(),
+            'costing' => $q->costing(),
+            'target' => Percent::format(CostingCalculator::COMPANY_TARGET_MARGIN_BP, 0),
             'editable' => $canUpdate && $q->isDraft(),
             'canUpdate' => $canUpdate,
             'canBackToDraft' => Gate::allows('backToDraft', $q) && in_array($q->status->value, ['sent', 'rejected', 'accepted'], true) && ! $q->project,
