@@ -100,3 +100,9 @@ it('shows frequency only when needed, marks SST items and never shows costs', fu
     $q->items[0]->update(['frequency' => 1]);
     expect(app(QuotationPdf::class)->html($q->fresh()))->not->toContain('Freq.');
 });
+
+it('has no customer "Accepted by" box, only the Prepared by signature', function () {
+    $html = app(QuotationPdf::class)->html(pdfQuotation());
+
+    expect($html)->toContain('Prepared by,')->not->toContain('Accepted by')->not->toContain('Name, signature &amp; company stamp');
+});
