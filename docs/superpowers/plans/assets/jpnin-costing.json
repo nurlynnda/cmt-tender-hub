@@ -1,0 +1,50 @@
+[
+  {
+    "description": "1. Dokumen Laporan Kajian Awal Sistem Platform Digital Skim Rondaan Sukarela",
+    "unit_cost_sen": 1859900
+  },
+  {
+    "description": "2. Menaik Taraf Sistem Platform Digital Skim Rondaan Sukarela Fasa 1 Tahun 2026",
+    "unit_cost_sen": 1062800
+  },
+  {
+    "description": "3. Menaik Taraf Sistem Platform Digital Skim Rondaan Sukarela Fasa 2 Tahun 2027",
+    "unit_cost_sen": 1062800
+  },
+  {
+    "description": "4. Dokumentasi Mengikut Kaedah Garis Panduan Pembangunan Aplikasi (KRISA) Fasa 1 Tahun 2026",
+    "unit_cost_sen": 2391300
+  },
+  {
+    "description": "5. Dokumentasi Mengikut Kaedah Garis Panduan Pembangunan Aplikasi (KRISA) Fasa 2 Tahun 2027",
+    "unit_cost_sen": 2391300
+  },
+  {
+    "description": "6. Pengujian dan Pentauliahan",
+    "unit_cost_sen": 531200
+  },
+  {
+    "description": "7. Pengujian Postur Keselamatan (Security Posture Assessment) Bilangan 1 Tahun 2026",
+    "unit_cost_sen": 398600
+  },
+  {
+    "description": "8. Pengujian Postur Keselamatan (Security Posture Assessment) Bilangan 2 Tahun 2027",
+    "unit_cost_sen": 398600
+  },
+  {
+    "description": "9. Latihan dan Training of Trainers (ToT) Siri 1 Tahun 2026",
+    "unit_cost_sen": 1062800
+  },
+  {
+    "description": "10. Latihan dan Training of Trainers (ToT) Siri 2 Tahun 2027",
+    "unit_cost_sen": 1062800
+  },
+  {
+    "description": "11. Sokongan dan Penyelenggaraan Fasa 1 Tahun 2026",
+    "unit_cost_sen": 531200
+  },
+  {
+    "description": "12. Sokongan dan Penyelenggaraan Fasa 2 Tahun 2027",
+    "unit_cost_sen": 531200
+  }
+]

@@ -1,0 +1,99 @@
+<?php
+
+use App\Enums\TenderStatus;
+use App\Livewire\{Dashboard, StatusReport};
+use App\Models\{Tender, User};
+use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
+
+it('shows per-PIC performance with totals', function () {
+    $ahmad = User::factory()->create(['name' => 'Ahmad Faizal']);
+    $nurul = User::factory()->create(['name' => 'Nurul Ain']);
+    Tender::factory()->status(TenderStatus::Awarded)->create(['pic_id' => $ahmad->id, 'submitted_price_sen' => 500000]);
+    Tender::factory()->status(TenderStatus::Lost)->create(['pic_id' => $ahmad->id, 'submitted_price_sen' => 100000]);
+
+    Livewire::actingAs($nurul)->test(StatusReport::class)
+        ->assertSee('Per-PIC tender performance')
+        ->assertSeeInOrder(['Ahmad Faizal', '2', '1', '1', '50%', 'RM 6,000.00', 'RM 5,000.00'])
+        ->assertSee('Nurul Ain')->assertSee('Total')
+        ->assertSeeHtml(e(route('tenders.index', ['awarded', 'pic' => $ahmad->id])));
+});
+
+it('sorts by any column and back', function () {
+    User::factory()->create(['name' => 'Zara']);
+    $a = User::factory()->create(['name' => 'Aminah']);
+    Tender::factory()->status(TenderStatus::Done)->create(['pic_id' => $a->id, 'submitted_price_sen' => 100]);
+
+    Livewire::actingAs($a)->test(StatusReport::class)
+        ->assertSeeInOrder(['Aminah', 'Zara'])
+        ->call('sortBy', 'name')->assertSet('dir', 'asc')->assertSeeInOrder(['Aminah', 'Zara'])
+        ->call('sortBy', 'name')->assertSet('dir', 'desc')->assertSeeInOrder(['Zara', 'Aminah'])
+        ->call('sortBy', 'total')->assertSet('sort', 'total')->assertSet('dir', 'desc')
+        ->call('sortBy', 'nonsense')->assertSet('sort', 'bid_value_sen')->assertSet('dir', 'desc');
+});
+
+it('uses the period filter', function () {
+    $u = User::factory()->create(['name' => 'Siti Aisyah']);
+    Tender::factory()->create(['pic_id' => $u->id, 'wo_date' => '2001-01-01']);
+
+    Livewire::actingAs($u)->test(StatusReport::class)->set('period', 'month')->set('month', '2001-01')
+        ->assertSee('Jan 2001')->assertSeeInOrder(['Siti Aisyah', '1']);
+});
+
+it('is in the sidebar and reachable', function () {
+    $this->actingAs(User::factory()->create())->get(route('status'))->assertOk()->assertSee(route('status'));
+});
+
+it('does not run more queries as tenders pile up', function () {
+    $u = User::factory()->create();
+    $count = function () use ($u) {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        Livewire::actingAs($u)->test(Dashboard::class);
+        Livewire::actingAs($u)->test(StatusReport::class);
+        $n = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        return $n;
+    };
+    Tender::factory()->count(3)->create(['pic_id' => $u->id]);
+    $few = $count();
+    Tender::factory()->count(30)->create(['pic_id' => User::factory()->create()->id]);
+
+    expect($count())->toBe($few);
+});
+
+it('keeps the chosen period on every drill-down link', function () {
+    $u = User::factory()->create(['name' => 'Siti Aisyah']);
+    Tender::factory()->status(TenderStatus::Done)->create(['pic_id' => $u->id, 'wo_date' => '2001-01-05']);
+
+    Livewire::actingAs($u)->test(StatusReport::class)->set('period', 'month')->set('month', '2001-01')
+        ->assertSeeHtml(e(route('tenders.index', ['done', 'pic' => $u->id, 'wo_from' => '2001-01-01', 'wo_to' => '2001-01-31'])));
+
+    Livewire::actingAs($u)->test(Dashboard::class)->set('period', 'month')->set('month', '2001-01')
+        ->assertSeeHtml(e(route('tenders.index', ['done', 'wo_from' => '2001-01-01', 'wo_to' => '2001-01-31'])))
+        ->assertSeeHtml(e(route('status', ['period' => 'month', 'month' => '2001-01'])));
+});
+
+it('does not warn while a month or custom range is still being chosen', function () {
+    Livewire::actingAs(User::factory()->create())->test(StatusReport::class)
+        ->set('period', 'month')->assertDontSee("That period wasn't valid", false)
+        ->set('period', 'custom')->set('from', '2026-01-01')->assertDontSee("That period wasn't valid", false);
+});
+
+it('shows each PIC as a card on phones, with initials and the same drill-down links', function () {
+    $this->actingAs($u = \App\Models\User::factory()->create(['name' => 'Nurul Ain']));
+    \App\Models\Tender::factory()->status(\App\Enums\TenderStatus::Done)->create(['pic_id' => $u->id]);
+
+    \Livewire\Livewire::test(\App\Livewire\StatusReport::class)
+        ->assertSeeHtml('data-pic-card="'.$u->id.'"')->assertSeeHtml('>NA</span>')
+        ->assertSeeHtml('data-resizable="status"');
+});
+
+it('shows a Dropped column that links to that PIC\'s dropped tenders', function () {
+    $this->actingAs($u = \App\Models\User::factory()->create());
+    \App\Models\Tender::factory()->create(['pic_id' => $u->id, 'status' => \App\Enums\TenderStatus::Dropped]);
+
+    \Livewire\Livewire::test(\App\Livewire\StatusReport::class)
+        ->assertSee('Dropped')->assertSeeHtml(e(route('tenders.index', ['dropped', 'pic' => $u->id])));
+});
