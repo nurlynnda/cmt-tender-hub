@@ -40,9 +40,29 @@ class TenderCosting extends Component
 
     public function updated(string $property): void
     {
-        if (in_array(explode('.', $property)[0], self::EDITABLE, true)) {
+        $parts = explode('.', $property);
+        if (in_array($parts[0], self::EDITABLE, true)) {
             $this->markDirty();
         }
+        if ($parts[0] === 'lines' && isset($parts[1], $parts[2], $this->lines[(int) $parts[1]])) {
+            $i = (int) $parts[1];
+            if ($parts[2] === 'margin') {
+                $this->lines[$i]['unit_price'] = ''; // a new margin means "work the price out again"
+            } elseif (in_array($parts[2], ['unit_price', 'unit_cost', 'sub_items'], true)) {
+                $this->syncMarginFromPrice($i);
+            }
+        }
+    }
+
+    /** With a typed price, the margin box shows the margin that price gives (kept within 0–99.99 so the line still saves). */
+    private function syncMarginFromPrice(int $i): void
+    {
+        $line = CostingForm::lineToData($this->lines[$i], $this->defaultBp(), lenient: true);
+        if ($line['unit_price_override_sen'] === null) {
+            return;
+        }
+        $bp = CostingCalculator::line($line)['effective_margin_bp'];
+        $this->lines[$i]['margin'] = Percent::toInput(max(0, min(9999, $bp)));
     }
 
     public function addLine(): void
@@ -90,6 +110,7 @@ class TenderCosting extends Component
         $this->validateOnly('defaultMargin', CostingForm::rules(), [], CostingForm::attributes());
         foreach (array_keys($this->lines) as $i) {
             $this->lines[$i]['margin'] = $this->defaultMargin;
+            $this->lines[$i]['unit_price'] = '';
         }
         $this->markDirty();
     }

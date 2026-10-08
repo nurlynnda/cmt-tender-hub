@@ -121,8 +121,15 @@
                     <td class="px-2 py-1">
                         <input wire:model.live.blur="lines.{{ $i }}.margin" @disabled(! $editable) class="{{ $in }} w-16" aria-label="Margin %">
                         @error("lines.$i.margin") <span class="text-xs text-bad-ink">{{ $message }}</span> @enderror
+                        @if ($calc['is_price_override'] ?? false)
+                            <span @class(['block whitespace-nowrap text-[11px]', 'text-bad-ink' => $calc['effective_margin_bp'] < 0, 'text-muted' => $calc['effective_margin_bp'] >= 0])>{{ Percent::format($calc['effective_margin_bp']) }} from price{{ $calc['effective_margin_bp'] < 0 ? ' · below cost' : '' }}</span>
+                        @endif
                     </td>
-                    <td class="whitespace-nowrap px-2 py-1 text-right">{{ Money::format($calc['price_per_unit_sen'] ?? 0) }}</td>
+                    <td class="whitespace-nowrap px-2 py-1 text-right">
+                        <input wire:model.live.blur="lines.{{ $i }}.unit_price" @disabled(! $editable) placeholder="{{ Money::toInput($calc['price_per_unit_sen'] ?? 0) }}"
+                               class="{{ $in }} w-28 text-right placeholder:text-ink" aria-label="Selling price per unit" title="Type a price to work the margin out from it; clear it to use the margin">
+                        @error("lines.$i.unit_price") <span class="block text-xs text-bad-ink">{{ $message }}</span> @enderror
+                    </td>
                     <td class="whitespace-nowrap px-2 py-1 text-right">{{ Money::format($calc['selling_sen'] ?? 0) }}</td>
                     <td class="px-2 py-1">
                         <input wire:model.live.blur="lines.{{ $i }}.vendor" list="costing-vendors" @disabled(! $editable) class="{{ $in }} w-32" aria-label="Vendor">

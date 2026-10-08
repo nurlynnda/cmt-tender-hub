@@ -181,3 +181,28 @@ it('opens Bulk Import as a dialog and closes it again', function () {
         ->call('openImport')->assertSeeHtml('role="dialog"')->assertSee('Bulk Import Items')
         ->call('closeImport')->assertDontSeeHtml('role="dialog"');
 });
+
+it('shows a frequency box and no Year or Group columns', function () {
+    [$pic, $tender] = costingFixture();
+    CostingLine::factory()->for($tender)->create(['frequency' => 3]);
+
+    costingComponent($pic, $tender)
+        ->assertSeeHtml('aria-label="Frequency"')->assertSet('lines.0.frequency', '3')
+        ->assertDontSeeHtml('aria-label="Year"')->assertDontSeeHtml('aria-label="Group"')->assertDontSee('Cost by year');
+});
+
+it('works the margin out backwards from a typed selling price, and back again from the margin', function () {
+    [$pic, $tender] = costingFixture();
+
+    $c = costingComponent($pic, $tender)
+        ->call('addLine')->set('lines.0.description', 'Server')->set('lines.0.unit_cost', '1,000')
+        ->set('lines.0.unit_price', '1,250')
+        ->assertSet('lines.0.margin', '20')->assertSee('from price');
+
+    $c->set('lines.0.unit_price', '900')                                  // below cost
+        ->assertSet('lines.0.margin', '0')->assertSee('-11.1%')->assertSee('below cost');
+
+    $c->set('lines.0.margin', '25')->assertSet('lines.0.unit_price', '')  // editing the margin goes back to the worked-out price
+        ->assertSee('RM 1,334.00')                                         // 1,000 ÷ 0.75 = 1,333.33 → 1,334
+        ->set('lines.0.unit_price', '1,500')->call('applyDefaultToAll')->assertSet('lines.0.unit_price', '');
+});
