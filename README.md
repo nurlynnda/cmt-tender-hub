@@ -149,11 +149,13 @@ The team's register spreadsheet (saved as CSV) is imported with a command — th
   sample staff first — keeps admin@cmt.test, manager@cmt.test and Find Tenders data. One transaction:
   if anything fails, nothing changes.
 
-## Before going live
+## Production (the DigitalOcean server)
 
-- `php artisan serve` is for development; put a proper web server (e.g. Nginx +
-  PHP-FPM or FrankenPHP) in front for production.
-- Set real SMTP details for password-reset emails.
+- Step-by-step guide: **`docs/DEPLOY.md`** (first setup, moving the data, backups, updates).
+- `docker-compose.prod.yml` + `docker/prod/`: FrankenPHP (web server with automatic HTTPS) runs the
+  site; the same image runs the worker and scheduler; MySQL is capped to fit a 2 GB server.
+- The server's settings live in its own `.env` (template: `.env.production.example`), never in Git.
+- `php artisan users:set-password {email}` sets a password without showing it (used after moving the data).
 - Never run `db:seed` in production (it refuses anyway).
 
 ## Design documents

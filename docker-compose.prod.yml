@@ -1,0 +1,56 @@
+# Production (the DigitalOcean server). Start with:
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Settings and secrets come from the server's .env file (see docs/DEPLOY.md); it is never committed.
+
+x-app: &app
+  build: { context: ., dockerfile: docker/prod/Dockerfile }
+  image: cmt-tender-hub:prod
+  env_file: .env
+  restart: unless-stopped
+  volumes:
+    - storage:/app/storage          # uploaded stamps, logs and sessions survive updates
+  depends_on:
+    mysql: { condition: service_healthy }
+
+services:
+  app:
+    <<: *app
+    environment:
+      SERVER_NAME: ${APP_HOST}      # e.g. tenderhub.134-209-98-112.sslip.io — Caddy gets its HTTPS certificate
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes:
+      - storage:/app/storage
+      - caddy-data:/data            # HTTPS certificates
+      - caddy-config:/config
+
+  worker:
+    <<: *app
+    command: ["php", "artisan", "queue:work", "--tries=1", "--timeout=7500", "--sleep=3", "--max-time=3600"]
+    healthcheck: { disable: true }   # the image's check is for the web server only
+
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+    healthcheck: { disable: true }
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    # Capped to fit a 2 GB server: about 0.6–0.7 GB in use instead of 1 GB+.
+    command: ["--innodb-buffer-pool-size=256M", "--performance-schema=OFF", "--max-connections=40", "--innodb-log-buffer-size=8M"]
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      retries: 30
+
+volumes:
+  mysql-data: {}
+  storage: {}
+  caddy-data: {}
+  caddy-config: {}
