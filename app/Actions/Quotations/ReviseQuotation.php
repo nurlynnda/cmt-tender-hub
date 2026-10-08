@@ -4,7 +4,7 @@ namespace App\Actions\Quotations;
 
 use App\Actions\Quotations\Concerns\GuardsQuotation;
 use App\Enums\QuotationStatus;
-use App\Models\{ActivityLog, Quotation, User};
+use App\Models\{ActivityLog, Quotation, QuotationItem, User};
 use App\Support\MalaysiaTime;
 use Illuminate\Support\Facades\DB;
 
@@ -32,7 +32,7 @@ final class ReviseQuotation
                 'version' => 1,
             ])->save();
             foreach ($q->items as $item) {
-                $new->items()->create($item->only(['position', 'title', 'details', 'quantity', 'unit', 'unit_price_sen']));
+                $new->items()->create($item->only(QuotationItem::COPIED));
             }
 
             $q->forceFill(['status' => QuotationStatus::Revised]);

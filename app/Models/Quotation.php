@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Costing\CostingCalculator;
 use App\Enums\QuotationStatus;
 use App\Quotations\QuotationTotals;
 use App\Support\MalaysiaTime;
@@ -95,8 +96,16 @@ class Quotation extends Model
     public function totals(): array
     {
         return QuotationTotals::of(
-            $this->items->map(fn (QuotationItem $i) => ['quantity' => $i->quantity, 'unit_price_sen' => $i->unit_price_sen])->all(),
+            $this->items->map(fn (QuotationItem $i) => [
+                'quantity' => $i->quantity, 'frequency' => $i->frequency, 'unit_price_sen' => $i->unit_price_sen, 'has_sst' => $i->has_sst,
+            ])->all(),
             $this->sst_bp,
         );
+    }
+
+    /** Internal profit view: cost, worked-out total, margin and the 18% warning (never on the PDF). */
+    public function costing(): array
+    {
+        return CostingCalculator::summary($this->items->map(fn (QuotationItem $i) => $i->costingLine())->all(), null, null);
     }
 }

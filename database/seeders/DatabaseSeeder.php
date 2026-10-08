@@ -118,7 +118,7 @@ class DatabaseSeeder extends Seeder
                 'sent_at' => $sent ? $date.' 10:00:00' : null, 'sent_by' => $sent ? $u->id : null,
             ], $extra));
             foreach ($items as $i => [$title, $details, $qty, $unit, $priceSen]) {
-                $q->items()->create(['position' => $i + 1, 'title' => $title, 'details' => $details, 'quantity' => $qty, 'unit' => $unit, 'unit_price_sen' => $priceSen]);
+                $q->items()->create(['position' => $i + 1, 'title' => $title, 'details' => $details, 'quantity' => $qty, 'unit' => $unit, 'unit_price_sen' => $priceSen, 'unit_price_override_sen' => $priceSen]);
             }
             ActivityLog::record($q, $u, 'quotation_created', "Quotation {$number} created");
         };

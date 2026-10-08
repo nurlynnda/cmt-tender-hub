@@ -20,6 +20,9 @@ final class AddQuotationItem
                 'title' => 'New item',
                 'quantity' => 1,
                 'unit' => 'Unit',
+                'frequency' => 1,
+                'margin_bp' => $q->default_margin_bp,
+                'has_sst' => true,
                 'unit_price_sen' => 0,
             ]);
             $this->bump($q, $actor);
