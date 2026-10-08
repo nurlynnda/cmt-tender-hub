@@ -80,10 +80,10 @@
     </div>
 
     <div class="relative overflow-x-auto rounded-2xl border border-line bg-surface">
-        <table class="w-full min-w-[1720px] text-[13px]">
+        <table class="w-full min-w-[1480px] text-[13px]">
             <thead class="bg-subtle text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-muted">
                 <tr>
-                    <th class="px-2 py-2">Item</th><th class="px-2">Qty</th><th class="px-2">Unit</th><th class="px-2">Frequency</th><th class="px-2">Year</th><th class="px-2">Group</th>
+                    <th class="px-2 py-2">Item</th><th class="px-2">Qty</th><th class="px-2">Unit</th><th class="px-2">Frequency</th>
                     <th class="px-2 text-right">Unit cost</th><th class="px-2 text-right">Line cost</th><th class="px-2">Margin %</th>
                     <th class="px-2 text-right">Price/unit</th><th class="px-2 text-right">Selling price</th><th class="px-2">Vendor</th>
                     <th class="px-2">Quotation link</th><th class="px-2"><span class="sr-only">Actions</span></th>
@@ -105,25 +105,9 @@
                         <input wire:model.live.blur="lines.{{ $i }}.unit" @disabled(! $editable) class="{{ $in }} w-16" aria-label="Unit">
                         @error("lines.$i.unit") <span class="text-xs text-bad-ink">{{ $message }}</span> @enderror
                     </td>
-                    <td class="whitespace-nowrap px-2 py-1">
-                        <select wire:model.live="lines.{{ $i }}.frequency" @disabled(! $editable) class="{{ $in }} w-28" aria-label="Frequency">
-                            <option value="one_off">One-off</option>
-                            <option value="monthly">Monthly</option>
-                        </select>
-                        @if (($line['frequency'] ?? '') === 'monthly')
-                            <div class="mt-1">× <input wire:model.live.blur="lines.{{ $i }}.months" @disabled(! $editable) class="{{ $in }} w-14" aria-label="Months"> months</div>
-                            @error("lines.$i.months") <span class="block text-xs text-bad-ink">{{ $message }}</span> @enderror
-                        @endif
-                    </td>
                     <td class="px-2 py-1">
-                        <select wire:model.live="lines.{{ $i }}.project_year" @disabled(! $editable) class="{{ $in }} w-20" aria-label="Year">
-                            @foreach (range(1, 7) as $y) <option value="{{ $y }}">Y{{ $y }}</option> @endforeach
-                        </select>
-                    </td>
-                    <td class="px-2 py-1">
-                        <select wire:model.live="lines.{{ $i }}.pd_group" @disabled(! $editable) class="{{ $in }} w-40" aria-label="Group" title="Where this cost goes in the PD budget once the tender is awarded">
-                            @foreach (\App\Enums\PdGroup::costGroups() as $g) <option value="{{ $g->value }}">{{ $g->label() }}</option> @endforeach
-                        </select>
+                        <input wire:model.live.blur="lines.{{ $i }}.frequency" @disabled(! $editable) class="{{ $in }} w-16" aria-label="Frequency" title="How many times this repeats, e.g. 12 for monthly over a year">
+                        @error("lines.$i.frequency") <span class="block text-xs text-bad-ink">{{ $message }}</span> @enderror
                     </td>
                     <td class="whitespace-nowrap px-2 py-1 text-right">
                         @if ($hasSubs)
@@ -137,8 +121,15 @@
                     <td class="px-2 py-1">
                         <input wire:model.live.blur="lines.{{ $i }}.margin" @disabled(! $editable) class="{{ $in }} w-16" aria-label="Margin %">
                         @error("lines.$i.margin") <span class="text-xs text-bad-ink">{{ $message }}</span> @enderror
+                        @if ($calc['is_price_override'] ?? false)
+                            <span @class(['block whitespace-nowrap text-[11px]', 'text-bad-ink' => $calc['effective_margin_bp'] < 0, 'text-muted' => $calc['effective_margin_bp'] >= 0])>{{ Percent::format($calc['effective_margin_bp']) }} from price{{ $calc['effective_margin_bp'] < 0 ? ' · below cost' : '' }}</span>
+                        @endif
                     </td>
-                    <td class="whitespace-nowrap px-2 py-1 text-right">{{ Money::format($calc['price_per_unit_sen'] ?? 0) }}</td>
+                    <td class="whitespace-nowrap px-2 py-1 text-right">
+                        <input wire:model.live.blur="lines.{{ $i }}.unit_price" @disabled(! $editable) placeholder="{{ Money::toInput($calc['price_per_unit_sen'] ?? 0) }}"
+                               class="{{ $in }} w-28 text-right placeholder:text-ink" aria-label="Selling price per unit" title="Type a price to work the margin out from it; clear it to use the margin">
+                        @error("lines.$i.unit_price") <span class="block text-xs text-bad-ink">{{ $message }}</span> @enderror
+                    </td>
                     <td class="whitespace-nowrap px-2 py-1 text-right">{{ Money::format($calc['selling_sen'] ?? 0) }}</td>
                     <td class="px-2 py-1">
                         <input wire:model.live.blur="lines.{{ $i }}.vendor" list="costing-vendors" @disabled(! $editable) class="{{ $in }} w-32" aria-label="Vendor">
@@ -171,7 +162,7 @@
                             @error("lines.$i.sub_items.$j.quantity") <span class="text-bad-ink">{{ $message }}</span> @enderror
                         </td>
                         <td class="px-2 py-1"><input wire:model.live.blur="lines.{{ $i }}.sub_items.{{ $j }}.unit" @disabled(! $editable) class="{{ $in }} w-16" aria-label="Sub-item unit"></td>
-                        <td colspan="3"></td>
+                        <td></td>
                         <td class="whitespace-nowrap px-2 py-1 text-right">
                             <input wire:model.live.blur="lines.{{ $i }}.sub_items.{{ $j }}.unit_cost" @disabled(! $editable) class="{{ $in }} w-28 text-right" aria-label="Sub-item unit cost">
                             @error("lines.$i.sub_items.$j.unit_cost") <span class="text-bad-ink">{{ $message }}</span> @enderror
@@ -194,7 +185,7 @@
                     </tr>
                 @endforeach
             @empty
-                <tr><td colspan="14" class="px-3 py-8 text-center text-muted">No cost lines yet.</td></tr>
+                <tr><td colspan="12" class="px-3 py-8 text-center text-muted">No cost lines yet.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -235,16 +226,6 @@
                         <td class="py-1 text-right">{{ Money::format($g['max_cost_sen']) }}</td>
                     </tr>
                 @endforeach
-            </tbody></table>
-        </div>
-        <div class="{{ $card }} text-sm">
-            <h3 class="mb-2 font-bold">Cost by year</h3>
-            <table class="w-full"><tbody>
-                @forelse ($summary['cost_by_year'] as $year => $sen)
-                    <tr class="border-t border-line"><td class="py-1">Year {{ $year }}</td><td class="py-1 text-right">{{ Money::format($sen) }}</td></tr>
-                @empty
-                    <tr><td class="py-1 text-muted">—</td></tr>
-                @endforelse
             </tbody></table>
         </div>
     </div>

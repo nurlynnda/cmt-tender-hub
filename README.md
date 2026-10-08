@@ -64,19 +64,22 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
 ## Costing
 
 - Each In Progress tender has a **Costing** tab: cost lines (with optional sub-items), a
-  margin % per line, one-off or monthly × N months, and the project year (1–7) the cost falls in.
+  margin % per line, and a **frequency** (a whole number: 12 = monthly over a year). Line total =
+  price × quantity × frequency.
 - Price per unit = cost ÷ (1 − margin), rounded **up** to the whole ringgit — the same as the
-  Excel sheet. The lines' selling prices add up to the suggested bid price; you can type your
-  own price instead, and the margin is always worked out from the price actually used.
+  Excel sheet. You can also **type a line's selling price**: the margin is then worked out
+  backwards from it (red when below cost); changing the margin or clearing the price goes back
+  to the worked-out price. The lines' selling prices add up to the suggested bid price; you can
+  type your own bid price instead, and the margin is always worked out from the price actually used.
 - Margins under 18% are flagged. Rows can be pasted straight from Excel (Bulk import).
 - **Mark Done** needs a saved costing and records its bid price as the submitted price.
 - All maths lives in `app/Costing/CostingCalculator.php` (whole sen, no rounding drift).
-- Each costing line has a **Group** (Principal, Distributor, …) that decides where it lands in the PD budget.
 
 ## PD (project finance)
 
 - When a tender is marked **Awarded** it gets a **PD tab**. Its budget is copied from the costing
-  (each line goes to its Group) plus a "Contract value" collection line; after that the PD is independent.
+  (each line under **Principal** — move it to another group on the PD page if needed) plus a
+  "Contract value" collection line; after that the PD is independent.
 - Budget vs actual Profit & Loss: GP = revenue − costs − project charges; commission =
   (GP − approved margin) × commission share; net = GP − commission. Actual figures use invoices.
 - Each line keeps its documents (PR, PO, invoice, payment; or invoice and receipt for collections).
@@ -95,7 +98,13 @@ The `scheduler` container runs `php artisan tenders:send-reminders` every hour
   the Preview tab shows the same PDF. **Duplicate** copies any quotation into a new draft.
 - The typed signature uses the **Allura** handwriting font, stored in `resources/fonts` (free SIL Open Font
   License, see `OFL.txt` there). Dompdf keeps its processed copy in `storage/fonts`, which must stay writable.
-- An Accepted quotation can **Create project** — a PD (see above) with the subtotal as contract value.
+- **Items are costed like tender costing:** unit cost (or sub-items), margin %, vendor and quote link sit in
+  a "Costing (not shown to the customer)" row under each item; the unit price is worked out from them, or
+  typed (the margin is then worked out backwards). Items also have a **frequency** and an **SST tick**:
+  SST is charged only on ticked items, which the PDF marks with \*. A **Profit (internal)** box shows total
+  cost, margin and the 18% warning; the quotation's default margin is used for new items.
+- An Accepted quotation can **Create project** — a PD (see above) with the subtotal as contract value and
+  each costed item as a Principal cost line.
 - Admins set the letterhead, stamp, default terms and default SST in **Finance Settings**. Each quotation
   keeps a copy of the letterhead it was created with; stamp files are never deleted.
 

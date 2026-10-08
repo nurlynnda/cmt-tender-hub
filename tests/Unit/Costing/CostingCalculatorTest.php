@@ -2,10 +2,9 @@
 
 use App\Costing\CostingCalculator as C;
 
-function oneOff(int $costSen, int $bp = 2000, int $qty = 1, int $year = 1): array
+function oneOff(int $costSen, int $bp = 2000, int $qty = 1): array
 {
-    return ['quantity' => $qty, 'frequency' => 'one_off', 'months' => 1, 'project_year' => $year,
-        'unit_cost_sen' => $costSen, 'margin_bp' => $bp, 'sub_items' => []];
+    return ['quantity' => $qty, 'frequency' => 1, 'unit_cost_sen' => $costSen, 'margin_bp' => $bp, 'sub_items' => []];
 }
 
 it('rounds the price per unit up to the whole ringgit, exactly', function (int $cost, int $bp, int $price) {
@@ -34,8 +33,8 @@ it('reproduces the prototype JPNIN costing to the sen', function () {
         ->and($s['under_budget_bp'])->toBe(500); // (174,800 − 166,059) ÷ 174,800 = 5.0%
 });
 
-it('uses sub-items as the cost of one unit, and multiplies monthly lines', function () {
-    $line = ['quantity' => 20, 'frequency' => 'monthly', 'months' => 12, 'project_year' => 2, 'unit_cost_sen' => 999,
+it('uses sub-items as the cost of one unit, and multiplies by the frequency', function () {
+    $line = ['quantity' => 20, 'frequency' => 12, 'unit_cost_sen' => 999,
         'margin_bp' => 2000, 'sub_items' => [['quantity' => 1, 'unit_cost_sen' => 300000], ['quantity' => 2, 'unit_cost_sen' => 40000]]];
 
     expect(C::line($line))->toBe([
@@ -43,11 +42,21 @@ it('uses sub-items as the cost of one unit, and multiplies monthly lines', funct
         'line_cost_sen' => 20 * 380000 * 12,
         'price_per_unit_sen' => 475000,            // 3,800 ÷ 0.8
         'selling_sen' => 20 * 475000 * 12,
+        'effective_margin_bp' => 2000,
+        'is_price_override' => false,
     ]);
 });
 
-it('treats one-off lines as one month whatever months says', function () {
-    expect(C::line(['months' => 9] + oneOff(100000))['line_cost_sen'])->toBe(100000);
+it('uses a typed selling price exactly and works the margin out backwards', function () {
+    $typed = C::line(['unit_price_override_sen' => 125000] + oneOff(100000, 3000, 2));
+    $belowCost = C::line(['unit_price_override_sen' => 90000] + oneOff(100000));
+    $subs = C::line(['unit_price_override_sen' => 500000, 'sub_items' => [['quantity' => 2, 'unit_cost_sen' => 200000]]] + oneOff(1));
+
+    expect($typed)->toMatchArray(['price_per_unit_sen' => 125000, 'selling_sen' => 250000, 'effective_margin_bp' => 2000, 'is_price_override' => true])
+        ->and($belowCost['effective_margin_bp'])->toBe(-1111)                 // (900 − 1,000) ÷ 900
+        ->and($subs)->toMatchArray(['unit_cost_sen' => 400000, 'price_per_unit_sen' => 500000, 'effective_margin_bp' => 2000])
+        ->and(C::line(['unit_price_override_sen' => 0] + oneOff(100))['effective_margin_bp'])->toBe(0)
+        ->and(C::marginFromPriceBp(100000, 125000))->toBe(2000);
 });
 
 it('uses the override as the bid price and recomputes the margin from it', function () {
@@ -88,8 +97,6 @@ it('lists the most you can spend for 12% to 21% margin', function () {
         ->and($guide[9])->toBe(['margin_bp' => 2100, 'max_cost_sen' => 9875000]);
 });
 
-it('totals cost by project year', function () {
-    $s = C::summary([oneOff(100, year: 3), oneOff(200, year: 1), oneOff(300, year: 3)], null, null);
-
-    expect($s['cost_by_year'])->toBe([1 => 200, 3 => 400]);
+it('no longer reports cost by year', function () {
+    expect(C::summary([oneOff(100)], null, null))->not->toHaveKey('cost_by_year');
 });

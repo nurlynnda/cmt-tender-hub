@@ -67,6 +67,7 @@
     <thead>
         <tr>
             <th style="width: 24px">No</th><th>Description</th><th class="right" style="width: 40px">Qty</th><th style="width: 40px">Unit</th>
+            @if ($totals['has_frequency']) <th class="right" style="width: 34px">Freq.</th> @endif
             <th class="right" style="width: 80px">Unit price (RM)</th><th class="right" style="width: 85px">Amount (RM)</th>
         </tr>
     </thead>
@@ -81,8 +82,9 @@
             </td>
             <td class="right">{{ $item->quantity }}</td>
             <td>{{ $item->unit }}</td>
+            @if ($totals['has_frequency']) <td class="right">{{ $item->frequency }}</td> @endif
             <td class="right">{{ $num($item->unit_price_sen) }}</td>
-            <td class="right">{{ $num($totals['lines'][$i]) }}</td>
+            <td class="right">{{ $num($totals['lines'][$i]).($item->has_sst ? '*' : '') }}</td>
         </tr>
     @endforeach
     </tbody>
@@ -90,7 +92,7 @@
 
 <table style="width: 45%; margin-left: auto; margin-top: 8px">
     <tr><td>Subtotal</td><td class="right">{{ $num($totals['subtotal_sen']) }}</td></tr>
-    <tr><td>SST ({{ Percent::format($q->sst_bp) }})</td><td class="right">{{ $num($totals['sst_sen']) }}</td></tr>
+    <tr><td>SST ({{ Percent::format($q->sst_bp) }}) on items marked *</td><td class="right">{{ $num($totals['sst_sen']) }}</td></tr>
     <tr>
         <td style="border-top: 1.5px solid #1f2933; font-weight: bold">Total (RM)</td>
         <td class="right" style="border-top: 1.5px solid #1f2933; font-weight: bold">{{ $num($totals['total_sen']) }}</td>

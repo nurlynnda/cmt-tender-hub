@@ -6,9 +6,24 @@ it('adds up the prototype quotation to the sen', function () {
     $t = QuotationTotals::of([['quantity' => 6, 'unit_price_sen' => 485000], ['quantity' => 1, 'unit_price_sen' => 650000]], 800);
 
     expect($t)->toBe([
-        'lines' => [2910000, 650000], 'subtotal_sen' => 3560000, 'sst_sen' => 284800, 'total_sen' => 3844800,
-        'words' => 'Ringgit Malaysia Thirty Eight Thousand Four Hundred Forty Eight Only',
+        'lines' => [2910000, 650000], 'subtotal_sen' => 3560000, 'taxable_sen' => 3560000, 'sst_sen' => 284800, 'total_sen' => 3844800,
+        'words' => 'Ringgit Malaysia Thirty Eight Thousand Four Hundred Forty Eight Only', 'has_frequency' => false,
     ]);
+});
+
+it('charges SST only on ticked items and multiplies by the frequency', function () {
+    $t = QuotationTotals::of([
+        ['quantity' => 2, 'frequency' => 12, 'unit_price_sen' => 10000, 'has_sst' => true],   // service: 2,400.00
+        ['quantity' => 1, 'frequency' => 1, 'unit_price_sen' => 500000, 'has_sst' => false],  // hardware: 5,000.00
+    ], 800);
+
+    expect($t)->toMatchArray(['lines' => [240000, 500000], 'subtotal_sen' => 740000, 'taxable_sen' => 240000,
+        'sst_sen' => 19200, 'total_sen' => 759200, 'has_frequency' => true]);
+});
+
+it('charges no SST when no item is ticked', function () {
+    expect(QuotationTotals::of([['quantity' => 1, 'unit_price_sen' => 1000, 'has_sst' => false]], 800))
+        ->toMatchArray(['sst_sen' => 0, 'total_sen' => 1000, 'has_frequency' => false]);
 });
 
 it('rounds SST half up and allows 0%', function () {

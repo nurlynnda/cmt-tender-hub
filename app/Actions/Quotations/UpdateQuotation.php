@@ -16,7 +16,7 @@ final class UpdateQuotation
     public const FIELDS = [
         'quote_date', 'validity_days', 'customer_name', 'attention', 'attention_phone', 'attention_email', 'customer_address',
         'subject', 'prepared_by', 'preparer_position', 'preparer_phone', 'preparer_email', 'show_signature', 'show_stamp',
-        'sst_bp', 'terms',
+        'sst_bp', 'default_margin_bp', 'terms',
     ];
 
     public function handle(User $actor, Quotation $quotation, int $expectedVersion, array $data): Quotation

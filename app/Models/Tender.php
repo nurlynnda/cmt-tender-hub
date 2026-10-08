@@ -85,8 +85,8 @@ class Tender extends Model
 
         return CostingCalculator::summary(
             $lines->map(fn (CostingLine $l) => [
-                'quantity' => $l->quantity, 'frequency' => $l->frequency, 'months' => $l->months,
-                'project_year' => $l->project_year, 'unit_cost_sen' => $l->unit_cost_sen, 'margin_bp' => $l->margin_bp,
+                'quantity' => $l->quantity, 'frequency' => $l->frequency, 'unit_cost_sen' => $l->unit_cost_sen,
+                'margin_bp' => $l->margin_bp, 'unit_price_override_sen' => $l->unit_price_override_sen,
                 'sub_items' => $l->subItems->map(fn ($s) => ['quantity' => $s->quantity, 'unit_cost_sen' => $s->unit_cost_sen])->all(),
             ])->all(),
             $this->bid_price_override_sen,

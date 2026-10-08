@@ -3,7 +3,7 @@
 namespace App\Actions\Quotations;
 
 use App\Enums\QuotationStatus;
-use App\Models\{ActivityLog, CompanyProfile, Quotation, User};
+use App\Models\{ActivityLog, CompanyProfile, Quotation, QuotationItem, User};
 use App\Support\MalaysiaTime;
 use Illuminate\Support\Facades\{DB, Gate};
 
@@ -21,7 +21,7 @@ final class DuplicateQuotation
             $samePerson = $source->prepared_by === $actor->id;
             $copy = Quotation::create([
                 ...$source->only(['validity_days', 'customer_name', 'attention', 'attention_phone', 'attention_email',
-                    'customer_address', 'subject', 'show_signature', 'show_stamp', 'sst_bp', 'terms']),
+                    'customer_address', 'subject', 'show_signature', 'show_stamp', 'sst_bp', 'default_margin_bp', 'terms']),
                 'number' => $this->numbers->next($today->year),
                 'status' => QuotationStatus::Draft,
                 'quote_date' => $today->format('Y-m-d'),
@@ -34,7 +34,7 @@ final class DuplicateQuotation
                 'version' => 1,
             ]);
             foreach ($source->items as $item) {
-                $copy->items()->create($item->only(['position', 'title', 'details', 'quantity', 'unit', 'unit_price_sen']));
+                $copy->items()->create($item->only(QuotationItem::COPIED));
             }
             ActivityLog::record($copy, $actor, 'quotation_created', "Duplicated from {$source->number}");
 

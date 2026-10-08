@@ -40,8 +40,14 @@ class TenderCosting extends Component
 
     public function updated(string $property): void
     {
-        if (in_array(explode('.', $property)[0], self::EDITABLE, true)) {
+        $parts = explode('.', $property);
+        if (in_array($parts[0], self::EDITABLE, true)) {
             $this->markDirty();
+        }
+        // A new margin means "work the price out again". A typed price leaves the margin box alone (its own
+        // margin shows as the "from price" note), so clearing the price returns to the price from the margin.
+        if ($parts[0] === 'lines' && ($parts[2] ?? '') === 'margin' && isset($this->lines[(int) $parts[1]])) {
+            $this->lines[(int) $parts[1]]['unit_price'] = '';
         }
     }
 
@@ -90,6 +96,7 @@ class TenderCosting extends Component
         $this->validateOnly('defaultMargin', CostingForm::rules(), [], CostingForm::attributes());
         foreach (array_keys($this->lines) as $i) {
             $this->lines[$i]['margin'] = $this->defaultMargin;
+            $this->lines[$i]['unit_price'] = '';
         }
         $this->markDirty();
     }

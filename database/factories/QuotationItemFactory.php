@@ -17,6 +17,11 @@ class QuotationItemFactory extends Factory
             'quantity' => 1,
             'unit' => 'Unit',
             'unit_price_sen' => 100000,
+            'frequency' => 1,
+            'unit_cost_sen' => 0,
+            'margin_bp' => 2000,
+            'unit_price_override_sen' => fn (array $a) => $a['unit_price_sen'], // like a migrated item: the price as set
+            'has_sst' => true,
         ];
     }
 }

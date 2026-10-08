@@ -16,9 +16,7 @@ class CostingLineFactory extends Factory
             'description' => fake()->words(4, true),
             'unit' => 'unit',
             'quantity' => 1,
-            'frequency' => 'one_off',
-            'months' => 1,
-            'project_year' => 1,
+            'frequency' => 1,
             'unit_cost_sen' => 10000000,
             'margin_bp' => 2000,
         ];
