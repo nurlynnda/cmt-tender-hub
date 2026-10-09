@@ -87,11 +87,13 @@ it('splits the submission-mode bar by EP and Non-EP count, and draws nothing wit
     \Livewire\Livewire::test(\App\Livewire\Dashboard::class)->assertSeeHtml('data-mode-bar')->assertSeeHtml('data-ep-pct="75"');
 });
 
-it('shows the portfolio value shortened, with the full amount beside it', function () {
+it('shows the portfolio value shortened, with no bracketed note beside it', function () {
     $this->actingAs(\App\Models\User::factory()->create());
     \App\Models\Tender::factory()->create(['estimated_value_sen' => 2389441110]);
+    \App\Models\Tender::factory()->create(['estimated_value_sen' => null]);
 
-    \Livewire\Livewire::test(\App\Livewire\Dashboard::class)->assertSee('RM 23.9M')->assertSee('RM 23,894,411.10 bid value');
+    \Livewire\Livewire::test(\App\Livewire\Dashboard::class)->assertSee('RM 23.9M')
+        ->assertDontSee('RM 23,894,411.10 bid value')->assertDontSee('without a value');
 });
 
 it('shows Dropped as its own slice in the status ring', function () {
