@@ -75,7 +75,7 @@
 ::-webkit-scrollbar-thumb { background: var(--muted-2); border-radius: 9999px; border: 2px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: content-box; }
 /* Firefox has no way to set an exact width; "thin" is the closest. */
-@supports not selector(::-webkit-scrollbar) {
+@supports (-moz-appearance: none) {
     * { scrollbar-width: thin; scrollbar-color: var(--muted-2) transparent; }
 }
 
