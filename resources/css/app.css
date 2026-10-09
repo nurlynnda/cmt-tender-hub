@@ -69,6 +69,16 @@
 
 [x-cloak] { display: none !important; }
 
+/* Slim 10px scrollbars everywhere (sidebar, dialogs, lists, page). */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--muted-2); border-radius: 9999px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); background-clip: content-box; }
+/* Firefox has no way to set an exact width; "thin" is the closest. */
+@supports not selector(::-webkit-scrollbar) {
+    * { scrollbar-width: thin; scrollbar-color: var(--muted-2) transparent; }
+}
+
 /* Buttons in the prototype style: btn + one of primary (green), dark, outline, danger (red). */
 @layer components {
     .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-[11px] px-4 py-2.5 text-[12.5px] font-bold whitespace-nowrap disabled:opacity-50; }
