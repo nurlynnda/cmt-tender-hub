@@ -4,14 +4,14 @@ namespace App\Actions\Tenders;
 
 use App\Enums\TenderStatus;
 use App\Models\{ActivityLog, Tender, TenderDocument, User};
-use App\Support\{AssignmentNotifier, MalaysiaTime};
+use App\Support\{AssignmentNotifier, CompanyFieldCodes, MalaysiaTime};
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\{DB, Gate};
 
 final class RegisterTender
 {
     public const FIELDS = [
-        'mode', 'type', 'category', 'tender_code', 'title', 'client', 'ministry', 'scope',
+        'mode', 'type', 'category', 'tender_code', 'title', 'client', 'ministry', 'field_codes', 'scope',
         'pic_id', 'owner_id', 'publish_date', 'closing_date',
         'has_briefing', 'briefing_date', 'estimated_value_sen',
         'collected_tender_id',
@@ -22,6 +22,7 @@ final class RegisterTender
     public function handle(User $actor, array $data): Tender
     {
         Gate::forUser($actor)->authorize('create', Tender::class);
+        CompanyFieldCodes::assertHeld($data['field_codes'] ?? []);
 
         $tender = DB::transaction(function () use ($actor, $data) {
             $today = MalaysiaTime::today();

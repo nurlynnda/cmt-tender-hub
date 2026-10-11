@@ -5,7 +5,7 @@ namespace App\Livewire\Forms;
 use App\Enums\{TenderCategory, TenderMode, TenderType};
 use App\Models\Tender;
 use App\Rules\MoneyAmount;
-use App\Support\Money;
+use App\Support\{CompanyFieldCodes, Money};
 use Illuminate\Validation\Rule;
 use Livewire\Form;
 
@@ -18,6 +18,8 @@ class TenderForm extends Form
     public string $title = '';
     public string $client = '';
     public string $ministry = '';
+    /** MOF field codes (kod bidang), separated by commas or spaces. */
+    public string $fieldCodes = '';
     public string $scope = '';
     public string $picId = '';
     public string $ownerId = '';
@@ -49,8 +51,17 @@ class TenderForm extends Form
             'title' => ['required', 'string', 'max:2000'],
             'client' => ['required', 'string', 'max:255'],
             'ministry' => ['nullable', 'string', 'max:255'],
+            'fieldCodes' => ['nullable', 'string', 'max:500', function ($attribute, $value, $fail) {
+                foreach (CompanyFieldCodes::parse($value) as $code) {
+                    if (preg_match('/^[A-Z0-9]{2,10}$/', $code) !== 1) {
+                        $fail("“{$code}” is not a field code. Use codes like 210101, separated by commas.");
+
+                        return;
+                    }
+                }
+            }],
             'scope' => ['nullable', 'string', 'max:5000'],
-            'picId' => ['required', $activeUser],
+            'picId' => ['nullable', $activeUser],
             'ownerId' => ['nullable', $activeUser],
             'publishDate' => ['nullable', 'date_format:Y-m-d'],
             'closingDate' => ['required', 'date_format:Y-m-d', function ($attribute, $value, $fail) {
@@ -68,6 +79,7 @@ class TenderForm extends Form
     {
         return [
             'tenderCode' => 'tender code',
+            'fieldCodes' => 'field codes',
             'picId' => 'person in charge',
             'ownerId' => 'opportunity owner',
             'publishDate' => 'publish date',
@@ -86,8 +98,9 @@ class TenderForm extends Form
         $this->title = $t->title;
         $this->client = $t->client;
         $this->ministry = (string) $t->ministry;
+        $this->fieldCodes = implode(', ', $t->field_codes ?? []);
         $this->scope = (string) $t->scope;
-        $this->picId = (string) $t->pic_id;
+        $this->picId = (string) ($t->pic_id ?? '');
         $this->ownerId = (string) ($t->owner_id ?? '');
         $this->publishDate = (string) $t->publish_date?->toDateString();
         $this->closingDate = $t->closing_date->toDateString();
@@ -104,6 +117,7 @@ class TenderForm extends Form
         $this->title = $c->title;
         $this->client = (string) ($c->agency ?? $c->ministry ?? '');
         $this->ministry = (string) ($c->ministry ?? '');
+        $this->fieldCodes = $c->fieldCodes->pluck('code')->implode(', ');
         $this->publishDate = (string) $c->advertised_date?->toDateString();
         $this->closingDate = (string) $c->closing_date?->toDateString();
         $this->estimatedValue = Money::toInput($c->indicative_price_sen);
@@ -125,8 +139,9 @@ class TenderForm extends Form
             'title' => trim($this->title),
             'client' => trim($this->client),
             'ministry' => trim($this->ministry) === '' ? null : trim($this->ministry),
+            'field_codes' => CompanyFieldCodes::parse($this->fieldCodes) ?: null,
             'scope' => $scope === '' ? null : $scope,
-            'pic_id' => (int) $this->picId,
+            'pic_id' => $this->picId === '' ? null : (int) $this->picId,
             'owner_id' => $this->ownerId === '' ? null : (int) $this->ownerId,
             'publish_date' => $this->publishDate === '' ? null : $this->publishDate,
             'closing_date' => $this->closingDate,

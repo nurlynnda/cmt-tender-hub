@@ -2,7 +2,7 @@
     use App\Enums\TenderStatus;
     use App\Support\Money;
     $status = $tender->status;
-    $total = $documents->count();
+    $total = $topLevelCount;
     $closing = $tender->closingState();
     $pill = 'rounded-full bg-hover px-2.5 py-0.5 text-[11.5px] font-semibold text-ink-2';
 @endphp
@@ -57,7 +57,7 @@
 
         {{-- Key facts (prototype) --}}
         <div data-facts class="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-line pt-4 sm:grid-cols-4">
-            <x-fact label="Assigned PIC"><span class="flex items-center gap-2"><x-avatar :user="$tender->pic" /> {{ $tender->pic->name }}</span></x-fact>
+            <x-fact label="Assigned PIC"><span class="flex items-center gap-2"><x-avatar :user="$tender->pic" /> {{ $tender->pic?->name ?? 'Unassigned' }}</span></x-fact>
             <x-fact label="Opportunity Owner">{{ $tender->owner?->name ?? '—' }}</x-fact>
             <x-fact label="Category">{{ $tender->category->value }}</x-fact>
             <x-fact label="Tender Code">{{ $tender->tender_code }}</x-fact>

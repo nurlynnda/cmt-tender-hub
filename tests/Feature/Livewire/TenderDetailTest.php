@@ -264,3 +264,94 @@ it('labels the closing button Back in the Cancel tender dialog, so it is not con
     Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
         ->call('openModal', 'cancel')->assertSeeHtml('>Back</button>')->assertSee('Cancel tender');
 });
+
+// ---- Pop-up notifications ----
+
+it('pops up a confirmation when details are saved or a task is changed', function () {
+    [$pic, $tender] = detailFixture();
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])
+        ->call('startEdit')->set('form.title', 'NEW TITLE')->call('save')
+        ->assertDispatched('toast', message: 'Tender details saved', type: 'success')
+        ->call('toggleDocument', $tender->documents->first()->id)
+        ->assertDispatched('toast', message: 'Task updated', type: 'success');
+});
+
+it('shows the confirmation on the next page after Done, Awarded and the other status changes', function (string $call, string $message, TenderStatus $from) {
+    [$pic, $tender] = detailFixture(['status' => $from]);
+    if ($call === 'markDone') {
+        $tender->documents()->update(['is_done' => true]);
+        \App\Models\CostingLine::factory()->for($tender)->create(['unit_cost_sen' => 13284500, 'margin_bp' => 2000]);
+    }
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])->call($call)->assertRedirect(route('tenders.show', $tender));
+
+    expect(session('toast'))->toBe(['message' => $message, 'type' => 'success']);
+})->with([
+    'done' => ['markDone', 'Tender marked Done', TenderStatus::InProgress],
+    'awarded' => ['markAwarded', 'Tender marked Awarded', TenderStatus::Done],
+    'dropped' => ['dropTender', 'Tender dropped', TenderStatus::InProgress],
+]);
+
+it('shows a pending confirmation in the page', function () {
+    $user = User::factory()->create();
+
+    $this->withSession(['toast' => ['message' => 'Tender 200-07102026-001 registered', 'type' => 'success']])
+        ->actingAs($user)->get('/tenders/in-progress')
+        ->assertSee('data-toaster', false)->assertSee('Tender 200-07102026-001 registered');
+});
+
+// ---- Subtasks on the Documents tab ----
+
+it('adds a subtask from the Documents tab and shows how many are done', function () {
+    [$pic, $tender] = detailFixture();
+    $task = $tender->documents->first();
+
+    $component = Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])->set('tab', 'documents')
+        ->set("newSubtasks.{$task->id}", 'Get SSM certificate')
+        ->call('addSubtask', $task->id)
+        ->assertHasNoErrors()
+        ->assertSet("newSubtasks.{$task->id}", null)
+        ->assertDispatched('toast', message: 'Subtask added', type: 'success')
+        ->assertSee('Get SSM certificate')->assertSee('0 of 1 subtasks done');
+
+    $component->call('toggleDocument', $task->children()->first()->id)->assertSee('1 of 1 subtasks done');
+    expect($task->fresh()->is_done)->toBeTrue();
+});
+
+it('requires text for a subtask and keeps the Docs count to top-level tasks', function () {
+    [$pic, $tender] = detailFixture();
+    $task = $tender->documents->first();
+    $task->children()->create(['tender_id' => $tender->id, 'name' => 'Sub', 'position' => 9]);
+
+    Livewire::actingAs($pic)->test(TenderDetail::class, ['tender' => $tender])->set('tab', 'documents')
+        ->call('addSubtask', $task->id)->assertHasErrors("newSubtasks.{$task->id}")
+        ->assertSee('Docs 0/5')->assertSee('0 / 5 done');
+});
+
+it('forbids adding a subtask to a tender the user may not edit', function () {
+    [, $tender] = detailFixture();
+
+    Livewire::actingAs(User::factory()->create())->test(TenderDetail::class, ['tender' => $tender])
+        ->set('newSubtasks.1', 'x')->call('addSubtask', $tender->documents->first()->id)->assertForbidden();
+});
+
+// ---- Tenders without a PIC ----
+
+it('shows a tender with no PIC as Unassigned and lets anyone edit it and set the PIC', function () {
+    [, $tender] = detailFixture(['pic_id' => null]);
+    $someone = User::factory()->create(['name' => 'Aina']);
+
+    Livewire::actingAs($someone)->test(TenderDetail::class, ['tender' => $tender])
+        ->assertSee('Unassigned')->assertSee('Edit details')
+        ->set('tab', 'documents')->assertSee('No PIC yet')
+        ->call('startEdit')->set('form.picId', (string) $someone->id)->call('save')->assertHasNoErrors();
+
+    expect($tender->fresh()->pic_id)->toBe($someone->id);
+});
+
+it('goes back to PIC-only editing once a PIC is set', function () {
+    [$pic, $tender] = detailFixture();
+
+    Livewire::actingAs(User::factory()->create())->test(TenderDetail::class, ['tender' => $tender])->call('startEdit')->assertForbidden();
+});

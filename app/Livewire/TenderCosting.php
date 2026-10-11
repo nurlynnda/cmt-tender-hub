@@ -13,6 +13,8 @@ use Livewire\Component;
 /** The Costing tab. Holds unsaved edits on screen; one Save writes the whole costing. */
 class TenderCosting extends Component
 {
+    use \App\Livewire\Concerns\Toasts;
+
     public Tender $tender;
     #[Reactive] public int $version;
     /** Display hint only — SaveCosting checks permission itself. */
@@ -147,6 +149,7 @@ class TenderCosting extends Component
         $this->unsaved = false;
         $this->dispatch('costing-dirty', dirty: false);
         $this->dispatch('costing-saved', version: $fresh->version);
+        $this->toast('Costing saved');
     }
 
     private function state(): array

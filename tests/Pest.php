@@ -22,6 +22,7 @@ function tenderData(array $overrides = []): array
         'tender_code' => 'QT260000000041127',
         'title' => 'PERKHIDMATAN PEMBANGUNAN SISTEM',
         'client' => 'JABATAN PERPADUAN NEGARA DAN INTEGRASI NASIONAL',
+        'field_codes' => ['210101'], // a code CMT holds
         'scope' => null,
         'pic_id' => App\Models\User::factory()->create()->id,
         'owner_id' => null,

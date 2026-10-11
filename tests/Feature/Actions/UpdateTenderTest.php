@@ -77,3 +77,33 @@ it('refuses edits once the tender is no longer in progress', function () {
 
     app(UpdateTender::class)->handle($pic, $tender, 1, ['title' => 'X']);
 })->throws(InvalidTenderTransition::class);
+
+it('logs setting a PIC on a tender that had none, and notifies them', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $someone = User::factory()->create(['name' => 'Siti Aisyah']);
+    $tender = Tender::factory()->create(['pic_id' => null]);
+
+    $updated = app(UpdateTender::class)->handle(User::factory()->create(), $tender, 1, ['pic_id' => $someone->id]);
+
+    expect($updated->pic_id)->toBe($someone->id)
+        ->and($updated->activity->first()->description)->toBe('PIC changed from nobody to Siti Aisyah');
+    \Illuminate\Support\Facades\Notification::assertSentTo($someone, \App\Notifications\TenderAssigned::class);
+});
+
+it('lets a tender go back to having no PIC without notifying anyone', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    [$pic, $tender] = editable();
+
+    $updated = app(UpdateTender::class)->handle($pic, $tender, 1, ['pic_id' => null]);
+
+    expect($updated->pic_id)->toBeNull()->and($updated->activity->first()->description)->toBe('PIC changed from Nurul Ain to nobody');
+    \Illuminate\Support\Facades\Notification::assertNothingSent();
+});
+
+it('saves changed field codes and logs them', function () {
+    [$pic, $tender] = editable();
+
+    $updated = app(UpdateTender::class)->handle($pic, $tender, 1, ['field_codes' => ['210101', 'B04']]);
+
+    expect($updated->field_codes)->toBe(['210101', 'B04'])->and($updated->activity->first()->description)->toBe('Details updated: field codes');
+});

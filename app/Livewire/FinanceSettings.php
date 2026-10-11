@@ -17,6 +17,8 @@ use Livewire\WithFileUploads;
 #[Title('Finance Settings')]
 class FinanceSettings extends Component
 {
+    use \App\Livewire\Concerns\Toasts;
+
     use WithFileUploads;
 
     /** Letterhead fields (Company letterhead section); "sst" is the default SST % as typed. */
@@ -69,6 +71,7 @@ class FinanceSettings extends Component
         $fields = array_map(fn ($v) => trim((string) $v) === '' ? null : $v, array_diff_key($this->company, ['sst' => true]));
         app(SaveCompanyProfile::class)->handle(auth()->user(), [...$fields, 'default_sst_bp' => Percent::parseBp($this->company['sst'])]);
         $this->notice = 'Letterhead saved. New quotations will use it.';
+        $this->toast($this->notice);
     }
 
     public function uploadStamp(): void
@@ -78,12 +81,14 @@ class FinanceSettings extends Component
         app(SaveCompanyStamp::class)->handle(auth()->user(), $this->stamp);
         $this->reset('stamp');
         $this->notice = 'Stamp saved. New quotations will use it.';
+        $this->toast($this->notice);
     }
 
     public function removeStamp(): void
     {
         app(RemoveCompanyStamp::class)->handle(auth()->user());
         $this->notice = 'Stamp removed. Quotations already created keep theirs.';
+        $this->toast($this->notice);
     }
 
     public function editType(int $id): void
@@ -109,6 +114,7 @@ class FinanceSettings extends Component
         $type = $this->editingType ? ProjectType::findOrFail($this->editingType) : null;
         app(SaveProjectType::class)->handle(auth()->user(), $type, $this->typeName, Percent::parseBp($this->typeMargin), $type?->is_active ?? true);
         $this->notice = 'Project type saved.';
+        $this->toast($this->notice);
         $this->cancelType();
     }
 
@@ -134,6 +140,7 @@ class FinanceSettings extends Component
             ['charge' => 'project charges', 'share' => 'commission share']);
         app(SaveFinanceDefaults::class)->handle(auth()->user(), Percent::parseBp($this->charge), Percent::parseBp($this->share));
         $this->notice = 'Saved. New projects will use these numbers.';
+        $this->toast($this->notice);
     }
 
     public function saveOwnNames(): void
@@ -142,6 +149,7 @@ class FinanceSettings extends Component
         $this->validate(['ownNames' => ['nullable', 'string', 'max:2000']], [], ['ownNames' => 'company names']);
         FinanceSetting::current()->forceFill(['own_company_names' => trim($this->ownNames)])->save();
         $this->notice = 'Saved. Market Insights and Find Tenders will mark these names as ours.';
+        $this->toast($this->notice);
     }
 
     public function render()

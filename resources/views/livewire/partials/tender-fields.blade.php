@@ -31,6 +31,20 @@
         <input wire:model="form.ministry" list="ministry-list" class="{{ $input }}">
         @if ($e = $err('ministry')) <span class="text-xs text-bad-ink">{{ $e }}</span> @endif
     </label>
+    <div class="text-sm sm:col-span-2">
+        <label class="block"><span class="text-muted">Field codes (kod bidang) * — the code(s) this tender asks for, separated by commas</span>
+            <input wire:model="form.fieldCodes" class="{{ $input }}" placeholder="e.g. 210101, 210105" data-field-codes>
+        </label>
+        @if ($e = $err('fieldCodes')) <span class="text-xs text-bad-ink">{{ $e }}</span> @endif
+        <details class="mt-1 text-xs text-muted">
+            <summary class="cursor-pointer font-semibold">CMT's field codes ({{ count(\App\Support\CompanyFieldCodes::all()) }}) — a tender needs at least one of these to be registered</summary>
+            <ul class="mt-1 max-h-40 space-y-0.5 overflow-y-auto rounded-lg bg-subtle p-2">
+                @foreach (\App\Support\CompanyFieldCodes::all() as $fc)
+                    <li><span class="font-semibold text-ink-2">{{ $fc['code'] }}</span> — {{ $fc['name'] }}</li>
+                @endforeach
+            </ul>
+        </details>
+    </div>
     <label class="text-sm sm:col-span-2"><span class="text-muted">Agency (PTJ) * (pick from the list or type any name)</span>
         <input wire:model="form.client" list="ministry-list" class="{{ $input }}">
         <datalist id="ministry-list">
@@ -38,9 +52,9 @@
         </datalist>
         @if ($e = $err('client')) <span class="text-xs text-bad-ink">{{ $e }}</span> @endif
     </label>
-    <label class="text-sm"><span class="text-muted">Person in charge (PIC) *</span>
+    <label class="text-sm"><span class="text-muted">Person in charge (PIC) — optional, can be added later</span>
         <select wire:model="form.picId" class="{{ $input }}">
-            <option value="">Choose…</option>
+            <option value="">Not assigned yet</option>
             @foreach ($people as $p) <option value="{{ $p->id }}">{{ $personLabel($p) }}</option> @endforeach
         </select>
         @if ($e = $err('picId')) <span class="text-xs text-bad-ink">{{ $e }}</span> @endif

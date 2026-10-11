@@ -20,7 +20,7 @@ final class MarkTenderDone
             $t = $this->lockForChange($actor, $tender, $expectedVersion);
             $this->requireStatus($t, TenderStatus::InProgress, 'mark as Done');
 
-            $pending = $t->documents()->where('is_done', false)->pluck('name')->all();
+            $pending = $t->documents()->whereNull('parent_id')->where('is_done', false)->pluck('name')->all();
             if ($pending !== []) {
                 throw new DocumentsIncomplete($pending);
             }

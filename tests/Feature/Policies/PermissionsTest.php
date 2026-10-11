@@ -39,3 +39,11 @@ it('lets only admins manage users', function () {
         ->and(Gate::forUser(User::factory()->manager()->create())->allows('manage-users'))->toBeFalse()
         ->and(Gate::forUser(User::factory()->create())->allows('manage-users'))->toBeFalse();
 });
+
+it('lets anyone edit a tender that has no PIC yet, but still only managers reopen it', function () {
+    $staff = User::factory()->create();
+    $tender = Tender::factory()->create(['pic_id' => null]);
+
+    expect(Gate::forUser($staff)->allows('update', $tender))->toBeTrue()
+        ->and(Gate::forUser($staff)->allows('reopen', $tender))->toBeFalse();
+});

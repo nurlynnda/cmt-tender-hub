@@ -10,6 +10,8 @@ use Livewire\Component;
 #[Title('Settings')]
 class Settings extends Component
 {
+    use \App\Livewire\Concerns\Toasts;
+
     public string $name = '';
     public string $currentPassword = '';
     public string $newPassword = '';
@@ -26,6 +28,7 @@ class Settings extends Component
         $this->validate(['name' => ['required', 'string', 'max:255']]);
         auth()->user()->update(['name' => trim($this->name)]);
         $this->status = 'Profile saved.';
+        $this->toast('Profile saved');
     }
 
     public function changePassword(): void

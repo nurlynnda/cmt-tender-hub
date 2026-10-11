@@ -33,7 +33,9 @@ final class TenderListQuery
         if ($mode = TenderMode::tryFrom((string) ($filters['mode'] ?? ''))) {
             $query->where('mode', $mode);
         }
-        if (ctype_digit((string) ($filters['pic'] ?? ''))) {
+        if (($filters['pic'] ?? '') === 'none') {
+            $query->whereNull('pic_id'); // registered but not assigned yet
+        } elseif (ctype_digit((string) ($filters['pic'] ?? ''))) {
             $query->where('pic_id', (int) $filters['pic']);
         }
         if ($category = TenderCategory::tryFrom((string) ($filters['category'] ?? ''))) {
