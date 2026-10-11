@@ -32,12 +32,12 @@
         @if ($e = $err('ministry')) <span class="text-xs text-bad-ink">{{ $e }}</span> @endif
     </label>
     <div class="text-sm sm:col-span-2">
-        <label class="block"><span class="text-muted">Field codes (kod bidang) * — the code(s) this tender asks for, separated by commas</span>
+        <label class="block"><span class="text-muted">Field codes (kod bidang) — the code(s) this tender asks for, separated by commas</span>
             <input wire:model="form.fieldCodes" class="{{ $input }}" placeholder="e.g. 210101, 210105" data-field-codes>
         </label>
         @if ($e = $err('fieldCodes')) <span class="text-xs text-bad-ink">{{ $e }}</span> @endif
         <details class="mt-1 text-xs text-muted">
-            <summary class="cursor-pointer font-semibold">CMT's field codes ({{ count(\App\Support\CompanyFieldCodes::all()) }}) — a tender needs at least one of these to be registered</summary>
+            <summary class="cursor-pointer font-semibold">10 Creative Solutions' field codes ({{ count(\App\Support\CompanyFieldCodes::all()) }}) — a tender's field codes should all be among these</summary>
             <ul class="mt-1 max-h-40 space-y-0.5 overflow-y-auto rounded-lg bg-subtle p-2">
                 @foreach (\App\Support\CompanyFieldCodes::all() as $fc)
                     <li><span class="font-semibold text-ink-2">{{ $fc['code'] }}</span> — {{ $fc['name'] }}</li>

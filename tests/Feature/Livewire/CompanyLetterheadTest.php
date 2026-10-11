@@ -12,7 +12,7 @@ const STAMP_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkY
 
 it('edits the letterhead, default terms and SST', function () {
     Livewire::actingAs(User::factory()->admin()->create())->test(FinanceSettings::class)
-        ->assertSet('company.name', 'CMT Sdn. Bhd.')->assertSet('company.sst', '8')
+        ->assertSet('company.name', '10 Creative Solutions Sdn Bhd')->assertSet('company.sst', '8')
         ->set('company.sst_no', 'W10-1808-32000001')->set('company.sst', '6')->set('company.default_terms', "One\nTwo")
         ->set('company.website', '')
         ->call('saveCompany')->assertHasNoErrors()->assertSee('Letterhead saved. New quotations will use it.');

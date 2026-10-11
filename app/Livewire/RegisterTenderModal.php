@@ -22,8 +22,10 @@ class RegisterTenderModal extends Component
     public bool $confirmDuplicate = false;
     public array $duplicateWoNumbers = [];
     public ?int $collectedTenderId = null;
-    /** Set when registering is refused because CMT holds none of the tender's field codes; shows the pop-up. */
+    /** Set when registering is refused because the company does not hold every field code the tender asks for (['asked' => [...], 'missing' => [...]]); shows the pop-up, which offers Register anyway. */
     public ?array $codeBlock = null;
+    /** The person chose "Register anyway" on the field-code pop-up; reset when the field codes are edited. */
+    public bool $codeOverride = false;
 
     #[On('open-register-tender')]
     public function show(?int $collectedTenderId = null): void
@@ -34,6 +36,7 @@ class RegisterTenderModal extends Component
         $this->duplicateWoNumbers = [];
         $this->collectedTenderId = null;
         $this->codeBlock = null;
+        $this->codeOverride = false;
         if ($collectedTenderId !== null && ($c = CollectedTender::with(['sources', 'fieldCodes'])->find($collectedTenderId))) {
             $this->form->fillFromCollected($c);
             $this->collectedTenderId = $c->id;
@@ -51,8 +54,20 @@ class RegisterTenderModal extends Component
         $this->codeBlock = null;
     }
 
+    /** The pop-up's "Register anyway": go ahead although the company does not hold every field code the tender asks for. */
+    public function registerAnyway()
+    {
+        $this->codeOverride = true;
+        $this->codeBlock = null;
+
+        return $this->save();
+    }
+
     public function updated(string $property): void
     {
+        if ($property === 'form.fieldCodes') {
+            $this->codeOverride = false;
+        }
         if ($property === 'form.tenderCode') {
             $this->confirmDuplicate = false;
             $this->duplicateWoNumbers = [];
@@ -62,16 +77,19 @@ class RegisterTenderModal extends Component
     public function save()
     {
         $this->validate(['collectedTenderId' => ['nullable', 'integer', 'exists:collected_tenders,id']]);
-        $this->form->validate();
 
-        // Checked before the duplicate prompt: there is no point asking about a tender we cannot register at all.
-        try {
-            CompanyFieldCodes::assertHeld(CompanyFieldCodes::parse($this->form->fieldCodes));
-        } catch (FieldCodeNotHeld $e) {
-            $this->codeBlock = $e->tenderCodes;
+        // Checked first, right after the click, before anything else is validated or asked.
+        if (! $this->codeOverride) {
+            try {
+                CompanyFieldCodes::assertHeld(CompanyFieldCodes::parse($this->form->fieldCodes));
+            } catch (FieldCodeNotHeld $e) {
+                $this->codeBlock = ['asked' => $e->tenderCodes, 'missing' => $e->missing];
 
-            return null;
+                return null;
+            }
         }
+
+        $this->form->validate();
 
         if (! $this->confirmDuplicate) {
             $existing = Tender::where('tender_code', trim($this->form->tenderCode))->pluck('wo_number')->all();
@@ -86,7 +104,7 @@ class RegisterTenderModal extends Component
         $tender = app(RegisterTender::class)->handle(auth()->user(), [
             ...$this->form->toData(),
             'collected_tender_id' => $this->collectedTenderId,
-        ]);
+        ], $this->codeOverride);
 
         $this->toastNextPage("Tender {$tender->wo_number} registered");
 

@@ -5,7 +5,7 @@
         [$title, $subtitle, $action, $label, $style] = match ($modal) {
             'done' => ['Mark tender as Done?', 'Marking this tender as Done will lock its costing and documents from further edits.', 'markDone', 'Yes, mark Done', 'btn-dark'],
             'cancel' => ['Cancel tender', 'The tender moves to Lost and is marked as cancelled.', 'cancelTender', 'Cancel tender', 'btn-danger'],
-            'awarded' => ['Mark as Awarded', 'Confirm CMT won this tender.', 'markAwarded', 'Mark Awarded', 'btn-primary'],
+            'awarded' => ['Mark as Awarded', 'Confirm 10 Creative Solutions won this tender.', 'markAwarded', 'Mark Awarded', 'btn-primary'],
             'lost' => ['Mark as Lost', 'Record the result. Both details are optional.', 'markLost', 'Mark Lost', 'btn-danger'],
             'bulk-docs' => ['Bulk Add Documents', 'Type one document name per line. Names already on the checklist are skipped.', 'bulkAddDocuments', 'Add documents', 'btn-primary'],
             'drop' => ['Drop tender', 'Use this when the company decides not to bid. The tender moves to the Dropped list and is left out of the win rate. A manager can reopen it.', 'dropTender', 'Drop tender', 'btn-danger'],

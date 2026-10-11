@@ -33,10 +33,11 @@ runs the suite with the coverage gate — enable it once with
 
 ## Registering a tender
 
-- **Field codes (kod bidang):** a tender can only be registered if it asks for at least one code CMT holds.
-  CMT's 30 codes are in `resources/data/company-field-codes.json` (shown on the Register form too). A tender with
-  none of them — or no codes at all — gets a pop-up saying it cannot be registered. Codes are filled in from
-  Find Tenders, or typed in (comma-separated) for a manual registration.
+- **Field codes (kod bidang):** 10 Creative Solutions' 30 field codes are in `resources/data/company-field-codes.json`
+  (shown on the Register form too). Right after you click Register, if the company does not hold **every** field code the
+  tender asks for — or no code was entered — a pop-up lists the ones we do not hold. **Go back** to fix the codes, or **Register anyway** to proceed; registering
+  anyway is noted in the tender's activity log. Codes are filled in from Find Tenders, or typed in (comma-separated)
+  for a manual registration.
 - **PIC is optional.** A tender without a PIC shows "Unassigned" and anyone can edit it (and set the PIC). Once a PIC is
   set, only that person, managers and admins can edit it.
 - **Documents are a task list** for the PIC. Each task can have subtasks; a task is done when all its subtasks are, and

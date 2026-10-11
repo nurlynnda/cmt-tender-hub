@@ -16,7 +16,7 @@ it('seeds the prototype quotations', function () {
         ->and($q12->totals()['total_sen'])->toBe(3844800)
         ->and($q12->items)->toHaveCount(2)
         ->and($q12->preparer->name)->toBe('Siti Aisyah')
-        ->and($q12->letterhead['name'])->toBe('CMT Sdn. Bhd.')
+        ->and($q12->letterhead['name'])->toBe('10 Creative Solutions Sdn Bhd')
         ->and(Quotation::where('number', 'QTN-2026-0011')->first()->status)->toBe(QuotationStatus::Accepted)
         ->and(Quotation::where('number', 'QTN-2026-0011')->first()->totals()['total_sen'])->toBe(2052000)
         ->and($q10->totals()['total_sen'])->toBe(3150000)

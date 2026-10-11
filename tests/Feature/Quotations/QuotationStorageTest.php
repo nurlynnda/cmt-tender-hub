@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Gate;
 it('ships the company letterhead, default terms and SST', function () {
     $c = CompanyProfile::current();
 
-    expect($c->name)->toBe('CMT Sdn. Bhd.')
+    expect($c->name)->toBe('10 Creative Solutions Sdn Bhd')
         ->and($c->default_sst_bp)->toBe(800)
         ->and(preg_split('/\R/', $c->default_terms))->toHaveCount(6)
-        ->and($c->letterhead())->toMatchArray(['name' => 'CMT Sdn. Bhd.', 'website' => 'www.cmt.com.my', 'stamp_path' => null]);
+        ->and($c->letterhead())->toMatchArray(['name' => '10 Creative Solutions Sdn Bhd', 'website' => 'www.cmt.com.my', 'stamp_path' => null]);
 });
 
 it('numbers quotations per year without gaps', function () {

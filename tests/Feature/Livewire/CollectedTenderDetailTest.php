@@ -16,7 +16,7 @@ function collected(array $o = [], string $source = 'myprocurement'): CollectedTe
         'events' => [['label' => 'Taklimat', 'date' => '2026-09-22', 'address' => 'Putrajaya']],
         'raw' => ['Kod Bidang' => '210103'],
     ], $o));
-    $c->fieldCodes()->create(['code' => '210103']); // a code CMT holds
+    $c->fieldCodes()->create(['code' => '210103']); // a code the company holds
 
     return $c;
 }

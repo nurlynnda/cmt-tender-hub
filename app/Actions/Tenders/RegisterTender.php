@@ -3,6 +3,7 @@
 namespace App\Actions\Tenders;
 
 use App\Enums\TenderStatus;
+use App\Exceptions\FieldCodeNotHeld;
 use App\Models\{ActivityLog, Tender, TenderDocument, User};
 use App\Support\{AssignmentNotifier, CompanyFieldCodes, MalaysiaTime};
 use Illuminate\Support\Arr;
@@ -19,12 +20,18 @@ final class RegisterTender
 
     public function __construct(private GenerateWoNumber $woNumbers, private AssignmentNotifier $notifier) {}
 
-    public function handle(User $actor, array $data): Tender
+    /** @param  bool  $overrideFieldCodes  register even though the company does not hold every field code the tender asks for */
+    public function handle(User $actor, array $data, bool $overrideFieldCodes = false): Tender
     {
         Gate::forUser($actor)->authorize('create', Tender::class);
-        CompanyFieldCodes::assertHeld($data['field_codes'] ?? []);
 
-        $tender = DB::transaction(function () use ($actor, $data) {
+        $codes = $data['field_codes'] ?? [];
+        $outsideCodes = $codes === [] || CompanyFieldCodes::missing($codes) !== [];
+        if ($outsideCodes && ! $overrideFieldCodes) {
+            throw new FieldCodeNotHeld(array_values($codes));
+        }
+
+        $tender = DB::transaction(function () use ($actor, $data, $outsideCodes, $codes) {
             $today = MalaysiaTime::today();
 
             $tender = new Tender(Arr::only($data, self::FIELDS));
@@ -39,7 +46,9 @@ final class RegisterTender
                 $tender->documents()->create(['name' => $name, 'position' => $i + 1]);
             }
 
-            ActivityLog::record($tender, $actor, 'registered', 'Tender registered');
+            ActivityLog::record($tender, $actor, 'registered', $outsideCodes
+                ? 'Tender registered anyway — '.($codes ? 'the company does not hold its field code(s) '.implode(', ', CompanyFieldCodes::missing($codes)) : 'no field codes given')
+                : 'Tender registered');
 
             return $tender->fresh();
         });

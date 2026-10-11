@@ -26,17 +26,22 @@
             </x-slot:actions>
         </x-dialog>
 
-        {{-- Pop-up reminder: CMT holds none of this tender's field codes, so it cannot be registered --}}
+        {{-- Pop-up shown right after clicking Register when the company does not hold every field code the tender asks for --}}
         @if ($codeBlock !== null)
-            <x-dialog title="Cannot register this tender" close="dismissCodeBlock" cancelLabel="OK, got it">
-                @if ($codeBlock === [])
-                    <p class="text-[13.5px]">This tender has no field codes (kod bidang). Enter the field code(s) it asks for — we can only register a tender under a code CMT holds.</p>
+            <x-dialog title="Field code does not match" close="dismissCodeBlock" cancelLabel="Go back">
+                @if ($codeBlock['asked'] === [])
+                    <p class="text-[13.5px]">This tender has no field codes (kod bidang). 10 Creative Solutions normally registers a tender only when it holds all of the tender's field codes. Go back and enter the code(s), or register it anyway.</p>
                 @else
-                    <p class="text-[13.5px]">We cannot register this tender because <strong>we do not hold its field code</strong>.</p>
-                    <p class="rounded-xl bg-bad-bg px-3 py-2 text-[13px] font-semibold text-bad-ink">Tender asks for: {{ implode(', ', $codeBlock) }}</p>
+                    <p class="text-[13.5px]">10 Creative Solutions does not hold <strong>every</strong> field code this tender asks for. We normally register a tender only when we hold all of them.</p>
+                    <div class="space-y-1 rounded-xl bg-bad-bg px-3 py-2 text-[13px] text-bad-ink">
+                        <p class="font-semibold">We do not hold: {{ implode(', ', $codeBlock['missing']) }}</p>
+                        <p>Tender asks for: {{ implode(', ', $codeBlock['asked']) }}</p>
+                    </div>
                 @endif
-                <p class="text-[12.5px] text-muted">CMT's codes are listed under the Field codes box. Only a tender with at least one of them can be registered.</p>
-                <x-slot:actions></x-slot:actions>
+                <p class="text-[12.5px] text-muted">The company's {{ count(\App\Support\CompanyFieldCodes::all()) }} codes are listed under the Field codes box.</p>
+                <x-slot:actions>
+                    <button type="button" wire:click="registerAnyway" class="btn btn-dark" data-register-anyway>Register anyway</button>
+                </x-slot:actions>
             </x-dialog>
         @endif
     @endif

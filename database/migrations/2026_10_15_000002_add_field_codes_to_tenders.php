@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/** The MOF field codes (kod bidang) a tender asks for, checked against CMT's own codes when it is registered. */
+/** The MOF field codes (kod bidang) a tender asks for, checked against the company's own codes when it is registered. */
 return new class extends Migration
 {
     public function up(): void
