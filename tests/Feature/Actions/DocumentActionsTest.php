@@ -110,3 +110,94 @@ it('refuses bulk add on a locked tender, for strangers, and on an old version', 
         ->toThrow(\App\Exceptions\StaleTenderException::class);
     expect($t->fresh()->documents()->count())->toBe(0);
 });
+
+// ---- Subtasks: a document is a task for the PIC; a task can have subtasks ----
+
+function taskWithSubtasks(): array
+{
+    [$pic, $tender, $task] = docTender();
+    $tender = app(\App\Actions\Tenders\AddSubtask::class)->handle($pic, $tender, 1, $task->id, 'Get SSM certificate');
+    $tender = app(\App\Actions\Tenders\AddSubtask::class)->handle($pic, $tender, 2, $task->id, 'Get bank letter');
+
+    return [$pic, $tender, $task->fresh()];
+}
+
+it('adds a subtask under a task, in order, and logs it', function () {
+    [$pic, $tender, $task] = taskWithSubtasks();
+
+    expect($task->children->pluck('name')->all())->toBe(['Get SSM certificate', 'Get bank letter'])
+        ->and($task->children->every(fn ($c) => $c->tender_id === $tender->id && $c->parent_id === $task->id))->toBeTrue()
+        ->and($tender->version)->toBe(3)
+        ->and($tender->activity->first()->description)->toBe('Added subtask: Get bank letter (under Pricing Schedule)');
+});
+
+it('does not allow a subtask under a subtask, a blank name, or a task of another tender', function () {
+    [$pic, $tender, $task] = taskWithSubtasks();
+    $sub = $task->children->first();
+    [, , $foreign] = docTender();
+
+    expect(fn () => app(\App\Actions\Tenders\AddSubtask::class)->handle($pic, $tender, 3, $sub->id, 'Deeper'))->toThrow(ModelNotFoundException::class)
+        ->and(fn () => app(\App\Actions\Tenders\AddSubtask::class)->handle($pic, $tender, 3, $foreign->id, 'Nope'))->toThrow(ModelNotFoundException::class)
+        ->and(fn () => app(\App\Actions\Tenders\AddSubtask::class)->handle($pic, $tender, 3, $task->id, '  '))->toThrow(InvalidArgumentException::class);
+});
+
+it('marks a task done only when all of its subtasks are ticked, and open again when one is unticked', function () {
+    [$pic, $tender, $task] = taskWithSubtasks();
+    [$a, $b] = $task->children;
+
+    $tender = app(ToggleDocument::class)->handle($pic, $tender, 3, $a->id);
+    expect($task->fresh()->is_done)->toBeFalse();
+
+    $tender = app(ToggleDocument::class)->handle($pic, $tender, 4, $b->id);
+    expect($task->fresh()->is_done)->toBeTrue()->and($task->fresh()->done_by)->toBe($pic->id);
+
+    app(ToggleDocument::class)->handle($pic, $tender, 5, $a->id);
+    expect($task->fresh()->is_done)->toBeFalse()->and($task->fresh()->done_by)->toBeNull();
+});
+
+it('ticks and unticks every subtask when the task itself is ticked or unticked', function () {
+    [$pic, $tender, $task] = taskWithSubtasks();
+
+    $tender = app(ToggleDocument::class)->handle($pic, $tender, 3, $task->id);
+    expect($task->fresh()->is_done)->toBeTrue()->and($task->children()->where('is_done', true)->count())->toBe(2);
+
+    app(ToggleDocument::class)->handle($pic, $tender, 4, $task->id);
+    expect($task->fresh()->is_done)->toBeFalse()->and($task->children()->where('is_done', true)->count())->toBe(0);
+});
+
+it('reopens a finished task when a new subtask is added to it', function () {
+    [$pic, $tender, $task] = taskWithSubtasks();
+    $tender = app(ToggleDocument::class)->handle($pic, $tender, 3, $task->id);
+
+    app(\App\Actions\Tenders\AddSubtask::class)->handle($pic, $tender, 4, $task->id, 'One more thing');
+
+    expect($task->fresh()->is_done)->toBeFalse();
+});
+
+it('finishes a task when its last unticked subtask is removed, and removes subtasks with their task', function () {
+    [$pic, $tender, $task] = taskWithSubtasks();
+    [$a, $b] = $task->children;
+    $tender = app(ToggleDocument::class)->handle($pic, $tender, 3, $a->id);
+
+    $tender = app(RemoveDocument::class)->handle($pic, $tender, 4, $b->id);
+    expect($task->fresh()->is_done)->toBeTrue();
+
+    app(RemoveDocument::class)->handle($pic, $tender, 5, $task->id);
+    expect(TenderDocument::count())->toBe(0);
+});
+
+it('counts only top-level tasks in the progress figures and in Mark Done', function () {
+    [$pic, $tender, $task] = taskWithSubtasks();
+
+    $row = Tender::withDocumentCounts()->find($tender->id);
+    expect($row->documents_count)->toBe(1)->and($row->documents_done_count)->toBe(0)->and($row->documentPercent())->toBe(0);
+
+    expect(fn () => app(\App\Actions\Tenders\MarkTenderDone::class)->handle($pic, $tender, 3))
+        ->toThrow(\App\Exceptions\DocumentsIncomplete::class, '1 document(s) still not ticked: Pricing Schedule');
+});
+
+it('locks subtask changes once the tender is no longer in progress', function () {
+    [$pic, $tender, $task] = docTender(TenderStatus::Done);
+
+    app(\App\Actions\Tenders\AddSubtask::class)->handle($pic, $tender, 1, $task->id, 'Late');
+})->throws(InvalidTenderTransition::class);

@@ -23,7 +23,8 @@ class TenderPolicy
 
     public function update(User $user, Tender $tender): bool
     {
-        return $user->role->canManageAllTenders() || $tender->pic_id === $user->id;
+        // No PIC yet → anyone may edit it (and set the PIC).
+        return $tender->pic_id === null || $user->role->canManageAllTenders() || $tender->pic_id === $user->id;
     }
 
     public function reopen(User $user, Tender $tender): bool

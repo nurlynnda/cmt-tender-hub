@@ -10,7 +10,7 @@ final class AssignmentNotifier
     public function notify(Tender $tender, User $actor, ?int $previousPicId, ?int $previousOwnerId): void
     {
         $recipients = [];
-        if ($tender->pic_id !== $previousPicId) {
+        if ($tender->pic_id !== null && $tender->pic_id !== $previousPicId) {
             $recipients[$tender->pic_id] = 'PIC';
         }
         if ($tender->owner_id !== null && $tender->owner_id !== $previousOwnerId && ! isset($recipients[$tender->owner_id])) {

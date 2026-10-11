@@ -27,6 +27,7 @@ class Tender extends Model
             'publish_date' => 'immutable_date',
             'closing_date' => 'immutable_date',
             'briefing_date' => 'immutable_date',
+            'field_codes' => 'array',
             'has_briefing' => 'boolean',
             'was_cancelled' => 'boolean',
             'estimated_value_sen' => 'integer',
@@ -107,8 +108,9 @@ class Tender extends Model
     public function scopeWithDocumentCounts(Builder $query): Builder
     {
         return $query->withCount([
-            'documents',
-            'documents as documents_done_count' => fn (Builder $q) => $q->where('is_done', true),
+            // Only top-level tasks count; a task is done when all of its subtasks are.
+            'documents' => fn (Builder $q) => $q->whereNull('parent_id'),
+            'documents as documents_done_count' => fn (Builder $q) => $q->whereNull('parent_id')->where('is_done', true),
         ]);
     }
 
@@ -135,8 +137,8 @@ class Tender extends Model
 
     public function documentPercent(): int
     {
-        $total = $this->documents_count ?? $this->documents()->count();
-        $done = $this->documents_done_count ?? $this->documents()->where('is_done', true)->count();
+        $total = $this->documents_count ?? $this->documents()->whereNull('parent_id')->count();
+        $done = $this->documents_done_count ?? $this->documents()->whereNull('parent_id')->where('is_done', true)->count();
 
         return $total === 0 ? 0 : (int) round($done * 100 / $total);
     }

@@ -2,14 +2,14 @@
 
 namespace App\Actions\Tenders;
 
-use App\Actions\Tenders\Concerns\GuardsTender;
+use App\Actions\Tenders\Concerns\{GuardsTender, SyncsSubtasks};
 use App\Enums\TenderStatus;
 use App\Models\{ActivityLog, Tender, User};
 use Illuminate\Support\Facades\DB;
 
 final class RemoveDocument
 {
-    use GuardsTender;
+    use GuardsTender, SyncsSubtasks;
 
     public function handle(User $actor, Tender $tender, int $expectedVersion, int $documentId): Tender
     {
@@ -19,7 +19,11 @@ final class RemoveDocument
 
             $doc = $t->documents()->findOrFail($documentId);
             $name = $doc->name;
-            $doc->delete();
+            $parent = $doc->parent;
+            $doc->delete(); // its subtasks go with it
+            if ($parent) {
+                $this->syncParent($parent, $actor);
+            }
 
             $t->forceFill(['version' => $t->version + 1])->save();
             ActivityLog::record($t, $actor, 'document_removed', "Removed document: {$name}");

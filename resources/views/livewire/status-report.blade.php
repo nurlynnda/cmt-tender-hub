@@ -10,7 +10,7 @@
     };
     $th = 'px-3.5 py-3 text-left text-[10.5px] font-bold uppercase tracking-[0.5px] text-muted';
     $td = 'px-3.5 py-3 align-top';
-    $drill = fn (array $row, string $k) => route('tenders.index', [$lists[$k], 'pic' => $row['user_id'], ...$reportPeriod->listFilters()]);
+    $drill = fn (array $row, string $k) => route('tenders.index', [$lists[$k], 'pic' => $row['user_id'] ?? 'none', ...$reportPeriod->listFilters()]);
 @endphp
 <div class="space-y-4">
     <x-page-heading title="Status" subtitle="Per-PIC tender performance">

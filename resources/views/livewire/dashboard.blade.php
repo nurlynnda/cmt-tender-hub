@@ -18,7 +18,7 @@
         ['Done', $c['done'], 'awaiting result', route('tenders.index', ['done', ...$reportPeriod->listFilters()])],
         ['Lost', $c['lost'], $c['cancelled'] ? $c['cancelled'].' cancelled' : 'incl. cancelled', route('tenders.index', ['lost', ...$reportPeriod->listFilters()])],
         ['Win rate', $rate, $r['decided'] ? $r['won'].' of '.$r['decided'].' decided' : 'no decided bids yet', null],
-        ['Portfolio value', Money::short($r['bid_value_sen']), Money::format($r['bid_value_sen']).' bid value'.($r['without_value'] ? ', '.$r['without_value'].' without a value' : ''), null],
+        ['Portfolio value', Money::short($r['bid_value_sen']), null, null],
     ];
     $modeTotal = $r['modes']['EP']['total'] + $r['modes']['NON_EP']['total'];
     $epPct = $modeTotal ? (int) round($r['modes']['EP']['total'] * 100 / $modeTotal) : 0;
@@ -49,7 +49,7 @@
                     @endif
                         <div class="flex flex-wrap items-baseline gap-x-[7px]">
                             <span class="text-2xl font-extrabold tracking-tight">{{ $value }}</span>
-                            <span class="text-[12px] text-muted-2">({{ $hint }})</span>
+                            @if ($hint) <span class="text-[12px] text-muted-2">({{ $hint }})</span> @endif
                         </div>
                         <div class="mt-1.5 text-[13px] font-semibold text-ink-2">{{ $label }}</div>
                     @if ($href) </a> @else </div> @endif

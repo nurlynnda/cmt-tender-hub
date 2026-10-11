@@ -18,7 +18,7 @@ final class UpdateTender
         'tender_code' => 'tender code', 'title' => 'title', 'client' => 'client', 'ministry' => 'ministry', 'scope' => 'scope',
         'publish_date' => 'publish date', 'closing_date' => 'closing date',
         'has_briefing' => 'briefing', 'briefing_date' => 'briefing date',
-        'estimated_value_sen' => 'estimated value',
+        'estimated_value_sen' => 'estimated value', 'field_codes' => 'field codes',
     ];
 
     public function __construct(private AssignmentNotifier $notifier) {}
@@ -31,7 +31,7 @@ final class UpdateTender
 
             $oldPicId = $t->pic_id;
             $oldOwnerId = $t->owner_id;
-            $oldPicName = $t->pic->name;
+            $oldPicName = $t->pic?->name ?? 'nobody';
             $oldOwnerName = $t->owner?->name ?? 'nobody';
 
             $t->fill(Arr::only($data, RegisterTender::FIELDS));
@@ -51,7 +51,7 @@ final class UpdateTender
             $t->load('pic', 'owner');
 
             if (in_array('pic_id', $changed, true)) {
-                ActivityLog::record($t, $actor, 'pic_changed', "PIC changed from {$oldPicName} to {$t->pic->name}");
+                ActivityLog::record($t, $actor, 'pic_changed', "PIC changed from {$oldPicName} to ".($t->pic?->name ?? 'nobody'));
             }
             if (in_array('owner_id', $changed, true)) {
                 $newOwner = $t->owner?->name ?? 'nobody';

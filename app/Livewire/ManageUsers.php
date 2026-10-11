@@ -14,6 +14,8 @@ use Livewire\Component;
 #[Title('Manage Users')]
 class ManageUsers extends Component
 {
+    use \App\Livewire\Concerns\Toasts;
+
     public string $name = '';
     public string $email = '';
     public string $role = 'staff';
@@ -43,6 +45,7 @@ class ManageUsers extends Component
 
         app(CreateUser::class)->handle(auth()->user(), $this->name, $this->email, Role::from($this->role), $this->password);
         $this->notice = "Account created for {$this->name}. Share the temporary password with them privately.";
+        $this->toast($this->notice);
         $this->reset('name', 'email', 'role', 'password');
     }
 
@@ -87,6 +90,7 @@ class ManageUsers extends Component
         $password = $self || $this->editPassword === '' ? null : $this->editPassword; // your own password: Settings
         app(UpdateUserProfile::class)->handle(auth()->user(), $target, $this->editName, $this->editEmail, $password);
         $this->notice = "Saved — {$target->name}.".($password ? ' Share the temporary password with them privately.' : '');
+        $this->toast($this->notice);
         $this->cancelEdit();
     }
 

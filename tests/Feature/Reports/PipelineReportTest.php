@@ -135,3 +135,23 @@ it('counts Dropped tenders but leaves them out of the win rate and the bid and w
         ->and($r['win_rate_bp'])->toBe(10000);
     expect(collect($r['pics'])->firstWhere('user_id', $u->id)['dropped'])->toBe(1);
 });
+
+it('gives tenders with no PIC their own Unassigned row, so the rows still add up', function () {
+    $siti = User::factory()->create(['name' => 'Siti Aisyah']);
+    tenderFor($siti, TenderStatus::InProgress, ['estimated_value_sen' => 100000]);
+    tenderFor($siti, TenderStatus::InProgress, ['pic_id' => null, 'estimated_value_sen' => 300000]);
+
+    $r = pipeline();
+    $rows = collect($r['pics'])->keyBy('name');
+
+    expect($r['counts']['total'])->toBe(2)
+        ->and($rows['Unassigned'])->toMatchArray(['user_id' => null, 'total' => 1, 'bid_value_sen' => 300000, 'share_bp' => 7500])
+        ->and($rows['Siti Aisyah']['total'])->toBe(1)
+        ->and(collect($r['pics'])->sum('total'))->toBe($r['totals']['total']);
+});
+
+it('shows no Unassigned row when every tender has a PIC', function () {
+    tenderFor(User::factory()->create(['name' => 'Siti Aisyah']), TenderStatus::InProgress);
+
+    expect(collect(pipeline()['pics'])->pluck('name')->all())->not->toContain('Unassigned');
+});

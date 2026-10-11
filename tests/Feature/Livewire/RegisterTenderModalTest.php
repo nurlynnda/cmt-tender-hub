@@ -11,6 +11,7 @@ function filledRegister(User $pic)
         ->set('form.tenderCode', 'QT260000000041127')
         ->set('form.title', 'PERKHIDMATAN PEMBANGUNAN SISTEM')
         ->set('form.client', 'KEMENTERIAN KESIHATAN')
+        ->set('form.fieldCodes', '210101')
         ->set('form.picId', (string) $pic->id)
         ->set('form.closingDate', '2026-10-15')
         ->set('form.estimatedValue', 'RM 162,006.10');
@@ -32,13 +33,13 @@ it('registers a tender and opens it', function () {
 
 it('requires the essentials', function () {
     Livewire::test(RegisterTenderModal::class)->call('show')->call('save')
-        ->assertHasErrors(['form.tenderCode', 'form.title', 'form.client', 'form.picId', 'form.closingDate']);
+        ->assertHasErrors(['form.tenderCode', 'form.title', 'form.client', 'form.closingDate'])
+        ->assertHasNoErrors('form.picId'); // the PIC can be added later
     expect(Tender::count())->toBe(0);
 });
 
 it('uses plain-English field names in error messages', function () {
     Livewire::test(RegisterTenderModal::class)->call('show')->call('save')
-        ->assertSee('The person in charge field is required.')
         ->assertSee('The tender code field is required.')
         ->assertDontSee('pic id');
 });
@@ -88,4 +89,61 @@ it('shows the WO number and date that registering will use, labelled as automati
 it('does not close Register Tender on a stray click or Escape, so typed details are not lost', function () {
     Livewire::test(RegisterTenderModal::class)->call('show')
         ->assertDontSeeHtml('keydown.escape')->assertSeeHtml('>Cancel</button>');
+});
+
+it('registers a tender with no PIC', function () {
+    filledRegister(User::factory()->create())->set('form.picId', '')->call('save')->assertHasNoErrors();
+
+    expect(Tender::sole()->pic_id)->toBeNull();
+});
+
+it('pops up a reminder, and registers nothing, when CMT holds none of the tender\'s field codes', function () {
+    filledRegister(User::factory()->create())
+        ->set('form.fieldCodes', 'B04, 050201')
+        ->call('save')
+        ->assertSet('codeBlock', ['B04', '050201'])
+        ->assertSee('Cannot register this tender')
+        ->assertSee('we do not hold its field code')
+        ->assertSee('B04, 050201')
+        ->assertNoRedirect()
+        ->call('dismissCodeBlock')
+        ->assertSet('codeBlock', null)
+        ->assertDontSee('Cannot register this tender');
+
+    expect(Tender::count())->toBe(0);
+});
+
+it('pops up the same reminder when no field code is entered', function () {
+    filledRegister(User::factory()->create())->set('form.fieldCodes', '')->call('save')
+        ->assertSet('codeBlock', [])
+        ->assertSee('Cannot register this tender')->assertSee('has no field codes');
+
+    expect(Tender::count())->toBe(0);
+});
+
+it('checks the field codes before asking about a duplicate tender code', function () {
+    Tender::factory()->create(['tender_code' => 'QT260000000041127']);
+
+    filledRegister(User::factory()->create())->set('form.fieldCodes', 'B04')->call('save')
+        ->assertSet('confirmDuplicate', false)->assertSet('codeBlock', ['B04']);
+});
+
+it('registers when only one of several field codes is held', function () {
+    filledRegister(User::factory()->create())->set('form.fieldCodes', 'B04, 220301')->call('save')->assertHasNoErrors();
+
+    expect(Tender::sole()->field_codes)->toBe(['B04', '220301']);
+});
+
+it('rejects something that is not a field code', function () {
+    filledRegister(User::factory()->create())->set('form.fieldCodes', 'not a code!')->call('save')->assertHasErrors('form.fieldCodes');
+});
+
+it('lists CMT\'s field codes on the form', function () {
+    Livewire::test(RegisterTenderModal::class)->call('show')->assertSee('CMT\'s field codes (30)', false)->assertSee('210101')->assertSee('221207');
+});
+
+it('confirms with a pop-up on the next page that the tender was registered', function () {
+    filledRegister(User::factory()->create())->call('save');
+
+    expect(session('toast'))->toBe(['message' => 'Tender '.Tender::sole()->wo_number.' registered', 'type' => 'success']);
 });

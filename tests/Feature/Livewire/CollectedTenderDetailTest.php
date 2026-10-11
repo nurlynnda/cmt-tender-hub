@@ -8,7 +8,7 @@ beforeEach(fn () => $this->actingAs(User::factory()->create()));
 
 function collected(array $o = [], string $source = 'myprocurement'): CollectedTender
 {
-    return CollectedTender::factory()->forSource($source, '980576')->create(array_merge([
+    $c = CollectedTender::factory()->forSource($source, '980576')->create(array_merge([
         'reference_no' => 'QT260000000041127', 'title' => 'SISTEM RONDAAN', 'procurement_type' => 'requisition',
         'ministry' => 'KEMENTERIAN DALAM NEGERI', 'agency' => 'JABATAN PERPADUAN NEGARA',
         'advertised_date' => '2026-09-08', 'closing_date' => '2026-10-15', 'indicative_price_sen' => 16200610,
@@ -16,6 +16,9 @@ function collected(array $o = [], string $source = 'myprocurement'): CollectedTe
         'events' => [['label' => 'Taklimat', 'date' => '2026-09-22', 'address' => 'Putrajaya']],
         'raw' => ['Kod Bidang' => '210103'],
     ], $o));
+    $c->fieldCodes()->create(['code' => '210103']); // a code CMT holds
+
+    return $c;
 }
 
 it('shows all details, events, winners, source links and raw fields', function () {
@@ -45,6 +48,7 @@ it('pre-fills the Register form from the collected tender', function () {
         ->assertSet('form.type', 'QUOTATION')
         ->assertSet('form.mode', 'EP')
         ->assertSet('form.category', 'General')
+        ->assertSet('form.fieldCodes', '210103')
         ->assertSet('form.picId', '');
 });
 
@@ -62,8 +66,7 @@ it('saves the link and then offers "Open in pipeline" instead', function () {
     $c = collected();
 
     Livewire::test(RegisterTenderModal::class)->call('show', $c->id)
-        ->set('form.picId', (string) User::factory()->create()->id)
-        ->call('save');
+        ->call('save'); // no PIC chosen yet — that is allowed
 
     $tender = Tender::sole();
     expect($tender->collected_tender_id)->toBe($c->id);

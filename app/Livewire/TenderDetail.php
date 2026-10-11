@@ -2,9 +2,10 @@
 
 namespace App\Livewire;
 
-use App\Actions\Tenders\{AddDocument, AddDocuments, CancelTender, DropTender, MarkTenderAwarded, MarkTenderDone, MarkTenderLost, RemoveDocument, ReopenTender, ToggleDocument, UpdateTender};
+use App\Actions\Tenders\{AddDocument, AddDocuments, AddSubtask, CancelTender, DropTender, MarkTenderAwarded, MarkTenderDone, MarkTenderLost, RemoveDocument, ReopenTender, ToggleDocument, UpdateTender};
 use App\Enums\{TenderCategory, TenderMode, TenderStatus, TenderType};
 use App\Exceptions\{CostingRequired, DocumentsIncomplete, InvalidTenderTransition, StaleTenderException};
+use App\Livewire\Concerns\Toasts;
 use App\Livewire\Forms\TenderForm;
 use App\Models\{Tender, User};
 use App\Rules\MoneyAmount;
@@ -16,6 +17,8 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class TenderDetail extends Component
 {
+    use Toasts;
+
     public Tender $tender;
     public int $version;
     #[Url] public string $tab = 'overview';
@@ -33,6 +36,8 @@ class TenderDetail extends Component
     public string $lostReason = '';
     public string $dropReason = '';
     public string $newDocument = '';
+    /** Text typed into each task's "Add subtask" box, keyed by the task's id. */
+    public array $newSubtasks = [];
     public string $bulkDocuments = '';
     /** A short confirmation shown on the Documents tab, e.g. "Added 3 documents". */
     public ?string $notice = null;
@@ -64,7 +69,7 @@ class TenderDetail extends Component
         $this->authorize('update', $this->tender);
         $this->form->keepPeople([$this->tender->pic_id, $this->tender->owner_id]);
         $this->form->validate();
-        if ($this->apply(fn () => app(UpdateTender::class)->handle(auth()->user(), $this->tender, $this->version, $this->form->toData()))) {
+        if ($this->apply(fn () => app(UpdateTender::class)->handle(auth()->user(), $this->tender, $this->version, $this->form->toData()), 'Tender details saved')) {
             $this->editing = false;
         }
     }
@@ -78,7 +83,7 @@ class TenderDetail extends Component
         $this->costingProblem = null;
 
         if ($name === 'done') {
-            $pending = $this->tender->documents()->where('is_done', false)->pluck('name')->all();
+            $pending = $this->tender->documents()->whereNull('parent_id')->where('is_done', false)->pluck('name')->all();
             if ($pending !== []) {
                 $this->pendingDocuments = $pending;
 
@@ -113,18 +118,18 @@ class TenderDetail extends Component
 
             return;
         }
-        $this->apply(fn () => app(MarkTenderDone::class)->handle(auth()->user(), $this->tender, $this->version));
+        $this->apply(fn () => app(MarkTenderDone::class)->handle(auth()->user(), $this->tender, $this->version), 'Tender marked Done');
     }
 
     public function cancelTender(): void
     {
         $this->validate(['cancelReason' => ['required', 'string', 'max:1000']]);
-        $this->apply(fn () => app(CancelTender::class)->handle(auth()->user(), $this->tender, $this->version, $this->cancelReason));
+        $this->apply(fn () => app(CancelTender::class)->handle(auth()->user(), $this->tender, $this->version, $this->cancelReason), 'Tender cancelled');
     }
 
     public function markAwarded(): void
     {
-        $this->apply(fn () => app(MarkTenderAwarded::class)->handle(auth()->user(), $this->tender, $this->version));
+        $this->apply(fn () => app(MarkTenderAwarded::class)->handle(auth()->user(), $this->tender, $this->version), 'Tender marked Awarded');
     }
 
     public function markLost(): void
@@ -135,30 +140,38 @@ class TenderDetail extends Component
         ]);
         $this->apply(fn () => app(MarkTenderLost::class)->handle(
             auth()->user(), $this->tender, $this->version, Money::parse($this->winningPrice), $this->lostReason,
-        ));
+        ), 'Tender marked Lost');
     }
 
     public function dropTender(): void
     {
         $this->validate(['dropReason' => ['nullable', 'string', 'max:1000']]);
-        $this->apply(fn () => app(DropTender::class)->handle(auth()->user(), $this->tender, $this->version, $this->dropReason));
+        $this->apply(fn () => app(DropTender::class)->handle(auth()->user(), $this->tender, $this->version, $this->dropReason), 'Tender dropped');
     }
 
     public function reopen(): void
     {
-        $this->apply(fn () => app(ReopenTender::class)->handle(auth()->user(), $this->tender, $this->version));
+        $this->apply(fn () => app(ReopenTender::class)->handle(auth()->user(), $this->tender, $this->version), 'Tender reopened');
     }
 
     public function toggleDocument(int $documentId): void
     {
-        $this->apply(fn () => app(ToggleDocument::class)->handle(auth()->user(), $this->tender, $this->version, $documentId));
+        $this->apply(fn () => app(ToggleDocument::class)->handle(auth()->user(), $this->tender, $this->version, $documentId), 'Task updated');
     }
 
     public function addDocument(): void
     {
         $this->validate(['newDocument' => ['required', 'string', 'max:255']]);
-        if ($this->apply(fn () => app(AddDocument::class)->handle(auth()->user(), $this->tender, $this->version, $this->newDocument))) {
+        if ($this->apply(fn () => app(AddDocument::class)->handle(auth()->user(), $this->tender, $this->version, $this->newDocument), 'Document added')) {
             $this->newDocument = '';
+        }
+    }
+
+    public function addSubtask(int $parentId): void
+    {
+        $this->validate(["newSubtasks.{$parentId}" => ['required', 'string', 'max:255']], attributes: ["newSubtasks.{$parentId}" => 'subtask']);
+        if ($this->apply(fn () => app(AddSubtask::class)->handle(auth()->user(), $this->tender, $this->version, $parentId, $this->newSubtasks[$parentId]), 'Subtask added')) {
+            unset($this->newSubtasks[$parentId]);
         }
     }
 
@@ -170,16 +183,17 @@ class TenderDetail extends Component
             [$fresh, $added] = app(AddDocuments::class)->handle(auth()->user(), $this->tender, $this->version, $this->bulkDocuments);
 
             return $fresh;
-        });
+        }, null);
         if ($ok) {
             $this->bulkDocuments = '';
             $this->notice = $added ? "Added {$added} documents" : 'Nothing new to add';
+            $this->toast($this->notice, $added ? 'success' : 'info');
         }
     }
 
     public function removeDocument(int $documentId): void
     {
-        $this->apply(fn () => app(RemoveDocument::class)->handle(auth()->user(), $this->tender, $this->version, $documentId));
+        $this->apply(fn () => app(RemoveDocument::class)->handle(auth()->user(), $this->tender, $this->version, $documentId), 'Removed from the checklist');
     }
 
     #[On('costing-dirty')]
@@ -197,7 +211,7 @@ class TenderDetail extends Component
     }
 
     /** Runs an action; on success refreshes local state. Returns false when the change was refused. */
-    private function apply(callable $action): bool
+    private function apply(callable $action, ?string $success = null): bool
     {
         try {
             $fresh = $action();
@@ -220,7 +234,12 @@ class TenderDetail extends Component
 
         if ($fresh->status !== $this->tender->status) {
             // Full reload so the sidebar counts (rendered outside this component) stay accurate.
+            if ($success) {
+                $this->toastNextPage($success);
+            }
             $this->redirectRoute('tenders.show', $fresh);
+        } elseif ($success) {
+            $this->toast($success);
         }
 
         $this->tender = $fresh;
@@ -237,10 +256,12 @@ class TenderDetail extends Component
     public function render()
     {
         $documents = $this->tender->documents()->with('doneBy')->get();
+        $topLevel = $documents->whereNull('parent_id');
 
         return view('livewire.tender-detail', [
             'documents' => $documents,
-            'doneCount' => $documents->where('is_done', true)->count(),
+            'topLevelCount' => $topLevel->count(),
+            'doneCount' => $topLevel->where('is_done', true)->count(),
             'costing' => $this->modal === 'done' ? $this->tender->costingSummary() : null,
             'hasPd' => $this->tender->status === TenderStatus::Awarded && $this->tender->project()->exists(),
             'activity' => $this->tender->activity()->with('user')->get(),

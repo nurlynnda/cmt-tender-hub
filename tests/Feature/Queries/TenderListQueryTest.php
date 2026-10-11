@@ -65,3 +65,10 @@ it('ignores filter values that are not valid', function () {
     expect(listOf(TenderStatus::InProgress, ['mode' => 'BOGUS', 'category' => 'nope', 'from' => 'garbage', 'pic' => 'abc']))
         ->toBe(['Z']);
 });
+
+it('filters tenders that have no PIC yet with pic=none', function () {
+    Tender::factory()->create(['wo_number' => 'NOPIC', 'pic_id' => null]);
+    Tender::factory()->create(['wo_number' => 'HASPIC']);
+
+    expect(listOf(TenderStatus::InProgress, ['pic' => 'none']))->toBe(['NOPIC']);
+});

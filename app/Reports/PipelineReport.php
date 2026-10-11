@@ -72,8 +72,12 @@ final class PipelineReport
     /** Every active person (zero rows included), plus switched-off people who have tenders in the period. */
     private function picRows(array $byPic, int $grandBid): array
     {
-        $users = User::query()->where('is_active', true)->orWhereIn('id', array_keys($byPic))->get(['id', 'name', 'is_active']);
+        $users = User::query()->where('is_active', true)->orWhereIn('id', array_filter(array_keys($byPic)))->get(['id', 'name', 'is_active']);
         $rows = $users->map(fn (User $u) => self::row($u->id, $u->name, $u->initials(), $byPic[$u->id] ?? self::blank(), $grandBid))->all();
+        // Tenders registered without a PIC (null groups under the '' key) get their own row so the rows still add up.
+        if (isset($byPic[''])) {
+            $rows[] = self::row(null, 'Unassigned', '—', $byPic[''], $grandBid);
+        }
         usort($rows, fn ($a, $b) => [$b['bid_value_sen'], $a['name']] <=> [$a['bid_value_sen'], $b['name']]);
 
         return $rows;
