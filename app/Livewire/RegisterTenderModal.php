@@ -22,7 +22,7 @@ class RegisterTenderModal extends Component
     public bool $confirmDuplicate = false;
     public array $duplicateWoNumbers = [];
     public ?int $collectedTenderId = null;
-    /** Set when registering is refused because the company holds none of the tender's field codes; shows the pop-up (which offers Register anyway). */
+    /** Set when registering is refused because the company does not hold every field code the tender asks for (['asked' => [...], 'missing' => [...]]); shows the pop-up, which offers Register anyway. */
     public ?array $codeBlock = null;
     /** The person chose "Register anyway" on the field-code pop-up; reset when the field codes are edited. */
     public bool $codeOverride = false;
@@ -54,7 +54,7 @@ class RegisterTenderModal extends Component
         $this->codeBlock = null;
     }
 
-    /** The pop-up's "Register anyway": go ahead although none of the tender's field codes is one the company holds. */
+    /** The pop-up's "Register anyway": go ahead although the company does not hold every field code the tender asks for. */
     public function registerAnyway()
     {
         $this->codeOverride = true;
@@ -83,7 +83,7 @@ class RegisterTenderModal extends Component
             try {
                 CompanyFieldCodes::assertHeld(CompanyFieldCodes::parse($this->form->fieldCodes));
             } catch (FieldCodeNotHeld $e) {
-                $this->codeBlock = $e->tenderCodes;
+                $this->codeBlock = ['asked' => $e->tenderCodes, 'missing' => $e->missing];
 
                 return null;
             }

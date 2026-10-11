@@ -26,14 +26,17 @@
             </x-slot:actions>
         </x-dialog>
 
-        {{-- Pop-up shown right after clicking Register when none of the tender's field codes is one the company holds --}}
+        {{-- Pop-up shown right after clicking Register when the company does not hold every field code the tender asks for --}}
         @if ($codeBlock !== null)
             <x-dialog title="Field code does not match" close="dismissCodeBlock" cancelLabel="Go back">
-                @if ($codeBlock === [])
-                    <p class="text-[13.5px]">This tender has no field codes (kod bidang). 10 Creative Solutions normally registers a tender only under a field code it holds. Go back and enter the code(s), or register it anyway.</p>
+                @if ($codeBlock['asked'] === [])
+                    <p class="text-[13.5px]">This tender has no field codes (kod bidang). 10 Creative Solutions normally registers a tender only when it holds all of the tender's field codes. Go back and enter the code(s), or register it anyway.</p>
                 @else
-                    <p class="text-[13.5px]">None of this tender's field codes is one that <strong>10 Creative Solutions holds</strong>. We normally register a tender only under a code we hold.</p>
-                    <p class="rounded-xl bg-bad-bg px-3 py-2 text-[13px] font-semibold text-bad-ink">Tender asks for: {{ implode(', ', $codeBlock) }}</p>
+                    <p class="text-[13.5px]">10 Creative Solutions does not hold <strong>every</strong> field code this tender asks for. We normally register a tender only when we hold all of them.</p>
+                    <div class="space-y-1 rounded-xl bg-bad-bg px-3 py-2 text-[13px] text-bad-ink">
+                        <p class="font-semibold">We do not hold: {{ implode(', ', $codeBlock['missing']) }}</p>
+                        <p>Tender asks for: {{ implode(', ', $codeBlock['asked']) }}</p>
+                    </div>
                 @endif
                 <p class="text-[12.5px] text-muted">The company's {{ count(\App\Support\CompanyFieldCodes::all()) }} codes are listed under the Field codes box.</p>
                 <x-slot:actions>

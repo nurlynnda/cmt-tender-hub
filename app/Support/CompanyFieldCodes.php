@@ -4,7 +4,7 @@ namespace App\Support;
 
 use App\Exceptions\FieldCodeNotHeld;
 
-/** The MOF field codes (kod bidang) 10 Creative Solutions is registered under — config('tenderhub.company_field_codes'). */
+/** The MOF field codes (kod bidang) 10 Creative Solutions is registered under — config('tenderhub.company_field_codes'). A tender needs all of its codes to be among them. */
 final class CompanyFieldCodes
 {
     /** @return list<array{code:string, name:string}> */
@@ -29,10 +29,16 @@ final class CompanyFieldCodes
         return array_values(array_intersect(array_map('strtoupper', $codes), $held));
     }
 
-    /** @param  list<string>  $codes */
+    /** @param  list<string>  $codes  @return list<string> those the company does not hold (all of them when it holds none) */
+    public static function missing(array $codes): array
+    {
+        return array_values(array_diff(array_map('strtoupper', $codes), array_column(self::all(), 'code')));
+    }
+
+    /** The company must hold EVERY code the tender asks for (and the tender must ask for at least one). */
     public static function assertHeld(array $codes): void
     {
-        if (self::matching($codes) === []) {
+        if ($codes === [] || self::missing($codes) !== []) {
             throw new FieldCodeNotHeld(array_values($codes));
         }
     }

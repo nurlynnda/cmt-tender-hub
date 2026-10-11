@@ -20,13 +20,13 @@ final class RegisterTender
 
     public function __construct(private GenerateWoNumber $woNumbers, private AssignmentNotifier $notifier) {}
 
-    /** @param  bool  $overrideFieldCodes  register even though none of the tender's field codes is one the company holds */
+    /** @param  bool  $overrideFieldCodes  register even though the company does not hold every field code the tender asks for */
     public function handle(User $actor, array $data, bool $overrideFieldCodes = false): Tender
     {
         Gate::forUser($actor)->authorize('create', Tender::class);
 
         $codes = $data['field_codes'] ?? [];
-        $outsideCodes = CompanyFieldCodes::matching($codes) === [];
+        $outsideCodes = $codes === [] || CompanyFieldCodes::missing($codes) !== [];
         if ($outsideCodes && ! $overrideFieldCodes) {
             throw new FieldCodeNotHeld(array_values($codes));
         }
@@ -47,7 +47,7 @@ final class RegisterTender
             }
 
             ActivityLog::record($tender, $actor, 'registered', $outsideCodes
-                ? 'Tender registered anyway — none of its field codes is one the company holds'.($codes ? ' ('.implode(', ', $codes).')' : ' (no field codes given)')
+                ? 'Tender registered anyway — '.($codes ? 'the company does not hold its field code(s) '.implode(', ', CompanyFieldCodes::missing($codes)) : 'no field codes given')
                 : 'Tender registered');
 
             return $tender->fresh();
