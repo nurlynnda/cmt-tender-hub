@@ -331,9 +331,12 @@ it('requires text for a subtask and keeps the Docs count to top-level tasks', fu
 
 it('forbids adding a subtask to a tender the user may not edit', function () {
     [, $tender] = detailFixture();
+    $taskId = $tender->documents->first()->id;
 
     Livewire::actingAs(User::factory()->create())->test(TenderDetail::class, ['tender' => $tender])
-        ->set('newSubtasks.1', 'x')->call('addSubtask', $tender->documents->first()->id)->assertForbidden();
+        ->set("newSubtasks.{$taskId}", 'x')->call('addSubtask', $taskId)->assertForbidden();
+
+    expect(TenderDocument::whereNotNull('parent_id')->count())->toBe(0);
 });
 
 // ---- Tenders without a PIC ----

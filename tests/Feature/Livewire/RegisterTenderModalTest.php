@@ -139,7 +139,7 @@ it('rejects something that is not a field code', function () {
 });
 
 it('lists CMT\'s field codes on the form', function () {
-    Livewire::test(RegisterTenderModal::class)->call('show')->assertSee('CMT\'s field codes (30)')->assertSee('210101')->assertSee('221207');
+    Livewire::test(RegisterTenderModal::class)->call('show')->assertSee('CMT\'s field codes (30)', false)->assertSee('210101')->assertSee('221207');
 });
 
 it('confirms with a pop-up on the next page that the tender was registered', function () {
