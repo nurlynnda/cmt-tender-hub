@@ -3,7 +3,7 @@
 use App\Exceptions\FieldCodeNotHeld;
 use App\Support\CompanyFieldCodes;
 
-it('holds the 30 field codes CMT is registered under', function () {
+it('holds the 30 field codes the company is registered under', function () {
     $codes = array_column(CompanyFieldCodes::all(), 'code');
 
     expect($codes)->toHaveCount(30)->toContain('010302', '210101', '210110', '221207')->not->toContain('050201');
@@ -15,7 +15,7 @@ it('reads codes separated by commas, spaces or new lines, upper-cased and withou
         ->and(CompanyFieldCodes::parse(null))->toBe([]);
 });
 
-it('finds which of a tender\'s codes CMT holds', function () {
+it('finds which of a tender\'s codes the company holds', function () {
     expect(CompanyFieldCodes::matching(['B04', '210102', '999999']))->toBe(['210102'])
         ->and(CompanyFieldCodes::matching(['B04']))->toBe([]);
 });

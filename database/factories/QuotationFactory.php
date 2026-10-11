@@ -22,7 +22,7 @@ class QuotationFactory extends Factory
             'sst_bp' => 800,
             'terms' => "Prices quoted are in Ringgit Malaysia (RM).\nPayment terms: 30 days.",
             'letterhead' => [
-                'name' => 'CMT Sdn. Bhd.', 'registration_no' => null, 'sst_no' => null, 'address' => 'Kuala Lumpur',
+                'name' => '10 Creative Solutions Sdn Bhd', 'registration_no' => null, 'sst_no' => null, 'address' => 'Kuala Lumpur',
                 'phone' => null, 'email' => null, 'website' => null, 'stamp_path' => null,
             ],
             'version' => 1,

@@ -4,7 +4,7 @@ namespace App\Support;
 
 use App\Exceptions\FieldCodeNotHeld;
 
-/** The MOF field codes (kod bidang) CMT is registered under — config('tenderhub.company_field_codes'). */
+/** The MOF field codes (kod bidang) 10 Creative Solutions is registered under — config('tenderhub.company_field_codes'). */
 final class CompanyFieldCodes
 {
     /** @return list<array{code:string, name:string}> */
@@ -21,7 +21,7 @@ final class CompanyFieldCodes
         return array_values(array_unique($codes));
     }
 
-    /** @param  list<string>  $codes  @return list<string> those CMT holds */
+    /** @param  list<string>  $codes  @return list<string> those the company holds */
     public static function matching(array $codes): array
     {
         $held = array_column(self::all(), 'code');

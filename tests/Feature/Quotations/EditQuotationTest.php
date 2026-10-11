@@ -20,7 +20,7 @@ it('creates a draft filled with today, the defaults and a copy of the letterhead
         ->and($q->preparer_email)->toBe('siti@cmt.test')
         ->and($q->sst_bp)->toBe(800)
         ->and(substr_count($q->terms, "\n"))->toBe(5)
-        ->and($q->letterhead['name'])->toBe('CMT Sdn. Bhd.')
+        ->and($q->letterhead['name'])->toBe('10 Creative Solutions Sdn Bhd')
         ->and($q->activity->first()->description)->toBe("Quotation {$q->number} created");
 });
 
