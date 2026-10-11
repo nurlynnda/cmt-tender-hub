@@ -104,7 +104,7 @@ it('pops up a reminder, and registers nothing, when the company holds none of th
         ->call('save')
         ->assertSet('codeBlock', ['asked' => ['B04', '050201'], 'missing' => ['B04', '050201']])
         ->assertSee('Field code does not match')
-        ->assertSee('10 Creative Solutions holds')
+        ->assertSee('does not hold')->assertSee('We do not hold: B04, 050201')->assertSee('Tender asks for: B04, 050201')
         ->assertSee('Register anyway')
         ->assertSee('B04, 050201')
         ->assertNoRedirect()
