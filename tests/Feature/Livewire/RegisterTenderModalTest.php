@@ -31,15 +31,16 @@ it('registers a tender and opens it', function () {
         ->and($tender->documents)->toHaveCount(5);
 });
 
+// The field-code check comes first (right after the click), so these give a held code to get past it to the form checks.
 it('requires the essentials', function () {
-    Livewire::test(RegisterTenderModal::class)->call('show')->call('save')
+    Livewire::test(RegisterTenderModal::class)->call('show')->set('form.fieldCodes', '210101')->call('save')
         ->assertHasErrors(['form.tenderCode', 'form.title', 'form.client', 'form.closingDate'])
         ->assertHasNoErrors('form.picId'); // the PIC can be added later
     expect(Tender::count())->toBe(0);
 });
 
 it('uses plain-English field names in error messages', function () {
-    Livewire::test(RegisterTenderModal::class)->call('show')->call('save')
+    Livewire::test(RegisterTenderModal::class)->call('show')->set('form.fieldCodes', '210101')->call('save')
         ->assertSee('The tender code field is required.')
         ->assertDontSee('pic id');
 });
@@ -103,7 +104,7 @@ it('pops up a reminder, and registers nothing, when the company holds none of th
         ->call('save')
         ->assertSet('codeBlock', ['asked' => ['B04', '050201'], 'missing' => ['B04', '050201']])
         ->assertSee('Field code does not match')
-        ->assertSee('10 Creative Solutions holds')
+        ->assertSee('does not hold')->assertSee('We do not hold: B04, 050201')->assertSee('Tender asks for: B04, 050201')
         ->assertSee('Register anyway')
         ->assertSee('B04, 050201')
         ->assertNoRedirect()
@@ -143,8 +144,12 @@ it('pops up when only some of the field codes are held, listing the ones we do n
     expect(Tender::count())->toBe(0);
 });
 
-it('rejects something that is not a field code', function () {
-    filledRegister(User::factory()->create())->set('form.fieldCodes', 'not a code!')->call('save')->assertHasErrors('form.fieldCodes');
+it('rejects something that is not a field code, once past the field-code pop-up', function () {
+    filledRegister(User::factory()->create())->set('form.fieldCodes', 'not a code!')->call('save')
+        ->assertSet('codeBlock.missing', ['NOT', 'A', 'CODE!']) // the pop-up comes first
+        ->call('registerAnyway')->assertHasErrors('form.fieldCodes');
+
+    expect(Tender::count())->toBe(0);
 });
 
 it('lists the company\'s field codes on the form', function () {
